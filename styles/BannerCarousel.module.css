@@ -1,0 +1,107 @@
+.bannerCarousel {
+  width: 100%;
+  height: 600px;
+  background-color: #0f0f0f;
+  overflow: hidden;
+  position: relative;
+}
+
+.carouselContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.carouselImage {
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  transition: opacity 0.8s ease-in-out;
+  position: relative;
+}
+
+.carouselImage.fadeOut {
+  opacity: 0;
+}
+
+.image {
+  object-fit: cover;
+}
+
+.carouselControls {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 100;
+}
+
+.carouselDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: rgba(180, 160, 140, 0.5);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.carouselDot.active {
+  background-color: #b8a89c;
+  width: 30px;
+  border-radius: 6px;
+}
+
+/* OFERTAS DESTACADAS */
+.offersSection {
+  position: absolute;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  z-index: 105;
+  padding: 0 20px;
+}
+
+.offersContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.offerCard {
+  background-color: rgba(30, 29, 27, 0.85);
+  backdrop-filter: blur(10px);
+  padding: 1.5rem 2rem;
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.5s ease;
+  border: 1px solid #363330;
+}
+
+.offerCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-color: #e8e4df;
+}
+
+.offerCard h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: #f5f2ec;
+}
+
+.offerCard p {
+  font-size: 0.95rem;
+  color: #d3cdc4;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .bannerCarousel {
+    height: 400px;
+  }
+}

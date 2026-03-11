@@ -1,0 +1,119 @@
+.whatsappFloat {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1999;
+  width: 60px;
+  height: 60px;
+  background-color: #25d366;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+  font-size: 1.8rem;
+}
+
+.whatsappFloat:hover {
+  background-color: #20ba5a;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* SPINNER FLOTANTE */
+.spinnerContainer {
+  position: fixed;
+  bottom: 25px;
+  left: 25px;
+  z-index: 1999;
+}
+
+.spinner {
+  width: 35.2px;
+  height: 35.2px;
+  --clr: rgb(247, 197, 159);
+  --clr-alpha: rgba(247, 197, 159, 0.1);
+  animation: spinnerAnimation 1.6s infinite ease;
+  transform-style: preserve-3d;
+}
+
+.spinner > div {
+  background-color: var(--clr-alpha);
+  height: 100%;
+  position: absolute;
+  width: 100%;
+  border: 1.75px solid var(--clr);
+}
+
+.spinner div:nth-of-type(1) {
+  transform: translateZ(-17.6px) rotateY(180deg);
+}
+
+.spinner div:nth-of-type(2) {
+  transform: rotateY(-270deg) translateX(50%);
+  transform-origin: top right;
+}
+
+.spinner div:nth-of-type(3) {
+  transform: rotateY(270deg) translateX(-50%);
+  transform-origin: center left;
+}
+
+.spinner div:nth-of-type(4) {
+  transform: rotateX(90deg) translateY(-50%);
+  transform-origin: top center;
+}
+
+.spinner div:nth-of-type(5) {
+  transform: rotateX(-90deg) translateY(50%);
+  transform-origin: bottom center;
+}
+
+.spinner div:nth-of-type(6) {
+  transform: translateZ(17.6px);
+}
+
+@keyframes spinnerAnimation {
+  0% {
+    transform: rotate(45deg) rotateX(-25deg) rotateY(25deg);
+  }
+
+  50% {
+    transform: rotate(45deg) rotateX(-385deg) rotateY(25deg);
+  }
+
+  100% {
+    transform: rotate(45deg) rotateX(-385deg) rotateY(385deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .spinnerContainer {
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .spinner {
+    width: 30px;
+    height: 30px;
+  }
+
+  .spinner > div {
+    border-width: 1.5px;
+  }
+
+  .spinner div:nth-of-type(1) {
+    transform: translateZ(-15px) rotateY(180deg);
+  }
+
+  .spinner div:nth-of-type(2) {
+    transform: rotateY(-270deg) translateX(45%);
+  }
+
+  .spinner div:nth-of-type(3) {
+    transform: rotateY(270deg) translateX(-45%);
+  }
+}
