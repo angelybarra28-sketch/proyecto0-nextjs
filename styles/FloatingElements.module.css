@@ -117,3 +117,76 @@
     transform: rotateY(270deg) translateX(-45%);
   }
 }
+
+/* BOTON VOLVER A PRODUCTOS */
+.backToTop {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #f7c59f;
+  border: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 0px 0px 4px rgba(247, 197, 159, 0.25);
+  cursor: pointer;
+  transition-duration: 0.3s;
+  overflow: hidden;
+  position: fixed;
+  bottom: 100px;
+  right: 25px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2000;
+}
+
+.backToTop.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.svgIcon {
+  width: 14px;
+  transition-duration: 0.3s;
+}
+
+.svgIcon path {
+  fill: #1e1d1b;
+}
+
+.backToTop:hover {
+  width: 140px;
+  border-radius: 50px;
+  transition-duration: 0.3s;
+  background-color: #e8b991;
+  align-items: center;
+}
+
+.backToTop:hover .svgIcon {
+  transition-duration: 0.3s;
+  transform: translateY(-200%);
+}
+
+.backToTop::before {
+  position: absolute;
+  bottom: -20px;
+  content: "Ir arriba";
+  color: #1e1d1b;
+  font-size: 0px;
+  white-space: nowrap;
+}
+
+.backToTop:hover::before {
+  font-size: 13px;
+  opacity: 1;
+  bottom: auto;
+  transition-duration: 0.3s;
+}
+
+@media (max-width: 768px) {
+  .backToTop {
+    bottom: 90px;
+    right: 20px;
+  }
+}

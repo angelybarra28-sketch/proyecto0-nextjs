@@ -17,6 +17,7 @@ export default function Home() {
       <ProductsSection 
         title={productData.section1.title} 
         products={productData.section1.products}
+        id="most-chosen"
       />
       <ProductsSection 
         title={productData.section2.title} 

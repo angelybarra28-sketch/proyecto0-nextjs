@@ -80,7 +80,7 @@
 }
 
 .logo {
-  height: 130px;
+  height: 195px;
   width: auto;
   transition: all 0.3s ease;
   cursor: pointer;
@@ -90,16 +90,17 @@
 }
 
 .header.scrolled .logo {
-  height: 50px;
+  height: 75px;
 }
 
 .logo:hover {
-  transform: scale(1.05);
+  transform: perspective(500px) rotateX(5deg) rotateY(5deg) scale(1.05);
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3));
 }
 
 .headerNav {
   width: 100%;
-  padding: 0 0 10px 0;
+  padding: 0 0 5px 0;
   position: relative;
   transition: all 0.3s ease;
   grid-column: 1 / -1;
@@ -110,7 +111,7 @@
 
 .header.scrolled .headerNav {
   width: 100%;
-  padding: 0 0 5px 0;
+  padding: 0;
   flex: none;
   order: unset;
   display: flex;
@@ -140,7 +141,7 @@
   display: flex;
 }
 
-.mainNav > li {
+.mainNav>li {
   position: relative;
   flex: 0;
   text-align: center;
@@ -158,7 +159,7 @@
   justify-self: end;
 }
 
-.header.scrolled .mainNav > li {
+.header.scrolled .mainNav>li {
   flex: 0;
   white-space: nowrap;
   text-align: center;
@@ -233,95 +234,67 @@
   background-color: #f5f2ec;
 }
 
-.searchToggle {
-  position: static;
-  width: 35px;
-  height: 35px;
-  cursor: pointer;
-  padding: 0;
-  border: none;
-  background: none;
-  margin-top: 0;
-  font-size: 1.5rem;
-}
-
-.searchBar {
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
   position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: #4a433a;
-  border-bottom: 1px solid #5a5248;
-  padding: 1rem 60px 1rem 20px;
-  display: none;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 1001;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  width: 100%;
-  box-sizing: border-box;
 }
 
-.searchBar.active {
-  display: flex;
-}
-
-.searchBar input {
-  width: 100%;
-  max-width: 500px;
-  padding: 0.8rem 1rem;
-  border: 1px solid #5a5248;
-  background-color: #1e1d1b;
-  color: #f5f2ec;
-  border-radius: 4px;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-}
-
-.searchBar input:focus {
-  outline: none;
-  border-color: #e8e4df;
-  box-shadow: 0 0 8px rgba(232, 228, 223, 0.2);
-}
-
-.btnSearch {
-  padding: 0.5rem;
-  background-color: #f5f2ec;
-  color: #1e1d1b;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 42px;
+.input {
+  border-style: none;
+  height: 50px;
   width: 50px;
-  flex-shrink: 0;
-  font-size: 1.2rem;
+  padding: 10px;
+  outline: none;
+  border-radius: 50%;
+  transition: .5s ease-in-out;
+  background-color: #f7c59f;
+  box-shadow: 0px 0px 3px #f3f3f3;
+  padding-right: 40px;
+  color: #1e1d1b;
 }
 
-.btnSearch:hover {
-  background-color: #e8e4df;
+.input::placeholder,
+.input {
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  font-size: 17px;
 }
 
-.closeSearch {
-  position: absolute;
-  right: 15px;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #f5f2ec;
-  padding: 0;
+.input::placeholder {
+  color: #6d665f;
+}
+
+.icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: absolute;
+  right: 0px;
+  cursor: pointer;
+  width: 50px;
+  height: 50px;
+  outline: none;
+  border-style: none;
+  border-radius: 50%;
+  pointer-events: painted;
+  background-color: transparent;
+  transition: .2s linear;
 }
 
-.closeSearch:hover {
-  color: #e8e4df;
+.icon:focus~.input,
+.input:focus {
+  box-shadow: none;
+  width: 250px;
+  border-radius: 0px;
+  background-color: transparent;
+  border-bottom: 3px solid #f7c59f;
+  transition: all 500ms cubic-bezier(0, 0.110, 0.35, 2);
 }
 
 .cartIcon {
@@ -358,15 +331,18 @@
   .headerContainer {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
-    gap: 1rem;
+    grid-template-rows: auto auto;
+    gap: 0.2rem; /* Reduced gap */
     align-items: center;
     padding: 0 10px;
+    width: 100%;
   }
 
   .header.scrolled .headerContainer {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
-    gap: 0.5rem;
+    grid-template-rows: auto auto;
+    gap: 0.2rem;
     align-items: center;
     padding: 0 10px;
   }
@@ -380,6 +356,7 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     gap: 1rem;
+    padding-right: 35px;
   }
 
   .headerTop {
@@ -392,12 +369,12 @@
   }
 
   .logo {
-    height: 60px;
+    height: 90px; /* Further reduced from 135px to save space */
     transition: height 0.3s ease;
   }
 
   .header.scrolled .logo {
-    height: 40px;
+    height: 50px;
   }
 
   .electrodomesticosItem,
@@ -426,28 +403,69 @@
   }
 
   .cartIcon {
-    position: absolute;
-    top: 5px;
-    right: 15px;
-    font-size: 1.6rem;
-    transition: top 0.3s ease;
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    font-size: 1.5rem;
     z-index: 2000;
   }
 
   .header.scrolled .cartIcon {
-    top: 5px;
-    right: 15px;
+    top: 10px;
+    right: 10px;
   }
 
-  .searchToggle {
-    display: none;
-    opacity: 0;
-    pointer-events: none;
+  .inputWrapper {
+    display: flex;
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center;
+    margin: 5px 0 10px 0; /* Less top margin */
+    width: 100%;
+    z-index: 10;
   }
 
-  .header.scrolled .searchToggle {
-    display: block;
-    opacity: 1;
-    pointer-events: auto;
+  /* Ensure the input doesn't overlap or look weird on small screens */
+  .input {
+    width: 85% !important;
+    max-width: 250px; /* Slightly narrower */
+    height: 38px !important; /* Smaller height */
+    border-radius: 19px !important;
+    padding: 0 40px 0 15px !important;
+    background-color: #f7c59f !important;
+    border: none !important;
+    opacity: 1 !important;
+    font-size: 14px !important;
+    color: #1e1d1b !important;
+  }
+
+  .input:focus {
+    width: 90% !important;
+    max-width: 280px;
+  }
+
+  .icon {
+    position: absolute !important;
+    right: auto !important;
+    left: calc(50% + 85px); /* Position it relative to the center for max-width 250px */
+    width: 38px !important;
+    height: 38px !important;
+    background: transparent !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    fill: #1e1d1b !important;
+  }
+
+  /* If the input is small/pill shaped, we might want the icon to stay relative */
+  .inputWrapper .icon {
+    position: absolute;
+    right: 7.5%; /* Assuming width 85% centered */
+    left: auto;
+    background: transparent;
   }
 }

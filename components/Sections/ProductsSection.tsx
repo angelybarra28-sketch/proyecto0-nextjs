@@ -14,11 +14,12 @@ interface Product {
 interface ProductsSectionProps {
   title: string;
   products: Product[];
+  id?: string;
 }
 
-export default function ProductsSection({ title, products }: ProductsSectionProps) {
+export default function ProductsSection({ title, products, id }: ProductsSectionProps) {
   return (
-    <section className={styles.productsSection}>
+    <section id={id} className={styles.productsSection}>
       <div className={styles.productsWrapper}>
         <h2 className={styles.sectionTitle}>{title}</h2>
         <div className={styles.productsGrid}>

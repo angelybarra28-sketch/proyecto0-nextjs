@@ -22,7 +22,7 @@ export default function ProductCard({
     <div className={styles.productCard}>
       <div className={styles.productImage}>
         {discount && <div className={styles.discountBadge}>{discount}</div>}
-        
+
         {imageUrl ? (
           <Image
             src={imageUrl}

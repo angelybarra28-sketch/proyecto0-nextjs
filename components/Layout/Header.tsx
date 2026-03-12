@@ -6,8 +6,6 @@ import styles from '@/styles/Header.module.css';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,40 +16,14 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      console.log('Buscando:', searchQuery);
-      setIsSearchOpen(false);
-      setSearchQuery('');
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
   return (
     <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}>
       <div className={styles.headerContainer}>
         <div className={styles.headerTop}>
           <div className={styles.logoContainer}>
             <div className={styles.logo}>
-              <img src="/logo/logo.png" alt="Logo" style={{ height: '40px', width: 'auto' }} />
+              <img src="/logo/logo.png" alt="Logo" style={{ width: 'auto', maxHeight: '100%' }} />
             </div>
-            <button
-              className={styles.searchToggle}
-              onClick={() => setIsSearchOpen(true)}
-              title="Buscar"
-              style={{
-                opacity: isScrolled ? 1 : 0,
-                pointerEvents: isScrolled ? 'auto' : 'none',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              <img src="/iconos/lupa.jpg" alt="Buscar" style={{ width: '20px', height: '20px' }} />
-            </button>
           </div>
         </div>
 
@@ -84,28 +56,6 @@ export default function Header() {
           </ul>
         </nav>
 
-        {/* SEARCH BAR */}
-        <div className={`${styles.searchBar} ${isSearchOpen ? styles.active : ''}`}>
-          <input
-            type="text"
-            placeholder="Busca productos, marcas, artículos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={handleKeyPress}
-          />
-          <button className={styles.btnSearch} onClick={handleSearch} title="Buscar">
-            <img src="/iconos/lupa.jpg" alt="Buscar" style={{ width: '20px', height: '20px' }} />
-          </button>
-          <button
-            className={styles.closeSearch}
-            onClick={() => {
-              setIsSearchOpen(false);
-              setSearchQuery('');
-            }}
-          >
-            ✕
-          </button>
-        </div>
       </div>
     </header>
   );
