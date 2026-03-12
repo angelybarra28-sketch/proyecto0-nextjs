@@ -147,15 +147,19 @@
   text-align: center;
 }
 
+.electrodomesticosItem, .blanqueriaItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .electrodomesticosItem {
   grid-column: 1;
-  text-align: right;
   justify-self: start;
 }
 
 .blanqueriaItem {
   grid-column: 3;
-  text-align: left;
   justify-self: end;
 }
 
@@ -180,7 +184,7 @@
   margin-left: auto;
 }
 
-.mainNav a {
+.mainNav a:not(.uiverseButton) {
   color: #f5f2ec;
   text-decoration: none;
   font-size: 0.75rem;
@@ -191,7 +195,7 @@
   display: block;
 }
 
-.mainNav a:hover {
+.mainNav a:not(.uiverseButton):hover {
   color: #e8e4df;
   border-bottom-color: #e8e4df;
 }
@@ -332,7 +336,8 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     grid-template-rows: auto auto;
-    gap: 0.2rem; /* Reduced gap */
+    gap: 0.2rem;
+    /* Reduced gap */
     align-items: center;
     padding: 0 10px;
     width: 100%;
@@ -369,7 +374,8 @@
   }
 
   .logo {
-    height: 90px; /* Further reduced from 135px to save space */
+    height: 90px;
+    /* Further reduced from 135px to save space */
     transition: height 0.3s ease;
   }
 
@@ -424,7 +430,8 @@
     grid-column: 1 / -1;
     grid-row: 2;
     justify-content: center;
-    margin: 5px 0 10px 0; /* Less top margin */
+    margin: 5px 0 10px 0;
+    /* Less top margin */
     width: 100%;
     z-index: 10;
   }
@@ -432,8 +439,10 @@
   /* Ensure the input doesn't overlap or look weird on small screens */
   .input {
     width: 85% !important;
-    max-width: 250px; /* Slightly narrower */
-    height: 38px !important; /* Smaller height */
+    max-width: 250px;
+    /* Slightly narrower */
+    height: 38px !important;
+    /* Smaller height */
     border-radius: 19px !important;
     padding: 0 40px 0 15px !important;
     background-color: #f7c59f !important;
@@ -451,7 +460,8 @@
   .icon {
     position: absolute !important;
     right: auto !important;
-    left: calc(50% + 85px); /* Position it relative to the center for max-width 250px */
+    left: calc(50% + 85px);
+    /* Position it relative to the center for max-width 250px */
     width: 38px !important;
     height: 38px !important;
     background: transparent !important;
@@ -464,8 +474,164 @@
   /* If the input is small/pill shaped, we might want the icon to stay relative */
   .inputWrapper .icon {
     position: absolute;
-    right: 7.5%; /* Assuming width 85% centered */
+    right: 7.5%;
+    /* Assuming width 85% centered */
     left: auto;
     background: transparent;
   }
+}
+
+/* From Uiverse.io by MuhammadHasann */ 
+.uiverseButton {
+  position: relative;
+  padding: 13px 45px; /* Más padding lateral para que el texto no toque los bordes */
+  background: #4a433a; /* Color del fondo del head */
+  font-size: 14px;
+  font-weight: 700; /* Un poco menos pesado para mejor legibilidad */
+  color: #f5f2ec; /* Color del texto del head */
+  border: 1px solid #5a5248; /* Sutil borde para definirlo */
+  border-radius: 8px;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.3), inset 1px 1px 2px rgba(255,255,255,0.1);
+  transition: all .3s ease-in-out;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  white-space: nowrap;
+  z-index: 5;
+  transform-style: preserve-3d;
+}
+
+.buttonText {
+  position: relative;
+  z-index: 10; /* Ensures text is always on top */
+}
+
+.icon1, .icon2, .icon3, .icon4, .icon5 {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: 0px;
+  height: auto;
+  transition: all .5s ease-in-out;
+  z-index: -1; /* Behind the button content */
+  pointer-events: none;
+}
+
+.uiverseButton:hover {
+  padding: 10px 20px;
+  border-radius: 8px 8px 24px 24px;
+}
+
+.uiverseButton:hover .icon1 {
+  top: -200%; /* Reduced from -250% */
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: 40px; /* Reduced from 50px */
+  height: auto;
+  animation: inIcon1 1s ease .45s forwards;
+}
+
+@keyframes inIcon1 {
+  0% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(0deg); }
+  25% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(5deg); }
+  50% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(1deg); }
+  65% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(3deg); }
+  100% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(0deg); }
+}
+
+.uiverseButton:hover .icon2 {
+  position: absolute;
+  top: -160%; /* Reduced */
+  left: 90%;
+  transform: translate(-50%, 0);
+  width: 55px; /* Reduced from 75px */
+  height: auto;
+  animation: inIcon2 1s ease .45s forwards;
+}
+
+@keyframes inIcon2 {
+  0% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(0deg); }
+  35% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(10deg); }
+  50% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(4deg); }
+  80% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(5deg); }
+  100% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(0deg); }
+}
+
+.uiverseButton:hover .icon3 {
+  position: absolute;
+  top: -100%; /* Reduced */
+  left: 20%;
+  transform: translate(-50%, 0);
+  width: 45px; /* Reduced from 60px */
+  height: auto;
+  animation: inIcon3 1s ease .45s forwards;
+}
+
+@keyframes inIcon3 {
+  0% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(0deg); }
+  35% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(-2deg); }
+  100% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(0deg); }
+}
+
+.uiverseButton:hover .icon4 {
+  position: absolute;
+  top: -220%; /* Reduced from -300% */
+  left: 10%;
+  transform: translate(-50%, 0);
+  width: 60px; /* Reduced from 85px */
+  height: auto;
+  animation: inIcon4 1s ease .45s forwards;
+}
+
+@keyframes inIcon4 {
+  0% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(0deg); }
+  40% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(-3deg); }
+  100% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(0deg); }
+}
+
+.uiverseButton:hover .icon5 {
+  position: absolute;
+  top: -260%; /* Reduced from -350% */
+  left: 90%;
+  transform: translate(-50%, 0);
+  width: 60px; /* Reduced from 85px */
+  height: auto;
+  animation: inIcon5 1s ease .45s forwards;
+}
+
+@keyframes inIcon5 {
+  0% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(0deg); }
+  35% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(-3deg); }
+  100% { transform-origin: 0 100%; transform: translate(-50%, 0) rotate(0deg); }
+}
+
+.filLeaf1 { fill: #7B9B3A }
+.filLeaf2 { fill: #556729; fill-rule: nonzero }
+.filLeaf3 { fill: #556729 }
+.filLeaf4 { fill: #3C4819 }
+.filLeaf5 { fill: #3C4819 }
+
+@media (max-width: 768px) {
+  .uiverseButton {
+    padding: 6px 10px; /* More compact */
+    font-size: 9px;
+    border-radius: 4px;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    min-height: 30px;
+  }
+
+  .uiverseButton:hover {
+    padding: 6px 8px;
+    border-radius: 4px 4px 12px 12px; /* Smaller rounding */
+  }
+
+  /* Reduce animation range significantly for mobile */
+  .uiverseButton:hover .icon1 { top: -100%; width: 25px; }
+  .uiverseButton:hover .icon2 { top: -80%; width: 35px; }
+  .uiverseButton:hover .icon3 { top: -50%; width: 30px; }
+  .uiverseButton:hover .icon4 { top: -110%; width: 40px; }
+  .uiverseButton:hover .icon5 { top: -130%; width: 40px; }
 }

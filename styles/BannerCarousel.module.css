@@ -15,43 +15,11 @@
 .carouselImage {
   width: 100%;
   height: 100%;
-  opacity: 1;
-  transition: opacity 0.8s ease-in-out;
   position: relative;
-}
-
-.carouselImage.fadeOut {
-  opacity: 0;
 }
 
 .image {
   object-fit: cover;
-}
-
-.carouselControls {
-  position: absolute;
-  bottom: 15px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 10px;
-  z-index: 100;
-}
-
-.carouselDot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: rgba(180, 160, 140, 0.5);
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.carouselDot.active {
-  background-color: #b8a89c;
-  width: 30px;
-  border-radius: 6px;
 }
 
 /* OFERTAS DESTACADAS */

@@ -23,10 +23,10 @@ export default function FloatingElements() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToMostChosen = () => {
-    const element = document.getElementById('most-chosen');
+  const scrollToBlanqueria = () => {
+    const element = document.getElementById('blanqueria');
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
@@ -45,7 +45,7 @@ export default function FloatingElements() {
       {/* BOTON VOLVER A PRODUCTOS (Aparece en sección About) */}
       <button 
         className={`${styles.backToTop} ${showBackToTop ? styles.visible : ''}`}
-        onClick={scrollToMostChosen}
+        onClick={scrollToBlanqueria}
         title="Volver a los artículos más elegidos"
       >
         <svg className={styles.svgIcon} viewBox="0 0 384 512">

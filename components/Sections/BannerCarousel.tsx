@@ -1,21 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import styles from '@/styles/BannerCarousel.module.css';
 
-const bannerImages = [
-  '/assets/sabana 1.webp',
-  '/assets/sabana 2.webp',
-  '/assets/sabana 3.webp'
-];
-
 export default function BannerCarousel() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [fadeOut, setFadeOut] = useState(false);
-
   useEffect(() => {
     AOS.init({
       duration: 900,
@@ -24,48 +15,17 @@ export default function BannerCarousel() {
     });
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFadeOut(true);
-      setTimeout(() => {
-        setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
-        setFadeOut(false);
-      }, 400);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const goToSlide = (index: number) => {
-    setFadeOut(true);
-    setTimeout(() => {
-      setCurrentSlide(index);
-      setFadeOut(false);
-    }, 400);
-  };
-
   return (
     <section className={styles.bannerCarousel}>
       <div className={styles.carouselContainer}>
-        <div className={`${styles.carouselImage} ${fadeOut ? styles.fadeOut : ''}`}>
+        <div className={styles.carouselImage}>
           <Image
-            src={bannerImages[currentSlide]}
-            alt={`Banner ${currentSlide + 1}`}
+            src="/assets/fondo-hero.webp"
+            alt="Fondo Principal"
             fill
             className={styles.image}
             priority
           />
-        </div>
-
-        <div className={styles.carouselControls}>
-          {bannerImages.map((_, index) => (
-            <button
-              key={index}
-              className={`${styles.carouselDot} ${index === currentSlide ? styles.active : ''}`}
-              onClick={() => goToSlide(index)}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
         </div>
 
         {/* OFERTAS DESTACADAS */}
