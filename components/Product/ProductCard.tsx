@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import styles from '@/styles/ProductCard.module.css';
 
 interface ProductCardProps {
@@ -9,6 +10,7 @@ interface ProductCardProps {
   discount?: string;
   imageUrl?: string;
   productIndex: number;
+  productId: number;
 }
 
 export default function ProductCard({
@@ -16,32 +18,35 @@ export default function ProductCard({
   price,
   discount,
   imageUrl,
-  productIndex
+  productIndex,
+  productId
 }: ProductCardProps) {
   return (
     <div className={styles.productCard}>
-      <div className={styles.productImage}>
-        {discount && <div className={styles.discountBadge}>{discount}</div>}
+      <Link href={`/detalles/${productId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+        <div className={styles.productImage}>
+          {discount && <div className={styles.discountBadge}>{discount}</div>}
+          
+          {imageUrl ? (
+            <Image
+              src={imageUrl}
+              alt={name}
+              fill
+              className={styles.image}
+            />
+          ) : (
+            <div className={styles.placeholder}>
+              <span>📸 Imagen no disponible</span>
+            </div>
+          )}
+        </div>
 
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={name}
-            fill
-            className={styles.image}
-          />
-        ) : (
-          <div className={styles.placeholder}>
-            <span>📸 Imagen no disponible</span>
-          </div>
-        )}
-      </div>
-
-      <div className={styles.productInfo}>
-        <h3 className={styles.productName}>{name}</h3>
-        <div className={styles.productPrice}>{price}</div>
-        <button className={styles.productButton}>Ver Detalles</button>
-      </div>
+        <div className={styles.productInfo}>
+          <h3 className={styles.productName}>{name}</h3>
+          <div className={styles.productPrice}>{price}</div>
+          <button className={styles.productButton}>Ver Detalles</button>
+        </div>
+      </Link>
     </div>
   );
 }

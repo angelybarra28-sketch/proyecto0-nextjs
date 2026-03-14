@@ -4,8 +4,17 @@ export interface Product {
   price: string;
   discount?: string;
   imageUrl?: string;
+  carouselImages?: string[];
   description?: string;
   category?: string;
+  specifications?: {
+    size: string;
+    material: string;
+    firmness: string;
+    withPillow: string;
+    color: string;
+  };
+  features?: string[];
 }
 
 export interface ProductSection {

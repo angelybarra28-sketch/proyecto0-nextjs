@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useCart } from '@/lib/cartContext';
 import styles from '@/styles/Header.module.css';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const { items } = useCart();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,7 +29,14 @@ export default function Header() {
           </div>
         </div>
 
-        <div className={styles.cartIcon}>🛒</div>
+        <Link href="/checkout" className={styles.cartIconLink}>
+          <div className={styles.cartIcon}>
+            🛒
+            {items.length > 0 && (
+              <span className={styles.cartBadge}>{items.length}</span>
+            )}
+          </div>
+        </Link>
 
         <nav className={styles.headerNav}>
           <ul className={styles.mainNav}>
