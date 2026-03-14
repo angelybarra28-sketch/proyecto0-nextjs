@@ -57,6 +57,7 @@ export default async function ProductDetailPage({ params }: Props) {
               productId={product.id}
               name={product.name}
               price={product.price}
+              imageUrl={product.imageUrl}
               discount={product.discount}
               description={product.description}
               specifications={product.specifications}

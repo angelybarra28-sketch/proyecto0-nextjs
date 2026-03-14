@@ -13,7 +13,7 @@ export default function Newsletter() {
   };
 
   return (
-    <section className={styles.newsletterSection}>
+    <section>
       <div className={styles.newsletterContainer}>
         <h2>¡No te pierdas nuestras ofertas!</h2>
         <p>Todas las semanas promos increíbles. Suscríbete a nuestro newsletter</p>

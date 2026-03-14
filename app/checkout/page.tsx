@@ -16,13 +16,8 @@ export default function CheckoutPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
-    phone: '',
     address: '',
-    apartment: '',
-    city: '',
-    province: '',
-    postalCode: '',
+    location: '',
     paymentMethod: 'credit-card'
   });
 
@@ -38,7 +33,7 @@ export default function CheckoutPage() {
     e.preventDefault();
     
     // Validar que los campos requeridos estén completos
-    if (!formData.fullName || !formData.email || !formData.address || !formData.city) {
+    if (!formData.fullName || !formData.address || !formData.location) {
       alert('Por favor completa todos los campos requeridos');
       return;
     }
@@ -99,8 +94,7 @@ export default function CheckoutPage() {
       <main style={{ minHeight: '100vh', backgroundColor: '#1e1d1b', paddingBottom: '3rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 20px' }}>
           <h1 style={{ color: '#f5f2ec', marginBottom: '2rem', fontSize: '1.8rem' }}>
-            Confirmar compra
-          </h1>
+            Confirmar pedido!
 
           {items.length === 0 ? (
             <div style={{
@@ -202,54 +196,16 @@ export default function CheckoutPage() {
                   </div>
 
                   <div className={checkoutStyles.formGroup}>
-                    <label htmlFor="apartment">Depto/Casa (opcional)</label>
+                    <label htmlFor="location">Localidad *</label>
                     <input
                       type="text"
-                      id="apartment"
-                      name="apartment"
-                      value={formData.apartment}
+                      id="location"
+                      name="location"
+                      value={formData.location}
                       onChange={handleInputChange}
-                      placeholder="Ej: Depto 5B"
+                      required
+                      placeholder="Ej: Buenos Aires"
                     />
-                  </div>
-
-                  <div className={checkoutStyles.formRow}>
-                    <div className={checkoutStyles.formGroup}>
-                      <label htmlFor="city">Ciudad *</label>
-                      <input
-                        type="text"
-                        id="city"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        required
-                        placeholder="Ej: Buenos Aires"
-                      />
-                    </div>
-                    <div className={checkoutStyles.formGroup}>
-                      <label htmlFor="province">Provincia *</label>
-                      <input
-                        type="text"
-                        id="province"
-                        name="province"
-                        value={formData.province}
-                        onChange={handleInputChange}
-                        required
-                        placeholder="Ej: Buenos Aires"
-                      />
-                    </div>
-                    <div className={checkoutStyles.formGroup}>
-                      <label htmlFor="postalCode">Código postal *</label>
-                      <input
-                        type="text"
-                        id="postalCode"
-                        name="postalCode"
-                        value={formData.postalCode}
-                        onChange={handleInputChange}
-                        required
-                        placeholder="Ej: 1425"
-                      />
-                    </div>
                   </div>
 
                   {/* Método de Pago */}
@@ -296,7 +252,7 @@ export default function CheckoutPage() {
                     type="submit" 
                     className={checkoutStyles.submitButton}
                   >
-                    Confirmar compra
+                    Confirmar pedido!
                   </button>
                 </form>
               </div>

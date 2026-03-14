@@ -9,6 +9,7 @@ interface ProductInfoProps {
   productId: number;
   name: string;
   price: string;
+  imageUrl: string;
   originalPrice?: string;
   discount?: string;
   description: string;
@@ -26,6 +27,7 @@ export default function ProductInfo({
   productId,
   name,
   price,
+  imageUrl,
   originalPrice,
   discount,
   description,
@@ -53,7 +55,7 @@ export default function ProductInfo({
         price: priceNum,
         originalPrice: originalPriceNum,
         discount,
-        imageUrl: '/images/sabana%201.webp'
+        imageUrl
       });
     }
 
@@ -73,7 +75,7 @@ export default function ProductInfo({
         price: priceNum,
         originalPrice: originalPriceNum,
         discount,
-        imageUrl: '/images/sabana%201.webp'
+        imageUrl
       });
     }
 
@@ -157,7 +159,7 @@ export default function ProductInfo({
           </div>
         </div>
 
-        <button className={styles.buyButton} onClick={handleBuyNow}>Comprar ahora</button>
+        <button className={styles.buyButton} onClick={handleBuyNow}>Hacer tu pedido</button>
         
         <button 
           className={`${styles.cartButton} ${addedToCart ? styles.addedSuccess : ''}`}

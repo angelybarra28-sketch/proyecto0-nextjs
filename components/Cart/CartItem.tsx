@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useCart, CartItem } from '@/lib/cartContext';
 import styles from '@/styles/Cart.module.css';
 
@@ -46,10 +45,9 @@ export default function CartItemComponent({
 
         {/* Imagen */}
         <div className={styles.itemImage}>
-          <Image
+          <img
             src={item.imageUrl}
             alt={item.name}
-            fill
             className={styles.image}
           />
         </div>
