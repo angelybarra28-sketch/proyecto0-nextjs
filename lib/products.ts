@@ -1,6 +1,6 @@
 export const productData = {
   section1: {
-    title: 'Articulos mas elegidos',
+    title: 'Electrodomesticos y Articulos',
     products: [
       {
         id: 1,
@@ -45,7 +45,7 @@ export const productData = {
     ]
   },
   section2: {
-    title: 'Tendencia, productos en alta demanda',
+    title: 'Blanqueria',
     products: [
       {
         id: 7,

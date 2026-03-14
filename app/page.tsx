@@ -17,12 +17,12 @@ export default function Home() {
       <ProductsSection 
         title={productData.section1.title} 
         products={productData.section1.products}
-        id="blanqueria"
+        id="electrodomesticos"
       />
       <ProductsSection 
         title={productData.section2.title} 
         products={productData.section2.products}
-        id="electrodomesticos"
+        id="blanqueria"
       />
       <About />
       <Newsletter />

@@ -6,6 +6,7 @@
   z-index: 1000;
   border-bottom: 1px solid #363330;
   transition: all 0.4s ease;
+  position: relative; /* Anchor for absolute cart icon */
 }
 
 .header.scrolled {
@@ -17,16 +18,16 @@
 }
 
 .headerContainer {
-  max-width: 1200px;
+  max-width: 1300px; /* Slightly wider to push buttons more to the sides */
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 10px; /* Reduced padding to bring buttons closer to margins */
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   transition: all 0.3s ease;
   position: relative;
   width: 100%;
-  gap: 2rem;
+  gap: 1rem;
 }
 
 .header.scrolled .headerContainer {
@@ -101,6 +102,7 @@
 .headerNav {
   width: 100%;
   padding: 0 0 5px 0;
+  margin-top: 65px; /* Significantly lower the buttons */
   position: relative;
   transition: all 0.3s ease;
   grid-column: 1 / -1;
@@ -119,6 +121,7 @@
   grid-column: 1 / -1;
   grid-row: 2;
   align-self: end;
+  margin-top: 0; /* Reset margin on scrolled state */
 }
 
 .mainNav {
@@ -306,11 +309,11 @@
   font-size: 1.8rem;
   cursor: pointer;
   transition: color 0.3s ease;
-  position: fixed;
-  top: 20px;
-  right: 20px;
+  position: absolute; /* Changed to absolute to be in the header frame */
+  top: 5px;    /* Tighter to the top */
+  right: 10px;  /* Tighter to the right */
   z-index: 2000;
-  padding: 10px;
+  padding: 5px;
 }
 
 .cartIcon:hover {
@@ -484,12 +487,12 @@
 /* From Uiverse.io by MuhammadHasann */ 
 .uiverseButton {
   position: relative;
-  padding: 13px 45px; /* Más padding lateral para que el texto no toque los bordes */
-  background: #4a433a; /* Color del fondo del head */
+  padding: 13px 20px;
+  background: #4a433a;
   font-size: 14px;
-  font-weight: 700; /* Un poco menos pesado para mejor legibilidad */
-  color: #f5f2ec; /* Color del texto del head */
-  border: 1px solid #5a5248; /* Sutil borde para definirlo */
+  font-weight: 700;
+  color: #f5f2ec;
+  border: 1px solid #5a5248;
   border-radius: 8px;
   box-shadow: 2px 2px 5px rgba(0,0,0,0.3), inset 1px 1px 2px rgba(255,255,255,0.1);
   transition: all .3s ease-in-out;
@@ -498,9 +501,13 @@
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.2;
   z-index: 5;
   transform-style: preserve-3d;
+  width: 180px;
+  min-height: 60px;
 }
 
 .buttonText {
@@ -616,16 +623,19 @@
 
 @media (max-width: 768px) {
   .uiverseButton {
-    padding: 6px 10px; /* More compact */
-    font-size: 9px;
+    padding: 6px 4px;
+    font-size: 10px;
     border-radius: 4px;
     box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-    min-height: 30px;
+    min-height: 45px;
+    width: 105px;
+    white-space: normal;
+    text-align: center;
   }
 
   .uiverseButton:hover {
-    padding: 6px 8px;
-    border-radius: 4px 4px 12px 12px; /* Smaller rounding */
+    padding: 6px 4px;
+    border-radius: 4px 4px 12px 12px;
   }
 
   /* Reduce animation range significantly for mobile */
