@@ -43,13 +43,26 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Simular que se envió el pedido
-    setOrderPlaced(true);
-    setTimeout(() => {
-      clearCart();
-      setOrderPlaced(false);
-      window.location.href = '/';
-    }, 3000);
+    // Construir mensaje para WhatsApp
+    const phoneNumber = '5491158056418';
+    let message = `Hola soy ${formData.fullName}, estoy interesada en estos productos y quisiera saber el precio, formas de pago y la disponibilidad:\n\n`;
+    
+    items.forEach((item) => {
+      message += `- ${item.name} (Cantidad: ${item.quantity})\n`;
+    });
+
+    const totalPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
+    message += `\nTotal: $${totalPrice.toLocaleString('es-AR')}`;
+
+    // Codificar mensaje para URL
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+
+    // Redireccionar a WhatsApp
+    window.open(whatsappUrl, '_blank');
+
+    // Limpiar carrito después de enviar
+    clearCart();
   };
 
   if (orderPlaced) {
@@ -94,7 +107,8 @@ export default function CheckoutPage() {
       <main style={{ minHeight: '100vh', backgroundColor: '#1e1d1b', paddingBottom: '3rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 20px' }}>
           <h1 style={{ color: '#f5f2ec', marginBottom: '2rem', fontSize: '1.8rem' }}>
-            Confirmar pedido!
+            Contactar con el vendedor personalmente
+          </h1>
 
           {items.length === 0 ? (
             <div style={{
@@ -156,30 +170,16 @@ export default function CheckoutPage() {
                     />
                   </div>
 
-                  <div className={checkoutStyles.formRow}>
-                    <div className={checkoutStyles.formGroup}>
-                      <label htmlFor="email">Email *</label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        required
-                        placeholder="correo@ejemplo.com"
-                      />
-                    </div>
-                    <div className={checkoutStyles.formGroup}>
-                      <label htmlFor="phone">Teléfono</label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="+54 9 11 XXXX-XXXX"
-                      />
-                    </div>
+                  <div className={checkoutStyles.formGroup}>
+                    <label htmlFor="phone">Teléfono</label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder="+54 9 11 XXXX-XXXX"
+                    />
                   </div>
 
                   <div className={checkoutStyles.formGroup}>
@@ -217,22 +217,11 @@ export default function CheckoutPage() {
                         <input
                           type="radio"
                           name="paymentMethod"
-                          value="credit-card"
-                          checked={formData.paymentMethod === 'credit-card'}
-                          onChange={handleInputChange}
-                        />
-                        <span className={checkoutStyles.paymentLabel}>💳 Tarjeta de crédito/débito</span>
-                      </label>
-
-                      <label className={checkoutStyles.paymentOption}>
-                        <input
-                          type="radio"
-                          name="paymentMethod"
                           value="transfer"
                           checked={formData.paymentMethod === 'transfer'}
                           onChange={handleInputChange}
                         />
-                        <span className={checkoutStyles.paymentLabel}>🏧 Transferencia bancaria</span>
+                        <span className={checkoutStyles.paymentLabel}>🏧 Transferencia / MercadoPago</span>
                       </label>
 
                       <label className={checkoutStyles.paymentOption}>

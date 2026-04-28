@@ -43,21 +43,16 @@ export default function CartItemComponent({
           />
         )}
 
-        {/* Imagen */}
-        <div className={styles.itemImage}>
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            className={styles.image}
-          />
-        </div>
-
         {/* Información */}
         <div className={styles.itemInfo}>
           <h3 className={styles.itemName}>{item.name}</h3>
-          <p className={styles.itemDesc}>
-            {item.quantity > 1 && `${item.quantity} ×`}
-          </p>
+          <div className={styles.itemImage}>
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className={styles.image}
+            />
+          </div>
         </div>
 
         {/* Cantidad */}
@@ -70,23 +65,6 @@ export default function CartItemComponent({
             className={styles.qtyInput}
           />
           <button onClick={handleIncrement} className={styles.qtyBtn}>+</button>
-          <span className={styles.available}>+50 disponibles</span>
-        </div>
-
-        {/* Precios */}
-        <div className={styles.priceSection}>
-          {item.originalPrice && (
-            <>
-              <span className={styles.originalPrice}>${item.originalPrice}</span>
-              <span className={styles.discountBadge}>{discount}% OFF</span>
-            </>
-          )}
-          <div className={styles.currentPrice}>
-            ${(item.price * item.quantity).toLocaleString('es-AR', {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 0
-            })}
-          </div>
         </div>
 
         {/* Eliminar */}

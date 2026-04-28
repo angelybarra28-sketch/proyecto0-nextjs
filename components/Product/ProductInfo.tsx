@@ -159,7 +159,7 @@ export default function ProductInfo({
           </div>
         </div>
 
-        <button className={styles.buyButton} onClick={handleBuyNow}>Hacer tu pedido</button>
+        <button className={styles.buyButton} onClick={handleBuyNow}>Contactar con el vendedor para consultar por mi pedido</button>
         
         <button 
           className={`${styles.cartButton} ${addedToCart ? styles.addedSuccess : ''}`}
