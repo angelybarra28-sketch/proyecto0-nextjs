@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/lib/cartContext';
+import { useAuth } from '@/lib/authContext';
 import styles from '@/styles/Header.module.css';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { items } = useCart();
+  const { user, isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,6 +23,26 @@ export default function Header() {
   return (
     <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}>
       <div className={styles.headerContainer}>
+        {/* Botón Ingresar - Izquierda */}
+        <div className={styles.authButtons}>
+          {isAuthenticated ? (
+            <>
+              <span className={styles.userName}>Hola, {user?.nombreApellido}</span>
+              <Link href="/admin" className={styles.adminLink}>
+                Panel Admin
+              </Link>
+              <button onClick={logout} className={styles.logoutBtn}>
+                Cerrar Sesión
+              </button>
+            </>
+          ) : (
+            <Link href="/auth" className={styles.loginBtn}>
+              Ingresar
+            </Link>
+          )}
+        </div>
+
+        {/* Logo - Centro */}
         <div className={styles.headerTop}>
           <div className={styles.logoContainer}>
             <div className={styles.logo}>
@@ -29,6 +51,7 @@ export default function Header() {
           </div>
         </div>
 
+        {/* Carrito - Derecha */}
         <Link href="/checkout" className={styles.cartIconLink}>
           <div className={styles.cartIcon}>
             🛒

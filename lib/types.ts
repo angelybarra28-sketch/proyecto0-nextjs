@@ -34,3 +34,22 @@ export interface ContactInfo {
   whatsapp: string;
   address?: string;
 }
+
+// Tipos para autenticación de usuarios
+export interface User {
+  id: string;
+  dni: string;
+  nombreApellido: string;
+  telefono: string;
+  email: string;
+  domicilio: string;
+  password: string;
+  role: 'user' | 'admin';
+  createdAt: string;
+}
+
+export interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+}
