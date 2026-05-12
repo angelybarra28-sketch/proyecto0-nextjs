@@ -6,21 +6,88 @@ import styles from '@/styles/FloatingElements.module.css';
 
 export default function FloatingElements() {
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isSpinnerVisible, setIsSpinnerVisible] = useState(false);
 
   useEffect(() => {
+    let hideTimer: number | null = null;
+    let spinnerShownAt: number | null = null;
+
     const handleScroll = () => {
-      // Mostrar el botón cuando llegamos cerca de la sección About (aprox 1400px o según scroll)
-      // O usando el selector de aboutContainer si preferís precisión absoluta
       const aboutSection = document.querySelector('[class*="aboutContainer"]');
       if (aboutSection) {
         const rect = aboutSection.getBoundingClientRect();
-        // Si la parte superior de "About" ya está en el viewport o más arriba
         setShowBackToTop(rect.top < window.innerHeight);
       }
     };
 
+    const hasPendingImages = () =>
+      Array.from(document.images).some((img) => !img.complete);
+
+    const clearHideTimer = () => {
+      if (hideTimer !== null) {
+        window.clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+    };
+
+    const scheduleHide = () => {
+      clearHideTimer();
+      hideTimer = window.setTimeout(() => {
+        if (!hasPendingImages()) {
+          setIsSpinnerVisible(false);
+        } else {
+          scheduleHide();
+        }
+      }, 1500);
+    };
+
+    const showSpinnerIfLoading = () => {
+      if (hasPendingImages()) {
+        setIsSpinnerVisible(true);
+        spinnerShownAt = Date.now();
+        scheduleHide();
+      }
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest(`.${styles.spinnerContainer}`) || target.closest(`.${styles.whatsappFloat}`)) {
+        return;
+      }
+
+      const clickable = target.closest(
+        'button, a, input, [role="button"], [role="link"], [type="button"], [type="submit"], [onclick]'
+      );
+      if (!clickable) return;
+
+      window.setTimeout(showSpinnerIfLoading, 100);
+    };
+
+    const handleImageEvent = () => {
+      if (!hasPendingImages()) {
+        const elapsed = spinnerShownAt ? Date.now() - spinnerShownAt : 0;
+        if (elapsed >= 1500) {
+          setIsSpinnerVisible(false);
+        } else {
+          clearHideTimer();
+          hideTimer = window.setTimeout(() => setIsSpinnerVisible(false), 1500 - elapsed);
+        }
+      }
+    };
+
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    document.addEventListener('click', handleClick, true);
+    document.addEventListener('load', handleImageEvent, true);
+    document.addEventListener('error', handleImageEvent, true);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('click', handleClick, true);
+      document.removeEventListener('load', handleImageEvent, true);
+      document.removeEventListener('error', handleImageEvent, true);
+      clearHideTimer();
+    };
   }, []);
 
   const scrollToBlanqueria = () => {
@@ -54,16 +121,18 @@ export default function FloatingElements() {
       </button>
 
       {/* SPINNER FLOTANTE */}
-      <div className={styles.spinnerContainer}>
-        <div className={styles.spinner}>
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
+      {isSpinnerVisible && (
+        <div className={styles.spinnerContainer}>
+          <div className={styles.spinner}>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

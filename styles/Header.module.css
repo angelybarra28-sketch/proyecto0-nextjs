@@ -1,6 +1,7 @@
 .header {
   background-color: #4a433a;
-  padding: 0.33rem 0;
+  padding: 0.2rem 0;
+  min-height: 180px;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -9,7 +10,7 @@
 }
 
 .header.scrolled {
-  padding: 0.17rem 0;
+  padding: 0.15rem 0;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
 
@@ -57,7 +58,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 0.35rem 0;
+  padding: 0.2rem 0;
   transition: padding 0.3s ease;
   position: relative;
   grid-column: 2;
@@ -102,7 +103,7 @@
 }
 
 .logo {
-  height: 160px;
+  height: 130px;
   width: auto;
   transition: all 0.3s ease;
   cursor: pointer;
@@ -118,7 +119,7 @@
 }
 
 .header.scrolled .logo {
-  height: 88px;
+  height: 72px;
 }
 
 .logo:hover {
@@ -375,13 +376,13 @@
 
 @media (max-width: 768px) {
   .header {
-    padding: 0.27rem 0;
-    min-height: 50px;
+    padding: 0.18rem 0;
+    min-height: 150px;
   }
 
   .header.scrolled {
-    padding: 0.15rem 0;
-    min-height: 40px;
+    padding: 0.12rem 0;
+    min-height: 120px;
   }
 
   .headerContainer {
@@ -435,12 +436,12 @@
   }
 
   .logo {
-    height: 122px;
+    height: 96px;
     transition: height 0.3s ease;
   }
 
   .header.scrolled .logo {
-    height: 67px;
+    height: 56px;
   }
 
   .electrodomesticosItem,
@@ -470,6 +471,20 @@
   .mainNav a {
     font-size: 0.62rem;
     padding: 0.25rem 0;
+  }
+
+  .uiverseButton {
+    width: 130px;
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .loginBtn {
+    width: 110px;
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
   }
 
   .cartIconLink {

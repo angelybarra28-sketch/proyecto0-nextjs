@@ -43,11 +43,6 @@ export default function AuthPage() {
         return;
       }
 
-      if (formData.password.length < 6) {
-        setError('La contraseña debe tener al menos 6 caracteres');
-        return;
-      }
-
       const result = register({
         dni: formData.dni,
         nombreApellido: formData.nombreApellido,
@@ -153,7 +148,7 @@ export default function AuthPage() {
               {isLogin ? 'Email / Usuario' : 'Email'}
             </label>
             <input
-              type="email"
+              type={isLogin ? 'text' : 'email'}
               id="email"
               name="email"
               value={formData.email}

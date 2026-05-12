@@ -21,7 +21,7 @@ const ADMIN_USER: User = {
   telefono: '0000000000',
   email: 'admin',
   domicilio: 'Admin',
-  password: 'ADMIN',
+  password: 'admin',
   role: 'admin',
   createdAt: new Date().toISOString(),
 };
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (email: string, password: string): boolean => {
     // Verificar si es el usuario admin
-    if (email === 'ADMIN' && password === 'ADMIN') {
+    if (email === 'admin' && password === 'admin') {
       setUser(ADMIN_USER);
       return true;
     }
