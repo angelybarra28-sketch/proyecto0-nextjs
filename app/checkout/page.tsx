@@ -18,6 +18,7 @@ export default function CheckoutPage() {
     fullName: '',
     address: '',
     location: '',
+    phone: '',
     paymentMethod: 'credit-card'
   });
 
