@@ -2,10 +2,15 @@ export interface Product {
   id: number;
   name: string;
   price: string;
+  priceNumber: number;
   discount?: string;
   imageUrl?: string;
   carouselImages?: string[];
   description?: string;
+  slug: string;
+  categoria: string;
+  stock: number;
+  destacado: boolean;
   category?: string;
   specifications?: {
     size: string;
