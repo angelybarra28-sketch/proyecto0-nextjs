@@ -2,6 +2,7 @@ import Header from '@/components/Layout/Header';
 import ProductsSection from '@/components/Sections/ProductsSection';
 import Footer from '@/components/Layout/Footer';
 import FloatingElements from '@/components/FloatingElements';
+import { getProductsByCategory } from '@/lib/product-utils';
 import { allProducts } from '@/lib/products';
 import Link from 'next/link';
 
@@ -23,10 +24,8 @@ export default async function CategoryPage({ params }: Props) {
   // Decodificar el slug de categoría en caso de espacios o caracteres especiales
   const decodedCategory = decodeURIComponent(categoria);
   
-  // Filtrar productos por categoría (case-insensitive)
-  const products = allProducts.filter(
-    p => p.categoria.toLowerCase() === decodedCategory.toLowerCase()
-  );
+  // Filtrar productos por categoría usando el helper
+  const products = getProductsByCategory(decodedCategory);
 
   return (
     <>
@@ -80,13 +79,11 @@ export default async function CategoryPage({ params }: Props) {
 export async function generateMetadata({ params }: Props) {
   const { categoria } = await params;
   const decodedCategory = decodeURIComponent(categoria);
-  const productCount = allProducts.filter(
-    p => p.categoria.toLowerCase() === decodedCategory.toLowerCase()
-  ).length;
+  const products = getProductsByCategory(decodedCategory);
 
   return {
     title: `Categoría: ${decodedCategory} | ElectroBlancos`,
-    description: `Explora nuestros productos de la categoría ${decodedCategory}. ${productCount} productos disponibles.`
+    description: `Explora nuestros productos de la categoría ${decodedCategory}. ${products.length} productos disponibles.`
   };
 }
 

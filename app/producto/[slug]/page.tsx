@@ -5,7 +5,7 @@ import Footer from '@/components/Layout/Footer';
 import FloatingElements from '@/components/FloatingElements';
 import ProductCarousel from '@/components/Product/ProductCarousel';
 import ProductInfo from '@/components/Product/ProductInfo';
-import { allProducts } from '@/lib/products';
+import { getProductBySlug, getAllProductSlugs } from '@/lib/product-utils';
 import styles from '@/styles/ProductDetail.module.css';
 
 interface Props {
@@ -16,7 +16,7 @@ interface Props {
 
 export default async function ProductDetailBySlugPage({ params }: Props) {
   const { slug } = await params;
-  const product = allProducts.find(p => p.slug === slug);
+  const product = getProductBySlug(slug);
 
   if (!product) {
     notFound();
@@ -75,7 +75,7 @@ export default async function ProductDetailBySlugPage({ params }: Props) {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const product = allProducts.find(p => p.slug === slug);
+  const product = getProductBySlug(slug);
 
   if (!product) {
     return {
@@ -96,7 +96,5 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export async function generateStaticParams() {
-  return allProducts.map(product => ({
-    slug: product.slug
-  }));
+  return getAllProductSlugs();
 }

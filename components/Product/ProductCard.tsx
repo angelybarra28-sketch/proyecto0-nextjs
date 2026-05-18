@@ -11,6 +11,7 @@ interface ProductCardProps {
   imageUrl?: string;
   productIndex: number;
   productId: number;
+  slug: string;
 }
 
 export default function ProductCard({
@@ -19,11 +20,12 @@ export default function ProductCard({
   discount,
   imageUrl,
   productIndex,
-  productId
+  productId,
+  slug
 }: ProductCardProps) {
   return (
     <div className={styles.productCard}>
-      <Link href={`/detalles/${productId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Link href={`/producto/${slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
         <div className={styles.productImage}>
           {discount && <div className={styles.discountBadge}>{discount}</div>}
           

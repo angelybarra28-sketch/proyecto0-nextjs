@@ -9,6 +9,7 @@ interface Product {
   price: string;
   discount?: string;
   imageUrl?: string;
+  slug: string;
 }
 
 interface ProductsSectionProps {
@@ -32,6 +33,7 @@ export default function ProductsSection({ title, products, id }: ProductsSection
               discount={product.discount}
               imageUrl={product.imageUrl}
               productIndex={index}
+              slug={product.slug}
             />
           ))}
         </div>
