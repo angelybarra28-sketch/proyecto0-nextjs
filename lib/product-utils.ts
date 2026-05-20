@@ -109,21 +109,78 @@ export function getProductsByPriceRange(
 }
 
 /**
- * Busca productos por nombre o descripción (case-insensitive)
+ * Normaliza una cadena de texto eliminando acentos, diacríticos y espacios innecesarios
+ * y convirtiendo a minúsculas para búsquedas case-insensitive precisas.
+ * @param text - El texto a normalizar
+ * @returns El texto normalizado
+ */
+export function normalizeSearch(text: string): string {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+/**
+ * Busca productos de manera case-insensitive sobre campos múltiples:
+ * name, category (categoria), tags, features y shortDescription.
  * @param products - Array de productos
  * @param query - Término de búsqueda
- * @returns Array de productos que coinciden
+ * @returns Array de productos que coinciden con la búsqueda
  */
 export function searchProducts(products: Product[], query: string): Product[] {
   if (!query || query.trim() === '') return products;
   
-  const lowerQuery = query.toLowerCase().trim();
-  
-  return products.filter(p => 
-    p.name.toLowerCase().includes(lowerQuery) ||
-    p.description?.toLowerCase().includes(lowerQuery) ||
-    p.categoria.toLowerCase().includes(lowerQuery)
-  );
+  const normalizedQuery = normalizeSearch(query);
+  if (!normalizedQuery) return products;
+
+  return products.filter(p => {
+    // Tipado dinámico para acceder a campos opcionales/futuros sin romper tipos existentes
+    const item = p as {
+      name?: string;
+      categoria?: string;
+      category?: string;
+      tags?: string[] | string;
+      features?: string[] | string;
+      shortDescription?: string;
+      description?: string;
+    };
+
+    // 1. name
+    const nameMatch = item.name ? normalizeSearch(item.name).includes(normalizedQuery) : false;
+
+    // 2. category (soporta 'categoria' y 'category')
+    const categoryMatch = (item.categoria && normalizeSearch(item.categoria).includes(normalizedQuery)) ||
+                          (item.category && normalizeSearch(item.category).includes(normalizedQuery));
+
+    // 3. tags (soporta string[] o string simple)
+    let tagsMatch = false;
+    if (item.tags) {
+      if (Array.isArray(item.tags)) {
+        tagsMatch = item.tags.some(tag => tag && normalizeSearch(tag).includes(normalizedQuery));
+      } else if (typeof item.tags === 'string') {
+        tagsMatch = normalizeSearch(item.tags).includes(normalizedQuery);
+      }
+    }
+
+    // 4. features (soporta string[] o string simple)
+    let featuresMatch = false;
+    if (item.features) {
+      if (Array.isArray(item.features)) {
+        featuresMatch = item.features.some(feature => feature && normalizeSearch(feature).includes(normalizedQuery));
+      } else if (typeof item.features === 'string') {
+        featuresMatch = normalizeSearch(item.features).includes(normalizedQuery);
+      }
+    }
+
+    // 5. shortDescription (también evalúa description por compatibilidad y robustez)
+    const shortDescMatch = item.shortDescription ? normalizeSearch(item.shortDescription).includes(normalizedQuery) : false;
+    const descMatch = item.description ? normalizeSearch(item.description).includes(normalizedQuery) : false;
+
+    return nameMatch || categoryMatch || tagsMatch || featuresMatch || shortDescMatch || descMatch;
+  });
 }
 
 /**
