@@ -40,12 +40,12 @@ export function getProductsByCategory(categoria: string): Product[] {
  */
 export function getRelatedProducts(productSlug: string, limit = 4): Product[] {
   const currentProduct = getProductBySlug(productSlug);
-  
+
   if (!currentProduct) return [];
-  
+
   return allProducts
-    .filter(p => 
-      p.categoria === currentProduct.categoria && 
+    .filter(p =>
+      p.categoria === currentProduct.categoria &&
       p.slug !== productSlug
     )
     .slice(0, limit);
@@ -132,7 +132,7 @@ export function normalizeSearch(text: string): string {
  */
 export function searchProducts(products: Product[], query: string): Product[] {
   if (!query || query.trim() === '') return products;
-  
+
   const normalizedQuery = normalizeSearch(query);
   if (!normalizedQuery) return products;
 
@@ -153,7 +153,7 @@ export function searchProducts(products: Product[], query: string): Product[] {
 
     // 2. category (soporta 'categoria' y 'category')
     const categoryMatch = (item.categoria && normalizeSearch(item.categoria).includes(normalizedQuery)) ||
-                          (item.category && normalizeSearch(item.category).includes(normalizedQuery));
+      (item.category && normalizeSearch(item.category).includes(normalizedQuery));
 
     // 3. tags (soporta string[] o string simple)
     let tagsMatch = false;
@@ -236,7 +236,7 @@ export function getProductStats(products: Product[]): ProductStats {
  */
 export function getFilterOptions(products: Product[]): FilterOptions {
   const stats = getProductStats(products);
-  
+
   // Agrupar categorías con conteo
   const categories = Array.from(stats.categoriesCount.entries()).map(
     ([name, count]) => ({ name, count })
@@ -320,8 +320,8 @@ export function filterProducts(
 
   // Filtro por tags (preparado para futuro)
   if (filters.tags && filters.tags.length > 0) {
-    result = result.filter(p => 
-      filters.tags!.some(tag => 
+    result = result.filter(p =>
+      filters.tags!.some(tag =>
         p.name.toLowerCase().includes(tag.toLowerCase())
       )
     );
@@ -350,21 +350,21 @@ export function sortProducts(
   switch (sortBy) {
     case 'price-asc':
       return sorted.sort((a, b) => a.priceNumber - b.priceNumber);
-    
+
     case 'price-desc':
       return sorted.sort((a, b) => b.priceNumber - a.priceNumber);
-    
+
     case 'newest':
       // Asumir que ID más alto = más nuevo (por consistencia con datos)
       return sorted.sort((a, b) => b.id - a.id);
-    
+
     case 'popularity':
       // Asumir que destacado = más popular
       return sorted.sort((a, b) => {
         if (a.destacado === b.destacado) return 0;
         return a.destacado ? -1 : 1;
       });
-    
+
     default:
       return sorted;
   }
