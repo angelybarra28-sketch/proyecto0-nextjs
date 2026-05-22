@@ -1,4 +1,9 @@
 export type SaleStatus = 'PENDING' | 'CONFIRMED' | 'DELIVERED' | 'CANCELLED';
+export type PaymentPlanType = 'FULL_PAYMENT' | 'INSTALLMENTS';
+export type InstallmentStatus = 'PENDING' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
+export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'MERCADO_PAGO' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'OTHER';
+export type PaymentStatus = 'PENDING' | 'CONFIRMED' | 'VOIDED';
+export type AllocationStatus = 'ACTIVE' | 'VOIDED';
 
 export interface CustomerInsert {
   full_name: string;
@@ -23,6 +28,8 @@ export interface SaleInsert {
   paid_amount: number;
   remaining_amount: number;
   item_count: number;
+  payment_plan_type: PaymentPlanType;
+  installments_count: number;
   payment_method_requested?: string | null;
   delivery_full_name?: string | null;
   delivery_phone?: string | null;
@@ -68,6 +75,9 @@ export interface CheckoutSaleRpcInput {
   checkoutRequestId: string;
   customer: CheckoutSaleInput['customer'];
   paymentMethodRequested?: string;
+  paymentPlanType: PaymentPlanType;
+  installmentsCount: number;
+  firstDueDate?: string;
   items: CheckoutSaleRpcItem[];
 }
 
@@ -90,6 +100,9 @@ export interface CheckoutSaleInput {
     city: string;
   };
   paymentMethodRequested?: string;
+  paymentPlanType?: PaymentPlanType;
+  installmentsCount?: number;
+  firstDueDate?: string;
   items: CheckoutSaleItemInput[];
 }
 
@@ -106,7 +119,7 @@ export interface CheckoutSaleRpcRow {
   sale_status: SaleStatus;
 }
 
-export type CollectionStatus = 'PENDING' | 'PAID';
+export type CollectionStatus = 'PENDING' | 'UP_TO_DATE' | 'OVERDUE' | 'PAID';
 
 export interface SaleCustomerView {
   id: string;
@@ -131,6 +144,18 @@ export interface SaleItemView {
   imageUrl: string | null;
 }
 
+export interface InstallmentView {
+  id: string;
+  saleId: string;
+  installmentNumber: number;
+  dueDate: string;
+  originalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  status: InstallmentStatus;
+  overdueDays: number;
+}
+
 export interface AdminSaleSummary {
   id: string;
   saleNumber: string;
@@ -139,8 +164,30 @@ export interface AdminSaleSummary {
   saleDate: string;
   total: number;
   itemCount: number;
+  paymentPlanType: PaymentPlanType;
+  installmentsCount: number;
   saleStatus: SaleStatus;
   collectionStatus: CollectionStatus;
+}
+
+export interface PaymentAllocationView {
+  id: string;
+  paymentId: string;
+  installmentId: string;
+  amount: number;
+  status: AllocationStatus;
+}
+
+export interface PaymentView {
+  id: string;
+  saleId: string;
+  customerId: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  status: PaymentStatus;
+  paymentDate: string;
+  notes: string | null;
+  allocations: PaymentAllocationView[];
 }
 
 export interface AdminSaleDetail extends AdminSaleSummary {
@@ -158,4 +205,30 @@ export interface AdminSaleDetail extends AdminSaleSummary {
   updatedAt: string;
   customer: SaleCustomerView | null;
   items: SaleItemView[];
+  installments: InstallmentView[];
+  payments: PaymentView[];
+}
+
+export interface RegisterPaymentInput {
+  saleId: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  paymentDate: string;
+  notes?: string;
+}
+
+export interface RegisterPaymentResult {
+  paymentId: string;
+  totalAllocated: number;
+  salePaidAmount: number;
+  saleRemainingAmount: number;
+  collectionStatus: CollectionStatus;
+}
+
+export interface CollectionSummary {
+  totalDebt: number;
+  overdueDebt: number;
+  overdueInstallments: number;
+  overdueSales: number;
+  customersWithDebt: number;
 }

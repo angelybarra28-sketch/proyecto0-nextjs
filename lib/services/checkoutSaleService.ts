@@ -62,6 +62,9 @@ export async function persistCheckoutSale(input: CheckoutSaleInput): Promise<Che
     checkoutRequestId: input.checkoutRequestId,
     customer: input.customer,
     paymentMethodRequested: input.paymentMethodRequested,
+    paymentPlanType: input.paymentPlanType ?? 'FULL_PAYMENT',
+    installmentsCount: input.installmentsCount ?? 1,
+    firstDueDate: input.firstDueDate,
     items,
   });
 

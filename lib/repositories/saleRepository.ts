@@ -8,7 +8,15 @@ import type {
   SaleStatus,
   AdminSaleDetail,
   AdminSaleSummary,
+  InstallmentStatus,
+  PaymentPlanType,
+  AllocationStatus,
+  PaymentMethod,
+  PaymentStatus,
+  CollectionStatus,
+  CollectionSummary,
 } from '@/lib/supabase/types';
+import { getOverdueDays } from '@/lib/financial/collectionHelpers';
 
 interface SupabaseCustomerRelation {
   id: string;
@@ -33,6 +41,37 @@ interface SupabaseSaleItemRelation {
   image_url_snapshot: string | null;
 }
 
+interface SupabaseInstallmentRelation {
+  id: string;
+  sale_id: string;
+  installment_number: number;
+  due_date: string;
+  original_amount: number | string;
+  paid_amount: number | string;
+  remaining_amount: number | string;
+  status: InstallmentStatus;
+}
+
+interface SupabasePaymentAllocationRelation {
+  id: string;
+  payment_id: string;
+  installment_id: string;
+  amount: number | string;
+  status: AllocationStatus;
+}
+
+interface SupabasePaymentRelation {
+  id: string;
+  sale_id: string;
+  customer_id: string;
+  amount: number | string;
+  payment_method: PaymentMethod;
+  status: PaymentStatus;
+  payment_date: string;
+  notes: string | null;
+  payment_allocations?: SupabasePaymentAllocationRelation[];
+}
+
 interface SupabaseAdminSaleRow {
   id: string;
   sale_number: string;
@@ -42,7 +81,10 @@ interface SupabaseAdminSaleRow {
   total_amount: number | string;
   paid_amount: number | string;
   remaining_amount: number | string;
+  collection_status: CollectionStatus;
   item_count: number;
+  payment_plan_type: PaymentPlanType;
+  installments_count: number;
   payment_method_requested: string | null;
   delivery_full_name: string | null;
   delivery_phone: string | null;
@@ -54,6 +96,8 @@ interface SupabaseAdminSaleRow {
   updated_at: string;
   customers: SupabaseCustomerRelation | SupabaseCustomerRelation[] | null;
   sale_items?: SupabaseSaleItemRelation[];
+  installments?: SupabaseInstallmentRelation[];
+  payments?: SupabasePaymentRelation[];
 }
 
 const adminSaleSelect = `
@@ -65,7 +109,10 @@ const adminSaleSelect = `
   total_amount,
   paid_amount,
   remaining_amount,
+  collection_status,
   item_count,
+  payment_plan_type,
+  installments_count,
   payment_method_requested,
   delivery_full_name,
   delivery_phone,
@@ -98,6 +145,33 @@ const adminSaleDetailSelect = `${adminSaleSelect},
     line_discount_amount,
     line_total,
     image_url_snapshot
+  ),
+  installments (
+    id,
+    sale_id,
+    installment_number,
+    due_date,
+    original_amount,
+    paid_amount,
+    remaining_amount,
+    status
+  ),
+  payments (
+    id,
+    sale_id,
+    customer_id,
+    amount,
+    payment_method,
+    status,
+    payment_date,
+    notes,
+    payment_allocations (
+      id,
+      payment_id,
+      installment_id,
+      amount,
+      status
+    )
   )
 `;
 
@@ -129,8 +203,10 @@ function mapSaleSummary(row: SupabaseAdminSaleRow): AdminSaleSummary {
     saleDate: row.sale_date,
     total: toNumber(row.total_amount),
     itemCount: row.item_count,
+    paymentPlanType: row.payment_plan_type,
+    installmentsCount: row.installments_count,
     saleStatus: row.sale_status,
-    collectionStatus: toCollectionStatus(remainingAmount),
+    collectionStatus: row.collection_status ?? toCollectionStatus(remainingAmount),
   };
 }
 
@@ -173,6 +249,38 @@ function mapSaleDetail(row: SupabaseAdminSaleRow): AdminSaleDetail {
       total: toNumber(item.line_total),
       imageUrl: item.image_url_snapshot,
     })),
+    installments: (row.installments ?? [])
+      .sort((a, b) => a.installment_number - b.installment_number)
+      .map((installment) => ({
+        id: installment.id,
+        saleId: installment.sale_id,
+        installmentNumber: installment.installment_number,
+        dueDate: installment.due_date,
+        originalAmount: toNumber(installment.original_amount),
+        paidAmount: toNumber(installment.paid_amount),
+        remainingAmount: toNumber(installment.remaining_amount),
+        status: installment.status,
+        overdueDays: getOverdueDays(installment.due_date),
+      })),
+    payments: (row.payments ?? [])
+      .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())
+      .map((payment) => ({
+        id: payment.id,
+        saleId: payment.sale_id,
+        customerId: payment.customer_id,
+        amount: toNumber(payment.amount),
+        paymentMethod: payment.payment_method,
+        status: payment.status,
+        paymentDate: payment.payment_date,
+        notes: payment.notes,
+        allocations: (payment.payment_allocations ?? []).map((allocation) => ({
+          id: allocation.id,
+          paymentId: allocation.payment_id,
+          installmentId: allocation.installment_id,
+          amount: toNumber(allocation.amount),
+          status: allocation.status,
+        })),
+      })),
   };
 }
 
@@ -186,6 +294,9 @@ export async function createCheckoutSaleTransaction(
       p_customer: input.customer,
       p_items: input.items,
       p_payment_method_requested: input.paymentMethodRequested ?? null,
+      p_payment_plan_type: input.paymentPlanType,
+      p_installments_count: input.installmentsCount,
+      p_first_due_date: input.firstDueDate ?? null,
     })
     .single();
 
@@ -309,4 +420,87 @@ export async function getSaleById(
   }
 
   return data ? mapSaleDetail(data as unknown as SupabaseAdminSaleRow) : null;
+}
+
+export async function refreshFinancialStatuses(supabase: SupabaseClient): Promise<void> {
+  const { error } = await supabase.rpc('refresh_financial_statuses');
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function getOverdueSales(
+  supabase: SupabaseClient,
+  limit = 50
+): Promise<AdminSaleSummary[]> {
+  const { data, error } = await supabase
+    .from('sales')
+    .select(adminSaleSelect)
+    .eq('collection_status', 'OVERDUE')
+    .order('sale_date', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data as unknown as SupabaseAdminSaleRow[] | null) ?? []).map(mapSaleSummary);
+}
+
+export async function getCustomersWithDebt(supabase: SupabaseClient): Promise<number> {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('customer_id')
+    .gt('remaining_amount', 0);
+
+  if (error) {
+    throw error;
+  }
+
+  return new Set(((data as { customer_id: string }[] | null) ?? []).map((row) => row.customer_id)).size;
+}
+
+export async function getOverdueInstallmentsCount(supabase: SupabaseClient): Promise<number> {
+  const { count, error } = await supabase
+    .from('installments')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'OVERDUE')
+    .gt('remaining_amount', 0);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+export async function getCollectionSummary(supabase: SupabaseClient): Promise<CollectionSummary> {
+  await refreshFinancialStatuses(supabase);
+
+  const { data, error } = await supabase
+    .from('sales')
+    .select('customer_id, remaining_amount, collection_status')
+    .gt('remaining_amount', 0);
+
+  if (error) {
+    throw error;
+  }
+
+  const sales = (data as Array<{ customer_id: string; remaining_amount: number | string; collection_status: CollectionStatus }> | null) ?? [];
+  const totalDebt = sales.reduce((total, sale) => total + toNumber(sale.remaining_amount), 0);
+  const overdueDebt = sales
+    .filter((sale) => sale.collection_status === 'OVERDUE')
+    .reduce((total, sale) => total + toNumber(sale.remaining_amount), 0);
+  const overdueSales = sales.filter((sale) => sale.collection_status === 'OVERDUE').length;
+  const customersWithDebt = new Set(sales.map((sale) => sale.customer_id)).size;
+  const overdueInstallments = await getOverdueInstallmentsCount(supabase);
+
+  return {
+    totalDebt,
+    overdueDebt,
+    overdueInstallments,
+    overdueSales,
+    customersWithDebt,
+  };
 }

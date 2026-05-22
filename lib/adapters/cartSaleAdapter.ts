@@ -25,6 +25,8 @@ export function createCheckoutSaleInput(
       city: formData.location,
     },
     paymentMethodRequested: formData.paymentMethod,
+    paymentPlanType: 'FULL_PAYMENT',
+    installmentsCount: 1,
     items: items.map((item) => ({
       legacyProductId: item.id,
       name: item.name,

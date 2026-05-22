@@ -5,8 +5,8 @@ import { useAuth } from '@/lib/authContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User } from '@/lib/types';
-import { fetchAdminSales } from '@/lib/services/adminSalesClient';
-import type { AdminSaleSummary, SaleStatus, CollectionStatus } from '@/lib/supabase/types';
+import { fetchAdminSales, fetchCollectionSummary } from '@/lib/services/adminSalesClient';
+import type { AdminSaleSummary, CollectionStatus, CollectionSummary, SaleStatus } from '@/lib/supabase/types';
 import styles from '@/styles/Admin.module.css';
 
 function formatCurrency(value: number) {
@@ -19,7 +19,7 @@ function formatCurrency(value: number) {
 }
 
 function getStatusClass(status: SaleStatus | CollectionStatus) {
-  if (status === 'CANCELLED') return 'cancelled';
+  if (status === 'CANCELLED' || status === 'OVERDUE') return 'cancelled';
   if (status === 'DELIVERED' || status === 'CONFIRMED' || status === 'PAID') return 'completed';
   return 'pending';
 }
@@ -29,6 +29,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [sales, setSales] = useState<AdminSaleSummary[]>([]);
+  const [collectionSummary, setCollectionSummary] = useState<CollectionSummary | null>(null);
   const [isLoadingSales, setIsLoadingSales] = useState(true);
   const [salesError, setSalesError] = useState('');
 
@@ -47,6 +48,10 @@ export default function AdminPage() {
         setSalesError('No se pudieron cargar las ventas reales desde Supabase');
       })
       .finally(() => setIsLoadingSales(false));
+
+    fetchCollectionSummary()
+      .then(setCollectionSummary)
+      .catch((error: unknown) => console.error('Error loading collection summary:', error));
   }, [isAdmin, getAllUsers, router]);
 
   const handleDeleteUser = (id: string) => {
@@ -66,6 +71,25 @@ export default function AdminPage() {
       <p className={styles.subtitle}>Bienvenido, {user?.nombreApellido}</p>
 
       <div className={styles.sections}>
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Resumen de Cobranza</h2>
+          {!collectionSummary ? (
+            <p className={styles.empty}>Cargando resumen de cobranza...</p>
+          ) : (
+            <div className={styles.tableContainer}>
+              <table className={styles.table}>
+                <tbody>
+                  <tr><td>Deuda total</td><td>{formatCurrency(collectionSummary.totalDebt)}</td></tr>
+                  <tr><td>Deuda vencida</td><td>{formatCurrency(collectionSummary.overdueDebt)}</td></tr>
+                  <tr><td>Cuotas vencidas</td><td>{collectionSummary.overdueInstallments}</td></tr>
+                  <tr><td>Ventas morosas</td><td>{collectionSummary.overdueSales}</td></tr>
+                  <tr><td>Clientes con deuda</td><td>{collectionSummary.customersWithDebt}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
         {/* Sección de Usuarios */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Usuarios Registrados ({users.length})</h2>

@@ -1,4 +1,4 @@
-import type { AdminSaleDetail, AdminSaleSummary } from '@/lib/supabase/types';
+import type { AdminSaleDetail, AdminSaleSummary, CollectionSummary, RegisterPaymentInput, RegisterPaymentResult } from '@/lib/supabase/types';
 
 export async function fetchAdminSales(): Promise<AdminSaleSummary[]> {
   const response = await fetch('/api/admin/sales');
@@ -25,4 +25,45 @@ export async function fetchAdminSaleDetail(saleId: string): Promise<AdminSaleDet
   }
 
   return payload.sale;
+}
+
+export async function registerAdminSalePayment(
+  input: RegisterPaymentInput
+): Promise<RegisterPaymentResult> {
+  const response = await fetch(`/api/admin/sales/${input.saleId}/payments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      amount: input.amount,
+      paymentMethod: input.paymentMethod,
+      paymentDate: input.paymentDate,
+      notes: input.notes,
+    }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo registrar el pago');
+  }
+
+  const payload = await response.json() as { payment: RegisterPaymentResult };
+  return payload.payment;
+}
+
+export async function fetchCollectionSummary(): Promise<CollectionSummary> {
+  const response = await fetch('/api/admin/collections/summary');
+
+  if (!response.ok) {
+    throw new Error('No se pudo cargar el resumen de cobranza');
+  }
+
+  const payload = await response.json() as { summary: CollectionSummary | null };
+
+  if (!payload.summary) {
+    throw new Error('Resumen de cobranza no disponible');
+  }
+
+  return payload.summary;
 }
