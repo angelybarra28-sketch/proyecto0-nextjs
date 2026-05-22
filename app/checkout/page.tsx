@@ -17,7 +17,7 @@ export default function CheckoutPage() {
   const { items, clearCart } = useCart();
   const isSubmittingRef = useRef(false);
   const checkoutRequestIdRef = useRef<string | null>(null);
-  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderPlaced] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     address: '',

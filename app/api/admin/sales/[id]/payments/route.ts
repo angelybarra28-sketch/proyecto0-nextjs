@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdminUser } from '@/lib/auth/server';
 import { registerAdminPayment } from '@/lib/services/paymentService';
 import type { PaymentMethod } from '@/lib/supabase/types';
 
@@ -17,6 +18,9 @@ interface PaymentRequestBody {
 
 export async function POST(request: Request, { params }: Props) {
   try {
+    const authorizationError = await requireAdminUser();
+    if (authorizationError) return authorizationError;
+
     const { id } = await params;
     const body = await request.json() as PaymentRequestBody;
 

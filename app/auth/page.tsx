@@ -24,13 +24,13 @@ export default function AuthPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (isLogin) {
       // Login
-      const success = login(formData.email, formData.password);
+      const success = await login(formData.email, formData.password);
       if (success) {
         router.push('/');
       } else {
@@ -43,7 +43,7 @@ export default function AuthPage() {
         return;
       }
 
-      const result = register({
+      const result = await register({
         dni: formData.dni,
         nombreApellido: formData.nombreApellido,
         telefono: formData.telefono,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCart, CartItem } from '@/lib/cartContext';
+import Image from 'next/image';
 import styles from '@/styles/Cart.module.css';
 
 interface CartItemComponentProps {
@@ -26,10 +27,6 @@ export default function CartItemComponent({
     }
   };
 
-  const discount = item.originalPrice 
-    ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100) 
-    : 0;
-
   return (
     <div className={styles.cartItemContainer}>
       <div className={styles.cartItem}>
@@ -47,9 +44,10 @@ export default function CartItemComponent({
         <div className={styles.itemInfo}>
           <h3 className={styles.itemName}>{item.name}</h3>
           <div className={styles.itemImage}>
-            <img
+            <Image
               src={item.imageUrl}
               alt={item.name}
+              fill
               className={styles.image}
             />
           </div>

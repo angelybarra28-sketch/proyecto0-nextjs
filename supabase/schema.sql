@@ -64,6 +64,12 @@ create type allocation_status as enum (
   'VOIDED'
 );
 
+create type app_role as enum (
+  'ADMIN',
+  'STAFF',
+  'CUSTOMER'
+);
+
 create table if not exists categories (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -108,6 +114,15 @@ create table if not exists customers (
   city text,
   province text,
   notes text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  role app_role not null default 'CUSTOMER',
+  full_name text,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -217,6 +232,8 @@ create index if not exists idx_customers_dni on customers(dni);
 create index if not exists idx_customers_phone on customers(phone);
 create index if not exists idx_customers_email on customers(email);
 create index if not exists idx_customers_full_name on customers(full_name);
+create index if not exists idx_profiles_role on profiles(role);
+create index if not exists idx_profiles_is_active on profiles(is_active);
 create unique index if not exists idx_customers_phone_unique
   on customers(phone)
   where phone is not null and phone <> '';
@@ -259,6 +276,7 @@ create index if not exists idx_payment_allocations_status on payment_allocations
 alter table categories enable row level security;
 alter table products enable row level security;
 alter table customers enable row level security;
+alter table profiles enable row level security;
 alter table sales enable row level security;
 alter table sale_items enable row level security;
 alter table installments enable row level security;
@@ -272,6 +290,39 @@ create policy "Public can read active categories"
 create policy "Public can read active products"
   on products for select
   using (status = 'ACTIVE');
+
+create policy "Users can read own profile"
+  on profiles for select
+  using (auth.uid() = user_id);
+
+create policy "Users can update own basic profile"
+  on profiles for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create or replace function handle_new_auth_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into profiles (user_id, role, full_name)
+  values (
+    new.id,
+    'CUSTOMER',
+    coalesce(new.raw_user_meta_data->>'full_name', new.email)
+  )
+  on conflict (user_id) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function handle_new_auth_user();
 
 -- Phase 1 writes are intended to go through the Next.js API using SUPABASE_SERVICE_ROLE_KEY.
 -- Do not add public insert/update policies for customers, sales, or sale_items unless you accept anonymous writes.

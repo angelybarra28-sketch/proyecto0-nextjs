@@ -19,8 +19,6 @@ export default function ProductCard({
   price,
   discount,
   imageUrl,
-  productIndex,
-  productId,
   slug
 }: ProductCardProps) {
   return (

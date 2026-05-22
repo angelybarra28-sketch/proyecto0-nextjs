@@ -2,123 +2,118 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState } from './types';
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
+import { canAccessAdmin, type AppRole } from '@/lib/auth/permissions';
+import { getCurrentAuthProfile } from '@/lib/auth/profileClient';
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => boolean;
-  register: (userData: Omit<User, 'id' | 'createdAt' | 'role'>) => { success: boolean; message: string };
-  logout: () => void;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (userData: Omit<User, 'id' | 'createdAt' | 'role'>) => Promise<{ success: boolean; message: string }>;
+  logout: () => Promise<void>;
   getAllUsers: () => User[];
   deleteUser: (id: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Usuario admin predefinido
-const ADMIN_USER: User = {
-  id: 'admin-001',
-  dni: '00000000',
-  nombreApellido: 'Administrador',
-  telefono: '0000000000',
-  email: 'admin',
-  domicilio: 'Admin',
-  password: 'admin',
-  role: 'admin',
-  createdAt: new Date().toISOString(),
-};
+function toAppUser(profile: { userId: string; role: AppRole; fullName: string | null }): User {
+  return {
+    id: profile.userId,
+    dni: '',
+    nombreApellido: profile.fullName ?? 'Usuario',
+    telefono: '',
+    email: '',
+    domicilio: '',
+    password: '',
+    role: canAccessAdmin(profile.role) ? 'admin' : 'user',
+    createdAt: new Date().toISOString(),
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Cargar usuario desde localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('currentUser');
-    if (saved) {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      return;
+    }
+
+    const syncUser = async () => {
       try {
-        setUser(JSON.parse(saved));
+        const profile = await getCurrentAuthProfile();
+        setUser(profile && profile.isActive ? toAppUser(profile) : null);
       } catch (error) {
-        console.error('Error loading user:', error);
+        console.error('Error loading Supabase auth profile:', error);
+        setUser(null);
       }
-    }
-    setIsHydrated(true);
-  }, []);
-
-  // Guardar usuario en localStorage
-  useEffect(() => {
-    if (isHydrated && user) {
-      localStorage.setItem('currentUser', JSON.stringify(user));
-    } else if (isHydrated && !user) {
-      localStorage.removeItem('currentUser');
-    }
-  }, [user, isHydrated]);
-
-  const login = (email: string, password: string): boolean => {
-    // Verificar si es el usuario admin
-    if (email === 'admin' && password === 'admin') {
-      setUser(ADMIN_USER);
-      return true;
-    }
-
-    // Buscar en usuarios registrados
-    const savedUsers = localStorage.getItem('users');
-    if (savedUsers) {
-      const users: User[] = JSON.parse(savedUsers);
-      const foundUser = users.find(u => u.email === email && u.password === password);
-      if (foundUser) {
-        setUser(foundUser);
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const register = (userData: Omit<User, 'id' | 'createdAt' | 'role'>): { success: boolean; message: string } => {
-    // Verificar si el email ya existe
-    const savedUsers = localStorage.getItem('users');
-    let users: User[] = savedUsers ? JSON.parse(savedUsers) : [];
-
-    if (users.some(u => u.email === userData.email)) {
-      return { success: false, message: 'El email ya está registrado' };
-    }
-
-    if (users.some(u => u.dni === userData.dni)) {
-      return { success: false, message: 'El DNI ya está registrado' };
-    }
-
-    // Crear nuevo usuario
-    const newUser: User = {
-      ...userData,
-      id: `user-${Date.now()}`,
-      role: 'user',
-      createdAt: new Date().toISOString(),
     };
 
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
+    void syncUser();
 
-    // Iniciar sesión automáticamente
-    setUser(newUser);
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      void syncUser();
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) return false;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) return false;
+
+    const profile = await getCurrentAuthProfile();
+    setUser(profile && profile.isActive ? toAppUser(profile) : null);
+    return Boolean(profile?.isActive);
+  };
+
+  const register = async (userData: Omit<User, 'id' | 'createdAt' | 'role'>): Promise<{ success: boolean; message: string }> => {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      return { success: false, message: 'Supabase Auth no está configurado' };
+    }
+
+    const { error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          full_name: userData.nombreApellido,
+          phone: userData.telefono,
+          address: userData.domicilio,
+          dni: userData.dni,
+        },
+      },
+    });
+
+    if (error) {
+      return { success: false, message: error.message };
+    }
 
     return { success: true, message: 'Usuario registrado correctamente' };
   };
 
-  const logout = () => {
+  const logout = async () => {
+    const supabase = getSupabaseBrowserClient();
+    await supabase?.auth.signOut();
     setUser(null);
-    localStorage.removeItem('currentUser');
   };
 
   const getAllUsers = (): User[] => {
-    const savedUsers = localStorage.getItem('users');
-    return savedUsers ? JSON.parse(savedUsers) : [];
+    return [];
   };
 
   const deleteUser = (id: string) => {
-    const savedUsers = localStorage.getItem('users');
-    if (savedUsers) {
-      const users: User[] = JSON.parse(savedUsers);
-      const filteredUsers = users.filter(u => u.id !== id);
-      localStorage.setItem('users', JSON.stringify(filteredUsers));
-    }
+    console.warn(`User deletion must be handled server-side. Ignored user id: ${id}`);
   };
 
   return (

@@ -25,29 +25,27 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [isHydrated, setIsHydrated] = useState(false);
+function getInitialCartItems(): CartItem[] {
+  if (typeof window === 'undefined') return [];
 
-  // Cargar carrito desde localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('cart');
-    if (saved) {
-      try {
-        setItems(JSON.parse(saved));
-      } catch (error) {
-        console.error('Error loading cart:', error);
-      }
-    }
-    setIsHydrated(true);
-  }, []);
+  const saved = window.localStorage.getItem('cart');
+  if (!saved) return [];
+
+  try {
+    return JSON.parse(saved) as CartItem[];
+  } catch (error) {
+    console.error('Error loading cart:', error);
+    return [];
+  }
+}
+
+export function CartProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<CartItem[]>(getInitialCartItems);
 
   // Guardar carrito en localStorage
   useEffect(() => {
-    if (isHydrated) {
-      localStorage.setItem('cart', JSON.stringify(items));
-    }
-  }, [items, isHydrated]);
+    localStorage.setItem('cart', JSON.stringify(items));
+  }, [items]);
 
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
     setItems(prevItems => {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminSaleDetail } from '@/lib/services/adminSalesService';
+import { requireAdminUser } from '@/lib/auth/server';
 
 interface Props {
   params: Promise<{
@@ -9,6 +10,9 @@ interface Props {
 
 export async function GET(_request: Request, { params }: Props) {
   try {
+    const authorizationError = await requireAdminUser();
+    if (authorizationError) return authorizationError;
+
     const { id } = await params;
     const sale = await getAdminSaleDetail(id);
 

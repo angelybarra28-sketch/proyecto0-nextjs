@@ -65,7 +65,7 @@ export default async function CategoryPage({ params }: Props) {
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
               Categoría no encontrada
             </h2>
-            <p>No hay productos disponibles en la categoría "{decodedCategory}"</p>
+            <p>No hay productos disponibles en la categoría &quot;{decodedCategory}&quot;</p>
           </div>
         )}
       </main>

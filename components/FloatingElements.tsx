@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from '@/styles/FloatingElements.module.css';
 
 export default function FloatingElements() {
@@ -106,7 +107,7 @@ export default function FloatingElements() {
         className={styles.whatsappFloat}
         title="Contáctanos por WhatsApp"
       >
-        <img src="/logo/whatapp logo.png" alt="WhatsApp" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        <Image src="/logo/whatapp logo.png" alt="WhatsApp" width={42} height={42} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </Link>
 
       {/* BOTON VOLVER A PRODUCTOS (Aparece en sección About) */}

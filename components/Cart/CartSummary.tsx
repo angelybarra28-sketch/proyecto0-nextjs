@@ -4,18 +4,12 @@ import Link from 'next/link';
 import { useCart } from '@/lib/cartContext';
 import styles from '@/styles/Cart.module.css';
 
-interface CartSummaryProps {
-  selectedItemsCount?: number;
-}
-
-export default function CartSummary({ selectedItemsCount }: CartSummaryProps) {
+export default function CartSummary() {
   const { getTotalPrice, getSubtotal, getDiscountTotal, items } = useCart();
 
   const subtotal = getSubtotal();
   const discount = getDiscountTotal();
   const total = getTotalPrice();
-  const shippingCost = 0; // Envío gratis
-
   return (
     <div className={styles.cartSummary}>
       <h2 className={styles.summaryTitle}>Resumen de compra</h2>

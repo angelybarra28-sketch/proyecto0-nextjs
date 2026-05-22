@@ -33,10 +33,15 @@ export function useProductSearch(initialProducts: Product[] = allProducts, delay
     if (urlQuery !== query) {
       // Cancelamos cualquier temporizador de tipeo pendiente para que la navegación sea instantánea
       if (timerRef.current) clearTimeout(timerRef.current);
-      setQuery(urlQuery);
-      setDebouncedQuery(urlQuery);
+
+      const syncTimer = setTimeout(() => {
+        setQuery(urlQuery);
+        setDebouncedQuery(urlQuery);
+      }, 0);
+
+      return () => clearTimeout(syncTimer);
     }
-  }, [searchParams]);
+  }, [query, searchParams]);
 
   // Limpieza preventiva del temporizador al desmontar para evitar fugas de memoria
   useEffect(() => {

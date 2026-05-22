@@ -86,7 +86,7 @@ export default function SearchBar({ placeholder = 'Buscar sábanas, acolchados, 
         {query.trim() !== '' && (
           <div style={{ marginTop: '2.5rem' }}>
             <h2 className={styles.sectionTitle} style={{ margin: '1rem 0 2rem 0', fontSize: '1.4rem', textAlign: 'left' }}>
-              Resultados para "{query}" ({totalResults} {totalResults === 1 ? 'producto' : 'productos'})
+              Resultados para &quot;{query}&quot; ({totalResults} {totalResults === 1 ? 'producto' : 'productos'})
             </h2>
 
             {hasResults ? (
@@ -118,7 +118,7 @@ export default function SearchBar({ placeholder = 'Buscar sábanas, acolchados, 
                   No se encontraron productos
                 </p>
                 <p style={{ fontSize: '0.9rem' }}>
-                  Prueba buscando otros términos como "sábanas", "acolchado", "kit" o "polar".
+                  Prueba buscando otros términos como &quot;sábanas&quot;, &quot;acolchado&quot;, &quot;kit&quot; o &quot;polar&quot;.
                 </p>
               </div>
             )}
