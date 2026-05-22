@@ -51,3 +51,9 @@ Do not expose `SUPABASE_SERVICE_ROLE_KEY` to the browser. Writes go through `app
 - Admin sales reads call the refresh function before returning data, so the panel reflects current overdue state without a separate scheduler yet.
 - Pure helpers in `lib/financial/collectionHelpers.ts` calculate overdue days, sale collection status, customer debt, and overdue installment filtering for UI/service reuse.
 - Interest, penalties, WhatsApp/email reminders, and automated background jobs are still intentionally deferred.
+
+## Dashboard Phase
+- Admin dashboard metrics are exposed through `app/api/admin/dashboard/route.ts` and calculated in `lib/repositories/statisticsRepository.ts`.
+- Current implementation uses bounded reads and TypeScript aggregation for simple metrics/rankings; this is acceptable while the dataset is small.
+- Metrics include monthly sales count, sold amount, collected amount, average ticket, collection summary, top products, top categories, and top customers.
+- Future large datasets should move heavy aggregations to SQL views/materialized views, especially monthly revenue, product rankings, customer LTV, and collection aging buckets.

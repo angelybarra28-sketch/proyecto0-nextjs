@@ -232,3 +232,35 @@ export interface CollectionSummary {
   overdueSales: number;
   customersWithDebt: number;
 }
+
+export interface MonthlyMetric {
+  month: string;
+  salesCount: number;
+  revenue: number;
+  collected: number;
+}
+
+export interface RankingMetric {
+  label: string;
+  quantity: number;
+  amount: number;
+}
+
+export interface CustomerRankingMetric {
+  customerId: string;
+  customerName: string;
+  salesCount: number;
+  amount: number;
+}
+
+export interface AdminDashboardStats {
+  currentMonthSalesCount: number;
+  currentMonthSoldAmount: number;
+  currentMonthCollectedAmount: number;
+  averageTicket: number;
+  collection: CollectionSummary;
+  monthly: MonthlyMetric[];
+  topProducts: RankingMetric[];
+  topCategories: RankingMetric[];
+  topCustomers: CustomerRankingMetric[];
+}

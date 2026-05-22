@@ -1,4 +1,4 @@
-import type { AdminSaleDetail, AdminSaleSummary, CollectionSummary, RegisterPaymentInput, RegisterPaymentResult } from '@/lib/supabase/types';
+import type { AdminDashboardStats, AdminSaleDetail, AdminSaleSummary, CollectionSummary, RegisterPaymentInput, RegisterPaymentResult } from '@/lib/supabase/types';
 
 export async function fetchAdminSales(): Promise<AdminSaleSummary[]> {
   const response = await fetch('/api/admin/sales');
@@ -66,4 +66,20 @@ export async function fetchCollectionSummary(): Promise<CollectionSummary> {
   }
 
   return payload.summary;
+}
+
+export async function fetchAdminDashboard(): Promise<AdminDashboardStats> {
+  const response = await fetch('/api/admin/dashboard');
+
+  if (!response.ok) {
+    throw new Error('No se pudo cargar el dashboard');
+  }
+
+  const payload = await response.json() as { dashboard: AdminDashboardStats | null };
+
+  if (!payload.dashboard) {
+    throw new Error('Dashboard no disponible');
+  }
+
+  return payload.dashboard;
 }
