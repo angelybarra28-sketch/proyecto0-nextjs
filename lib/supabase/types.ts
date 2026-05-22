@@ -105,3 +105,57 @@ export interface CheckoutSaleRpcRow {
   sale_number: string;
   sale_status: SaleStatus;
 }
+
+export type CollectionStatus = 'PENDING' | 'PAID';
+
+export interface SaleCustomerView {
+  id: string;
+  fullName: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  city: string | null;
+}
+
+export interface SaleItemView {
+  id: string;
+  legacyProductId: number | null;
+  name: string;
+  slug: string | null;
+  category: string | null;
+  unitPrice: number;
+  quantity: number;
+  subtotal: number;
+  discountAmount: number;
+  total: number;
+  imageUrl: string | null;
+}
+
+export interface AdminSaleSummary {
+  id: string;
+  saleNumber: string;
+  customerName: string;
+  customerPhone: string | null;
+  saleDate: string;
+  total: number;
+  itemCount: number;
+  saleStatus: SaleStatus;
+  collectionStatus: CollectionStatus;
+}
+
+export interface AdminSaleDetail extends AdminSaleSummary {
+  subtotal: number;
+  discountAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  paymentMethodRequested: string | null;
+  deliveryFullName: string | null;
+  deliveryPhone: string | null;
+  deliveryAddress: string | null;
+  deliveryCity: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer: SaleCustomerView | null;
+  items: SaleItemView[];
+}

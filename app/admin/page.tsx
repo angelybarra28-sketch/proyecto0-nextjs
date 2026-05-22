@@ -3,14 +3,34 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { User } from '@/lib/types';
+import { fetchAdminSales } from '@/lib/services/adminSalesClient';
+import type { AdminSaleSummary, SaleStatus, CollectionStatus } from '@/lib/supabase/types';
 import styles from '@/styles/Admin.module.css';
+
+function formatCurrency(value: number) {
+  return value.toLocaleString('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+
+function getStatusClass(status: SaleStatus | CollectionStatus) {
+  if (status === 'CANCELLED') return 'cancelled';
+  if (status === 'DELIVERED' || status === 'CONFIRMED' || status === 'PAID') return 'completed';
+  return 'pending';
+}
 
 export default function AdminPage() {
   const { isAdmin, getAllUsers, deleteUser, user } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [sales, setSales] = useState<AdminSaleSummary[]>([]);
+  const [isLoadingSales, setIsLoadingSales] = useState(true);
+  const [salesError, setSalesError] = useState('');
 
   useEffect(() => {
     if (!isAdmin) {
@@ -18,14 +38,15 @@ export default function AdminPage() {
       return;
     }
 
-    // Cargar usuarios
-    setUsers(getAllUsers());
+    window.setTimeout(() => setUsers(getAllUsers()), 0);
 
-    // Cargar pedidos desde localStorage
-    const savedOrders = localStorage.getItem('orders');
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
-    }
+    fetchAdminSales()
+      .then(setSales)
+      .catch((error: unknown) => {
+        console.error('Error loading sales:', error);
+        setSalesError('No se pudieron cargar las ventas reales desde Supabase');
+      })
+      .finally(() => setIsLoadingSales(false));
   }, [isAdmin, getAllUsers, router]);
 
   const handleDeleteUser = (id: string) => {
@@ -92,33 +113,51 @@ export default function AdminPage() {
 
         {/* Sección de Pedidos */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Pedidos Realizados ({orders.length})</h2>
+          <h2 className={styles.sectionTitle}>Ventas Realizadas ({sales.length})</h2>
+
+          {isLoadingSales && <p className={styles.empty}>Cargando ventas...</p>}
+
+          {salesError && <p className={styles.empty}>{salesError}</p>}
           
-          {orders.length === 0 ? (
-            <p className={styles.empty}>No hay pedidos registrados</p>
+          {!isLoadingSales && !salesError && sales.length === 0 ? (
+            <p className={styles.empty}>No hay ventas registradas en Supabase</p>
           ) : (
             <div className={styles.tableContainer}>
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>ID Pedido</th>
-                    <th>Usuario</th>
-                    <th>Total</th>
+                    <th>Venta</th>
+                    <th>Cliente</th>
                     <th>Fecha</th>
-                    <th>Estado</th>
+                    <th>Total</th>
+                    <th>Productos</th>
+                    <th>Venta</th>
+                    <th>Cobranza</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id}>
-                      <td>{order.id}</td>
-                      <td>{order.userName || 'Usuario'}</td>
-                      <td>${order.total?.toFixed(2)}</td>
-                      <td>{new Date(order.date).toLocaleDateString()}</td>
+                  {sales.map((sale) => (
+                    <tr key={sale.id}>
+                      <td>{sale.saleNumber}</td>
+                      <td>{sale.customerName}</td>
+                      <td>{new Date(sale.saleDate).toLocaleDateString('es-AR')}</td>
+                      <td>{formatCurrency(sale.total)}</td>
+                      <td>{sale.itemCount}</td>
                       <td>
-                        <span className={`${styles.status} ${styles[order.status]}`}>
-                          {order.status}
+                        <span className={`${styles.status} ${styles[getStatusClass(sale.saleStatus)]}`}>
+                          {sale.saleStatus}
                         </span>
+                      </td>
+                      <td>
+                        <span className={`${styles.status} ${styles[getStatusClass(sale.collectionStatus)]}`}>
+                          {sale.collectionStatus}
+                        </span>
+                      </td>
+                      <td>
+                        <Link href={`/admin/ventas/${sale.id}`} className={styles.deleteBtn}>
+                          Ver detalle
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -130,7 +169,7 @@ export default function AdminPage() {
       </div>
 
       <div className={styles.backLink}>
-        <a href="/">Volver al inicio</a>
+        <Link href="/">Volver al inicio</Link>
       </div>
     </div>
   );
