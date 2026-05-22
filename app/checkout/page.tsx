@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
@@ -15,6 +15,7 @@ import checkoutStyles from '@/styles/Checkout.module.css';
 
 export default function CheckoutPage() {
   const { items, clearCart } = useCart();
+  const isSubmittingRef = useRef(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -34,6 +35,10 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isSubmittingRef.current) {
+      return;
+    }
     
     // Validar que los campos requeridos estén completos
     if (!formData.fullName || !formData.address || !formData.location) {
@@ -45,6 +50,8 @@ export default function CheckoutPage() {
       alert('Tu carrito está vacío');
       return;
     }
+
+    isSubmittingRef.current = true;
 
     const saleResult = await persistCheckoutSaleFromClient(
       createCheckoutSaleInput(formData, items)
@@ -72,8 +79,13 @@ export default function CheckoutPage() {
     // Redireccionar a WhatsApp
     window.open(whatsappUrl, '_blank');
 
-    // Limpiar carrito después de enviar
-    clearCart();
+    if (saleResult.persisted) {
+      clearCart();
+    } else {
+      console.warn('No se confirmo la persistencia de la venta; el carrito se conserva.');
+    }
+
+    isSubmittingRef.current = false;
   };
 
   if (orderPlaced) {

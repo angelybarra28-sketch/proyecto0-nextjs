@@ -6,6 +6,7 @@ interface CheckoutFormData {
   address: string;
   location: string;
   phone: string;
+  email?: string;
   paymentMethod: string;
 }
 
@@ -17,6 +18,7 @@ export function createCheckoutSaleInput(
     customer: {
       fullName: formData.fullName,
       phone: formData.phone || undefined,
+      email: formData.email || undefined,
       address: formData.address,
       city: formData.location,
     },

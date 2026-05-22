@@ -21,6 +21,22 @@ export async function findOrCreateCustomer(
     }
   }
 
+  if (input.email) {
+    const { data: existingCustomer, error: findError } = await supabase
+      .from('customers')
+      .select('id, full_name, phone, email, address, city, notes')
+      .eq('email', input.email)
+      .maybeSingle();
+
+    if (findError) {
+      throw findError;
+    }
+
+    if (existingCustomer) {
+      return existingCustomer as CustomerRow;
+    }
+  }
+
   const { data, error } = await supabase
     .from('customers')
     .insert(input)

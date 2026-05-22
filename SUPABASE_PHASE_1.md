@@ -3,7 +3,7 @@
 ## Scope
 - Adds persistence for `categories`, `products`, `customers`, `sales`, and `sale_items` only.
 - Does not replace `lib/products.ts` yet; the current frontend catalog, search, filters, cart, and visual checkout remain unchanged.
-- Checkout now attempts to persist a real `sale` before opening WhatsApp. If Supabase env vars are missing or the API fails, WhatsApp checkout continues as before.
+- Checkout now attempts to persist a real `sale` before opening WhatsApp. If Supabase env vars are missing or the API fails, WhatsApp still opens, but the cart is preserved to avoid losing an unpersisted order.
 
 ## Files Added
 - `supabase/schema.sql`: initial schema, enums, foreign keys, indexes, and RLS notes.
@@ -27,3 +27,4 @@ Do not expose `SUPABASE_SERVICE_ROLE_KEY` to the browser. Writes go through `app
 - Keep `lib/products.ts` and `allProducts` as the active catalog source for current UI.
 - Use `sale_items.legacy_product_id` to preserve the current numeric product id until `products` is fully migrated.
 - Use snapshot columns in `sale_items` so historical sales are not affected by future catalog edits.
+- Checkout persistence is considered successful only after both `sales` and `sale_items` are inserted. If item insertion fails after sale creation, the sale is marked `CANCELLED` and the client keeps the cart.

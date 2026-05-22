@@ -76,6 +76,7 @@ create table if not exists sales (
   total_amount numeric(12, 2) not null default 0 check (total_amount >= 0),
   paid_amount numeric(12, 2) not null default 0 check (paid_amount >= 0),
   remaining_amount numeric(12, 2) not null default 0 check (remaining_amount >= 0),
+  item_count integer not null default 0 check (item_count >= 0),
   payment_method_requested text,
   source text not null default 'checkout_whatsapp',
   delivery_full_name text,
@@ -130,6 +131,7 @@ create index if not exists idx_sales_sale_number on sales(sale_number);
 create index if not exists idx_sales_sale_status on sales(sale_status);
 create index if not exists idx_sales_sale_date on sales(sale_date);
 create index if not exists idx_sales_customer_date on sales(customer_id, sale_date);
+create index if not exists idx_sales_item_count on sales(item_count);
 
 create index if not exists idx_sale_items_sale_id on sale_items(sale_id);
 create index if not exists idx_sale_items_product_id on sale_items(product_id);

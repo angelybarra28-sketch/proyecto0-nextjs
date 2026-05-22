@@ -21,6 +21,7 @@ export interface SaleInsert {
   total_amount: number;
   paid_amount: number;
   remaining_amount: number;
+  item_count: number;
   payment_method_requested?: string | null;
   delivery_full_name?: string | null;
   delivery_phone?: string | null;
@@ -62,6 +63,7 @@ export interface CheckoutSaleInput {
   customer: {
     fullName: string;
     phone?: string;
+    email?: string;
     address: string;
     city: string;
   };
