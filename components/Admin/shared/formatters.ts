@@ -1,0 +1,16 @@
+import type { CollectionStatus, SaleStatus } from '@/lib/supabase/types';
+
+export function formatCurrency(value: number) {
+  return value.toLocaleString('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+
+export function getStatusClass(status: SaleStatus | CollectionStatus) {
+  if (status === 'CANCELLED' || status === 'OVERDUE') return 'cancelled';
+  if (status === 'DELIVERED' || status === 'CONFIRMED' || status === 'PAID') return 'completed';
+  return 'pending';
+}
