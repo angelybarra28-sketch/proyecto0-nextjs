@@ -6,6 +6,8 @@ import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
 import FloatingElements from '@/components/FloatingElements';
 import { useCart } from '@/lib/cartContext';
+import { createCheckoutSaleInput } from '@/lib/adapters/cartSaleAdapter';
+import { persistCheckoutSaleFromClient } from '@/lib/services/checkoutSaleClient';
 import CartItem from '@/components/Cart/CartItem';
 import CartSummary from '@/components/Cart/CartSummary';
 import styles from '@/styles/Cart.module.css';
@@ -30,7 +32,7 @@ export default function CheckoutPage() {
     }));
   };
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validar que los campos requeridos estén completos
@@ -44,9 +46,17 @@ export default function CheckoutPage() {
       return;
     }
 
+    const saleResult = await persistCheckoutSaleFromClient(
+      createCheckoutSaleInput(formData, items)
+    );
+
     // Construir mensaje para WhatsApp
     const phoneNumber = '5491158056418';
     let message = `Hola soy ${formData.fullName}, estoy interesada en estos productos y quisiera saber el precio, formas de pago y la disponibilidad:\n\n`;
+
+    if (saleResult.saleNumber) {
+      message += `Pedido: ${saleResult.saleNumber}\n\n`;
+    }
     
     items.forEach((item) => {
       message += `- ${item.name} (Cantidad: ${item.quantity})\n`;
