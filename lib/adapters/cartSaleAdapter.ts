@@ -12,9 +12,11 @@ interface CheckoutFormData {
 
 export function createCheckoutSaleInput(
   formData: CheckoutFormData,
-  items: CartItem[]
+  items: CartItem[],
+  checkoutRequestId: string
 ): CheckoutSaleInput {
   return {
+    checkoutRequestId,
     customer: {
       fullName: formData.fullName,
       phone: formData.phone || undefined,

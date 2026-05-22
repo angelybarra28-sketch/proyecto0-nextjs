@@ -16,6 +16,7 @@ import checkoutStyles from '@/styles/Checkout.module.css';
 export default function CheckoutPage() {
   const { items, clearCart } = useCart();
   const isSubmittingRef = useRef(false);
+  const checkoutRequestIdRef = useRef<string | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -53,8 +54,12 @@ export default function CheckoutPage() {
 
     isSubmittingRef.current = true;
 
+    if (!checkoutRequestIdRef.current) {
+      checkoutRequestIdRef.current = crypto.randomUUID();
+    }
+
     const saleResult = await persistCheckoutSaleFromClient(
-      createCheckoutSaleInput(formData, items)
+      createCheckoutSaleInput(formData, items, checkoutRequestIdRef.current)
     );
 
     // Construir mensaje para WhatsApp
@@ -81,6 +86,7 @@ export default function CheckoutPage() {
 
     if (saleResult.persisted) {
       clearCart();
+      checkoutRequestIdRef.current = null;
     } else {
       console.warn('No se confirmo la persistencia de la venta; el carrito se conserva.');
     }

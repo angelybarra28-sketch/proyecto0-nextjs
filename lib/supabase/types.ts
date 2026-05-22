@@ -14,6 +14,7 @@ export interface CustomerRow extends CustomerInsert {
 }
 
 export interface SaleInsert {
+  checkout_request_id: string;
   customer_id: string;
   sale_status: SaleStatus;
   subtotal_amount: number;
@@ -50,6 +51,26 @@ export interface SaleItemInsert {
   image_url_snapshot?: string | null;
 }
 
+export interface CheckoutSaleRpcItem {
+  legacyProductId: number;
+  name: string;
+  slug: string | null;
+  category: string | null;
+  unitPrice: number;
+  quantity: number;
+  lineSubtotal: number;
+  lineDiscountAmount: number;
+  lineTotal: number;
+  imageUrl: string | null;
+}
+
+export interface CheckoutSaleRpcInput {
+  checkoutRequestId: string;
+  customer: CheckoutSaleInput['customer'];
+  paymentMethodRequested?: string;
+  items: CheckoutSaleRpcItem[];
+}
+
 export interface CheckoutSaleItemInput {
   legacyProductId: number;
   name: string;
@@ -60,6 +81,7 @@ export interface CheckoutSaleItemInput {
 }
 
 export interface CheckoutSaleInput {
+  checkoutRequestId: string;
   customer: {
     fullName: string;
     phone?: string;
@@ -75,4 +97,11 @@ export interface CheckoutSaleResult {
   persisted: boolean;
   saleId?: string;
   saleNumber?: string;
+}
+
+export interface CheckoutSaleRpcRow {
+  persisted: boolean;
+  sale_id: string;
+  sale_number: string;
+  sale_status: SaleStatus;
 }

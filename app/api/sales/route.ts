@@ -7,6 +7,7 @@ function isValidCheckoutSaleInput(input: CheckoutSaleInput): boolean {
     input.customer?.fullName &&
     input.customer?.address &&
     input.customer?.city &&
+    input.checkoutRequestId &&
     Array.isArray(input.items) &&
     input.items.length > 0
   );
