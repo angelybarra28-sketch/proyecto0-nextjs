@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { AdminSalesPage } from '@/components/Admin/Pages/AdminSalesPage';
 
 export default function AdminSalesRoute() {
-  redirect('/admin');
+  return <AdminSalesPage />;
 }

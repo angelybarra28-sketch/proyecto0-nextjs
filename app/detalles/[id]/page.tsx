@@ -5,7 +5,7 @@ import Footer from '@/components/Layout/Footer';
 import FloatingElements from '@/components/FloatingElements';
 import ProductCarousel from '@/components/Product/ProductCarousel';
 import ProductInfo from '@/components/Product/ProductInfo';
-import { allProducts } from '@/lib/products';
+import { getAllLegacyProductIds, getProductByLegacyId } from '@/lib/services/catalogService';
 import styles from '@/styles/ProductDetail.module.css';
 
 interface Props {
@@ -16,7 +16,7 @@ interface Props {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { id } = await params;
-  const product = allProducts.find(p => p.id === parseInt(id));
+  const product = await getProductByLegacyId(parseInt(id));
 
   if (!product) {
     notFound();
@@ -48,7 +48,7 @@ export default async function ProductDetailPage({ params }: Props) {
           <div className={styles.detailGrid}>
             {/* Left: Carousel */}
             <ProductCarousel 
-              images={product.carouselImages || [product.imageUrl]} 
+              images={product.carouselImages || [product.imageUrl ?? '']} 
               productName={product.name}
             />
 
@@ -57,11 +57,17 @@ export default async function ProductDetailPage({ params }: Props) {
               productId={product.id}
               name={product.name}
               price={product.price}
-              imageUrl={product.imageUrl}
+              imageUrl={product.imageUrl ?? ''}
               discount={product.discount}
-              description={product.description}
-              specifications={product.specifications}
-              features={product.features}
+              description={product.description ?? ''}
+              specifications={product.specifications ?? {
+                size: 'N/A',
+                material: 'N/A',
+                firmness: 'N/A',
+                withPillow: 'No',
+                color: 'N/A',
+              }}
+              features={product.features ?? []}
             />
           </div>
         </div>
@@ -75,7 +81,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
-  const product = allProducts.find(p => p.id === parseInt(id));
+  const product = await getProductByLegacyId(parseInt(id));
 
   if (!product) {
     return {
@@ -86,17 +92,15 @@ export async function generateMetadata({ params }: Props) {
 
   return {
     title: `${product.name} | ElectroBlancos`,
-    description: product.description,
+    description: product.description ?? '',
     openGraph: {
       title: product.name,
-      description: product.description,
-      images: [product.imageUrl]
+      description: product.description ?? '',
+      images: product.imageUrl ? [product.imageUrl] : []
     }
   };
 }
 
 export async function generateStaticParams() {
-  return allProducts.map(product => ({
-    id: product.id.toString()
-  }));
+  return getAllLegacyProductIds();
 }

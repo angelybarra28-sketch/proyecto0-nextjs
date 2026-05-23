@@ -2,14 +2,16 @@
 
 import { useProductSearch } from '@/hooks/useProductSearch';
 import ProductCard from '@/components/Product/ProductCard';
+import type { Product } from '@/lib/types';
 import styles from '@/styles/ProductsSection.module.css';
 
 interface SearchBarProps {
   placeholder?: string;
+  products?: Product[];
 }
 
-export default function SearchBar({ placeholder = 'Buscar sábanas, acolchados, categoría...' }: SearchBarProps) {
-  const { query, setQuery, filteredProducts, clearSearch, totalResults, hasResults } = useProductSearch();
+export default function SearchBar({ placeholder = 'Buscar sábanas, acolchados, categoría...', products }: SearchBarProps) {
+  const { query, setQuery, filteredProducts, clearSearch, totalResults, hasResults } = useProductSearch(products);
 
   return (
     <div style={{ backgroundColor: '#1e1d1b', padding: '1.5rem 20px 2.5rem 20px' }}>

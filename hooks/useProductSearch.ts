@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { searchProducts, normalizeSearch } from '@/lib/product-utils';
 import { allProducts } from '@/lib/products';
-import type { Product } from '@/lib/product-utils';
+import type { Product } from '@/lib/types';
 
 /**
  * Hook reutilizable para gestionar el estado de búsqueda de productos con debounce profesional

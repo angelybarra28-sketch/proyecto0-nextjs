@@ -1,4 +1,6 @@
 import type { AdminDashboardStats, AdminSaleDetail, AdminSaleSummary, CollectionSummary, RegisterPaymentInput, RegisterPaymentResult } from '@/lib/supabase/types';
+import type { AdminCatalogPayload, AdminProductPayload } from '@/lib/services/adminCatalogService';
+import type { AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
 
 export async function fetchAdminSales(): Promise<AdminSaleSummary[]> {
   const response = await fetch('/api/admin/sales');
@@ -82,4 +84,35 @@ export async function fetchAdminDashboard(): Promise<AdminDashboardStats> {
   }
 
   return payload.dashboard;
+}
+
+export async function fetchAdminProducts(): Promise<AdminCatalogPayload> {
+  const response = await fetch('/api/admin/products');
+
+  if (!response.ok) {
+    throw new Error('No se pudieron cargar los productos');
+  }
+
+  return await response.json() as AdminCatalogPayload;
+}
+
+export async function updateAdminProduct(
+  productId: string,
+  input: Partial<AdminProductPayload>
+): Promise<AdminCatalogProduct> {
+  const response = await fetch(`/api/admin/products/${productId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo actualizar el producto');
+  }
+
+  const payload = await response.json() as { product: AdminCatalogProduct };
+  return payload.product;
 }

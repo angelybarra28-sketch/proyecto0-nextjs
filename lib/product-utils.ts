@@ -1,7 +1,8 @@
 import { allProducts } from './products';
 import type { ProductFilters, FilterOptions, ProductStats, FilteredProductsResult } from './types';
+import type { Product } from './types';
 
-export type Product = typeof allProducts[0];
+export type { Product };
 
 /**
  * Busca un producto por su slug
@@ -261,7 +262,7 @@ export function getFilterOptions(products: Product[]): FilterOptions {
     },
     discountPercentages,
     tags: [], // Preparado para futuro cuando haya tags
-    totalProducts: allProducts.length,
+    totalProducts: products.length,
     filteredProducts: products.length
   };
 }

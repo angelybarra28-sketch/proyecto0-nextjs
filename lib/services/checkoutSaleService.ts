@@ -1,15 +1,15 @@
 import { createCheckoutSaleTransaction } from '@/lib/repositories/saleRepository';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
-import { allProducts } from '@/lib/products';
+import { getProductByLegacyId } from '@/lib/services/catalogService';
 import type { CheckoutSaleInput, CheckoutSaleResult, CheckoutSaleRpcItem } from '@/lib/supabase/types';
 
-function assertValidCheckoutInput(input: CheckoutSaleInput): void {
+async function assertValidCheckoutInput(input: CheckoutSaleInput): Promise<void> {
   if (!input.checkoutRequestId) {
     throw new Error('Missing checkout request id.');
   }
 
   for (const item of input.items) {
-    const catalogProduct = allProducts.find((product) => product.id === item.legacyProductId);
+    const catalogProduct = await getProductByLegacyId(item.legacyProductId);
 
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
       throw new Error(`Invalid quantity for product ${item.legacyProductId}.`);
@@ -36,10 +36,10 @@ export async function persistCheckoutSale(input: CheckoutSaleInput): Promise<Che
     return { persisted: false };
   }
 
-  assertValidCheckoutInput(input);
+  await assertValidCheckoutInput(input);
 
-  const items: CheckoutSaleRpcItem[] = input.items.map((item) => {
-    const catalogProduct = allProducts.find((product) => product.id === item.legacyProductId);
+  const items: CheckoutSaleRpcItem[] = await Promise.all(input.items.map(async (item) => {
+    const catalogProduct = await getProductByLegacyId(item.legacyProductId);
     const unitSubtotal = item.originalPrice ?? item.price;
     const lineSubtotal = unitSubtotal * item.quantity;
     const lineTotal = item.price * item.quantity;
@@ -56,7 +56,7 @@ export async function persistCheckoutSale(input: CheckoutSaleInput): Promise<Che
       lineTotal,
       imageUrl: catalogProduct?.imageUrl ?? item.imageUrl ?? null,
     };
-  });
+  }));
 
   const sale = await createCheckoutSaleTransaction(supabase, {
     checkoutRequestId: input.checkoutRequestId,

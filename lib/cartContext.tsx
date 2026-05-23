@@ -25,9 +25,7 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-function getInitialCartItems(): CartItem[] {
-  if (typeof window === 'undefined') return [];
-
+function readStoredCartItems(): CartItem[] {
   const saved = window.localStorage.getItem('cart');
   if (!saved) return [];
 
@@ -40,12 +38,24 @@ function getInitialCartItems(): CartItem[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(getInitialCartItems);
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [hasLoadedStoredCart, setHasLoadedStoredCart] = useState(false);
+
+  useEffect(() => {
+    const loadTimer = window.setTimeout(() => {
+      setItems(readStoredCartItems());
+      setHasLoadedStoredCart(true);
+    }, 0);
+
+    return () => window.clearTimeout(loadTimer);
+  }, []);
 
   // Guardar carrito en localStorage
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+    if (!hasLoadedStoredCart) return;
+
+    window.localStorage.setItem('cart', JSON.stringify(items));
+  }, [hasLoadedStoredCart, items]);
 
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
     setItems(prevItems => {

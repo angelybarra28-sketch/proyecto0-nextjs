@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { AdminProductsPage } from '@/components/Admin/Pages/AdminProductsPage';
 
 export default function AdminProductsRoute() {
-  redirect('/admin');
+  return <AdminProductsPage />;
 }
