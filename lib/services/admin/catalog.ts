@@ -35,6 +35,7 @@ export type AdminProductPayload = {
   status: ProductStatus;
   featured: boolean;
   imageUrl: string;
+  carouselImages: string[];
 };
 
 function normalizeText(value: unknown): string {
@@ -74,12 +75,25 @@ function normalizeStatus(value: unknown): ProductStatus {
   return 'ACTIVE';
 }
 
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function validateProductPayload(payload: Partial<AdminProductPayload>, requireBaseFields: boolean): ProductCreateInput | ProductUpdateInput {
   const name = payload.name === undefined ? undefined : normalizeText(payload.name);
   const slug = payload.slug === undefined ? undefined : normalizeText(payload.slug);
 
   if (requireBaseFields && !name) throw new Error('El nombre es obligatorio');
   if (requireBaseFields && !slug) throw new Error('El slug es obligatorio');
+  if (!requireBaseFields && payload.name !== undefined && !name) throw new Error('El nombre es obligatorio');
+  if (!requireBaseFields && payload.slug !== undefined && !slug) throw new Error('El slug es obligatorio');
 
   return {
     categoryId: payload.categoryId === undefined ? undefined : payload.categoryId,
@@ -95,6 +109,7 @@ function validateProductPayload(payload: Partial<AdminProductPayload>, requireBa
     status: payload.status === undefined ? undefined : normalizeStatus(payload.status),
     featured: payload.featured,
     imageUrl: payload.imageUrl === undefined ? undefined : normalizeNullableText(payload.imageUrl),
+    carouselImages: payload.carouselImages === undefined ? undefined : normalizeStringArray(payload.carouselImages),
   };
 }
 
@@ -114,8 +129,37 @@ function getLocalFallbackProducts(): AdminCatalogProduct[] {
     status: 'ACTIVE',
     featured: product.destacado,
     imageUrl: product.imageUrl ?? '',
+    carouselImages: product.carouselImages ?? [],
     createdAt: null,
   }));
+}
+
+async function assertValidCategory(categoryId: string | null | undefined): Promise<void> {
+  if (categoryId === undefined || categoryId === null) return;
+
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) throw new Error('Supabase no está configurado');
+
+  const categories = await listActiveCategories(supabase);
+  const exists = categories.some((category) => category.id === categoryId);
+
+  if (!exists) {
+    throw new Error('Categoría inválida');
+  }
+}
+
+async function assertUniqueSlug(productId: string, slug: string | undefined): Promise<void> {
+  if (!slug) return;
+
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) throw new Error('Supabase no está configurado');
+
+  const products = await listAllProducts(supabase);
+  const duplicate = products.find((product) => product.slug === slug && product.id !== productId);
+
+  if (duplicate) {
+    throw new Error('El slug ya está en uso');
+  }
 }
 
 export async function getAdminCatalog(): Promise<AdminCatalogPayload> {
@@ -153,6 +197,7 @@ export async function createAdminProduct(payload: AdminProductPayload): Promise<
   }
 
   const input = validateProductPayload(payload, true) as ProductCreateInput;
+  await assertValidCategory(input.categoryId);
   const product = await createProduct(supabase, input);
 
   return adaptAdminCatalogProduct(product);
@@ -169,6 +214,8 @@ export async function updateAdminProduct(
   }
 
   const input = validateProductPayload(payload, false) as ProductUpdateInput;
+  await assertValidCategory(input.categoryId);
+  await assertUniqueSlug(productId, input.slug);
   const product = await updateProduct(supabase, productId, input);
 
   return adaptAdminCatalogProduct(product);

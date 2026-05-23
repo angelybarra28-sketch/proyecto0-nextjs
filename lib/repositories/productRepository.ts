@@ -15,6 +15,7 @@ export type ProductCreateInput = {
   status: ProductStatus;
   featured: boolean;
   imageUrl: string | null;
+  carouselImages: string[];
 };
 
 export type ProductUpdateInput = Partial<ProductCreateInput>;
@@ -94,7 +95,7 @@ export async function createProduct(
       status: input.status,
       featured: input.featured,
       image_url: input.imageUrl,
-      carousel_images: [],
+      carousel_images: input.carouselImages,
       specifications: {},
       features: [],
     })
@@ -113,7 +114,7 @@ export async function updateProduct(
   productId: string,
   input: ProductUpdateInput
 ): Promise<CatalogProductRow> {
-  const payload: Record<string, string | number | boolean | null> = {};
+  const payload: Record<string, string | number | boolean | string[] | null> = {};
 
   if (input.categoryId !== undefined) payload.category_id = input.categoryId;
   if (input.name !== undefined) payload.name = input.name;
@@ -126,6 +127,7 @@ export async function updateProduct(
   if (input.status !== undefined) payload.status = input.status;
   if (input.featured !== undefined) payload.featured = input.featured;
   if (input.imageUrl !== undefined) payload.image_url = input.imageUrl;
+  if (input.carouselImages !== undefined) payload.carousel_images = input.carouselImages;
 
   const { data, error } = await supabase
     .from('products')

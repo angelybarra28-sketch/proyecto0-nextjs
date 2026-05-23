@@ -46,6 +46,7 @@ export type AdminCatalogProduct = {
   status: CatalogProductRow['status'];
   featured: boolean;
   imageUrl: string;
+  carouselImages: string[];
   createdAt: string | null;
 };
 
@@ -128,6 +129,7 @@ export function adaptAdminCatalogProduct(row: CatalogProductRow): AdminCatalogPr
     status: row.status,
     featured: row.featured,
     imageUrl: row.image_url ?? '',
+    carouselImages: toStringArray(row.carousel_images),
     createdAt: row.created_at ?? null,
   };
 }
