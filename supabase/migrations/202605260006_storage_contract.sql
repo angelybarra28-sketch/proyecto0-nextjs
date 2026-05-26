@@ -1,0 +1,5 @@
+-- Storage contract for Supabase dashboard/manual setup:
+-- bucket: product-images
+-- expected object path: products/{productId}/{filename}
+-- public read is required while product image URLs are stored as public URLs.
+-- writes/deletes go through Next.js admin APIs using service-role and server-side path validation.

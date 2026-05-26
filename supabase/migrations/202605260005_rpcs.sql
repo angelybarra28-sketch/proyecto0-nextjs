@@ -1,0 +1,7 @@
+-- Full RPC definitions live in supabase/schema.sql until the next migration compaction.
+-- Critical RPCs required by the app:
+-- - create_checkout_sale
+-- - register_sale_payment
+-- - refresh_financial_statuses
+-- - get_admin_dashboard_analytics
+-- - validate_runtime_contract

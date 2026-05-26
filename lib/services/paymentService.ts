@@ -1,4 +1,5 @@
 import { registerSalePayment } from '@/lib/repositories/paymentRepository';
+import { assertRuntimeContract } from '@/lib/services/runtimeContractService';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import type { PaymentMethod, RegisterPaymentInput, RegisterPaymentResult } from '@/lib/supabase/types';
 
@@ -35,6 +36,8 @@ function assertValidPaymentDate(value: string): void {
 export async function registerAdminPayment(
   input: RegisterPaymentInput
 ): Promise<RegisterPaymentResult> {
+  await assertRuntimeContract('admin payments');
+
   const supabase = getSupabaseAdminClient();
 
   if (!supabase) {

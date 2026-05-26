@@ -1,4 +1,5 @@
 import { createCheckoutSaleTransaction } from '@/lib/repositories/saleRepository';
+import { assertRuntimeContract } from '@/lib/services/runtimeContractService';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { getProducts } from '@/lib/services/catalogService';
 import type { Product } from '@/lib/types';
@@ -44,6 +45,8 @@ export async function persistCheckoutSale(input: CheckoutSaleInput): Promise<Che
   if (!supabase) {
     return { persisted: false };
   }
+
+  await assertRuntimeContract('checkout');
 
   const productsByLegacyId = new Map(
     (await getProducts())
