@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { fetchAdminSaleDetail, registerAdminSalePayment } from '@/lib/services/admin/client';
 import type { AdminSaleDetail, PaymentMethod } from '@/lib/supabase/types';
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
+
 type UseAdminSaleDetailParams = {
   isAdmin: boolean;
   saleId: string;
@@ -21,13 +25,20 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
   useEffect(() => {
     if (!isAdmin) return;
 
-    fetchAdminSaleDetail(saleId)
+    const controller = new AbortController();
+
+    fetchAdminSaleDetail(saleId, controller.signal)
       .then(setSale)
       .catch((loadError: unknown) => {
+        if (isAbortError(loadError)) return;
         console.error('Error loading sale detail:', loadError);
         setError('No se pudo cargar el detalle de la venta');
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
+
+    return () => controller.abort();
   }, [isAdmin, saleId]);
 
   const registerPayment = async () => {

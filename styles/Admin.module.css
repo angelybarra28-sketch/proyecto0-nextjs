@@ -46,6 +46,26 @@
   font-style: italic;
 }
 
+.adminAlertError,
+.adminAlertSuccess {
+  max-width: 1200px;
+  margin: 0 auto 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.adminAlertError {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.adminAlertSuccess {
+  background: #d1fae5;
+  color: #065f46;
+}
+
 .tableContainer {
   overflow-x: auto;
 }
@@ -73,6 +93,109 @@
   background: #f9f9f9;
 }
 
+.adminTableHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.adminTableHeader .sectionTitle {
+  margin-bottom: 8px;
+}
+
+.adminTableSummary {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.adminReadonlyBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.adminTableToolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(130px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.adminTableToolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #555;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.adminTableToolbar input,
+.adminTableToolbar select {
+  min-height: 38px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: white;
+  color: #333;
+  font-size: 14px;
+  text-transform: none;
+}
+
+.adminRowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.adminActionButton {
+  border: 1px solid #667eea;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: white;
+  color: #4f46e5;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.adminActionButton:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+}
+
+.adminActionButton:disabled,
+.deleteBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.adminPagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  color: #555;
+  font-size: 14px;
+}
+
 .deleteBtn {
   background: #ef4444;
   color: white;
@@ -86,6 +209,10 @@
 
 .deleteBtn:hover {
   background: #dc2626;
+}
+
+.deleteBtn:hover:disabled {
+  background: #ef4444;
 }
 
 .status {
@@ -123,4 +250,46 @@
 
 .backLink a:hover {
   text-decoration: underline;
+}
+
+.imageUploadControls {
+  margin-top: 10px;
+}
+
+.imagePreviewList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.imagePreviewItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.imagePreviewThumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 6px;
+  background: #eee;
+  background-position: center;
+  background-size: cover;
+}
+
+@media (max-width: 900px) {
+  .adminTableHeader,
+  .adminPagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .adminTableToolbar {
+    grid-template-columns: 1fr;
+  }
 }

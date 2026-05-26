@@ -8,7 +8,7 @@ interface ProfileAuthorizationRow {
   is_active: boolean;
 }
 
-export async function requireAdminUser(): Promise<NextResponse | null> {
+async function authorizeUser(allowRole: (role: AppRole) => boolean): Promise<NextResponse | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -46,9 +46,17 @@ export async function requireAdminUser(): Promise<NextResponse | null> {
 
   const profile = data as ProfileAuthorizationRow | null;
 
-  if (!profile?.is_active || !canAccessAdmin(profile.role)) {
+  if (!profile?.is_active || !allowRole(profile.role)) {
     return NextResponse.json({ message: 'No autorizado' }, { status: 403 });
   }
 
   return null;
+}
+
+export async function requireAdminUser(): Promise<NextResponse | null> {
+  return authorizeUser(canAccessAdmin);
+}
+
+export async function requireStrictAdminUser(): Promise<NextResponse | null> {
+  return authorizeUser((role) => role === 'ADMIN');
 }

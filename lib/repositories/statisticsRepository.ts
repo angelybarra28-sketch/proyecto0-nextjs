@@ -166,12 +166,13 @@ export async function getCollectionMetrics(supabase: SupabaseClient) {
 
 export async function getAdminDashboardStats(supabase: SupabaseClient): Promise<AdminDashboardStats> {
   const range = currentMonthRange();
-  const [monthSales, collection, topProducts, topCategories, topCustomers, paymentsResult, allSalesResult] = await Promise.all([
+  const [monthSales, collection, saleItemsResult, paymentsResult, allSalesResult] = await Promise.all([
     getMonthlySales(supabase),
     getCollectionMetrics(supabase),
-    getTopSellingProducts(supabase),
-    getTopSellingCategories(supabase),
-    getCustomerMetrics(supabase),
+    supabase
+      .from('sale_items')
+      .select('product_name_snapshot, category_name_snapshot, quantity, line_total')
+      .limit(1000),
     supabase
       .from('payments')
       .select('payment_date, amount, status')
@@ -185,9 +186,11 @@ export async function getAdminDashboardStats(supabase: SupabaseClient): Promise<
       .limit(1000),
   ]);
 
+  if (saleItemsResult.error) throw saleItemsResult.error;
   if (paymentsResult.error) throw paymentsResult.error;
   if (allSalesResult.error) throw allSalesResult.error;
 
+  const saleItems = (saleItemsResult.data as unknown as SaleItemStatsRow[] | null) ?? [];
   const monthPayments = (paymentsResult.data as unknown as PaymentStatsRow[] | null) ?? [];
   const allSales = (allSalesResult.data as unknown as SaleStatsRow[] | null) ?? [];
   const currentMonthSoldAmount = monthSales.reduce((total, sale) => total + toNumber(sale.total_amount), 0);
@@ -201,8 +204,8 @@ export async function getAdminDashboardStats(supabase: SupabaseClient): Promise<
     averageTicket,
     collection,
     monthly: aggregateMonthly(allSales, monthPayments),
-    topProducts,
-    topCategories,
-    topCustomers,
+    topProducts: aggregateRanking(saleItems, 'product', 5),
+    topCategories: aggregateRanking(saleItems, 'category', 5),
+    topCustomers: aggregateCustomers(allSales, 5),
   };
 }

@@ -17,6 +17,7 @@ import type {
   CollectionSummary,
 } from '@/lib/supabase/types';
 import { getOverdueDays } from '@/lib/financial/collectionHelpers';
+import type { AdminSortDirection } from '@/lib/services/admin/types';
 
 interface SupabaseCustomerRelation {
   id: string;
@@ -99,6 +100,31 @@ interface SupabaseAdminSaleRow {
   installments?: SupabaseInstallmentRelation[];
   payments?: SupabasePaymentRelation[];
 }
+
+export type AdminSaleSortKey = 'saleDate' | 'saleNumber' | 'customerName' | 'total' | 'saleStatus' | 'collectionStatus';
+
+export type AdminSaleFilters = {
+  search: string;
+  saleStatus: SaleStatus | 'all';
+  collectionStatus: CollectionStatus | 'all';
+  dateFrom: string;
+  dateTo: string;
+};
+
+export type PaginatedSalesInput = {
+  page: number;
+  limit: number;
+  filters: AdminSaleFilters;
+  sorting: {
+    sortKey: AdminSaleSortKey;
+    direction: AdminSortDirection;
+  };
+};
+
+export type PaginatedSalesResult = {
+  sales: AdminSaleSummary[];
+  total: number;
+};
 
 const adminSaleSelect = `
   id,
@@ -284,6 +310,14 @@ function mapSaleDetail(row: SupabaseAdminSaleRow): AdminSaleDetail {
   };
 }
 
+function getSaleOrderColumn(sortKey: AdminSaleSortKey): string {
+  if (sortKey === 'saleNumber') return 'sale_number';
+  if (sortKey === 'total') return 'total_amount';
+  if (sortKey === 'saleStatus') return 'sale_status';
+  if (sortKey === 'collectionStatus') return 'collection_status';
+  return 'sale_date';
+}
+
 export async function createCheckoutSaleTransaction(
   supabase: SupabaseClient,
   input: CheckoutSaleRpcInput
@@ -389,6 +423,64 @@ export async function getSales(
   }
 
   return ((data as unknown as SupabaseAdminSaleRow[] | null) ?? []).map(mapSaleSummary);
+}
+
+export async function getSalesPaginated(
+  supabase: SupabaseClient,
+  input: PaginatedSalesInput
+): Promise<PaginatedSalesResult> {
+  const from = (input.page - 1) * input.limit;
+  const to = from + input.limit - 1;
+  let query = supabase
+    .from('sales')
+    .select(adminSaleSelect, { count: 'exact' });
+
+  if (input.filters.saleStatus !== 'all') {
+    query = query.eq('sale_status', input.filters.saleStatus);
+  }
+
+  if (input.filters.collectionStatus !== 'all') {
+    query = query.eq('collection_status', input.filters.collectionStatus);
+  }
+
+  if (input.filters.dateFrom) {
+    query = query.gte('sale_date', input.filters.dateFrom);
+  }
+
+  if (input.filters.dateTo) {
+    query = query.lte('sale_date', input.filters.dateTo);
+  }
+
+  if (input.filters.search) {
+    const search = input.filters.search.replaceAll('%', '').replaceAll(',', ' ').trim();
+    if (search) {
+      query = query.or(`sale_number.ilike.%${search}%,delivery_full_name.ilike.%${search}%,delivery_phone.ilike.%${search}%`);
+    }
+  }
+
+  query = query
+    .order(getSaleOrderColumn(input.sorting.sortKey), { ascending: input.sorting.direction === 'asc' })
+    .range(from, to);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  const sales = ((data as unknown as SupabaseAdminSaleRow[] | null) ?? []).map(mapSaleSummary);
+
+  if (input.sorting.sortKey === 'customerName') {
+    sales.sort((firstSale, secondSale) => {
+      const result = firstSale.customerName.localeCompare(secondSale.customerName, 'es-AR');
+      return input.sorting.direction === 'asc' ? result : -result;
+    });
+  }
+
+  return {
+    sales,
+    total: count ?? 0,
+  };
 }
 
 export async function getRecentSales(

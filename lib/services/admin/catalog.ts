@@ -3,13 +3,22 @@ import { allProducts } from '@/lib/products';
 import { listActiveCategories } from '@/lib/repositories/categoryRepository';
 import {
   createProduct,
+  listProductsPaginated,
   listAllProducts,
   updateProduct,
+  type ProductListSortKey,
   type ProductCreateInput,
   type ProductStatus,
   type ProductUpdateInput,
 } from '@/lib/repositories/productRepository';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
+import {
+  createPagination,
+  normalizeLimit,
+  normalizePage,
+  type AdminListResponse,
+  type AdminSortDirection,
+} from '@/lib/services/admin/types';
 
 export type AdminCatalogCategory = {
   id: string;
@@ -21,6 +30,29 @@ export type AdminCatalogPayload = {
   products: AdminCatalogProduct[];
   categories: AdminCatalogCategory[];
   source: 'supabase' | 'local-fallback';
+} & AdminListResponse<AdminCatalogProduct, AdminProductFilters, AdminProductSorting>;
+
+export type AdminProductFilters = {
+  search: string;
+  status: ProductStatus | 'all';
+  featured: 'all' | 'featured' | 'not-featured';
+  categoryId: string;
+};
+
+export type AdminProductSorting = {
+  sortKey: ProductListSortKey;
+  direction: AdminSortDirection;
+};
+
+export type AdminProductListInput = {
+  search?: unknown;
+  status?: unknown;
+  featured?: unknown;
+  categoryId?: unknown;
+  sortKey?: unknown;
+  direction?: unknown;
+  page?: unknown;
+  limit?: unknown;
 };
 
 export type AdminProductPayload = {
@@ -86,6 +118,29 @@ function normalizeStringArray(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function normalizeProductFilters(input: AdminProductListInput): AdminProductFilters {
+  const status = input.status === 'ACTIVE' || input.status === 'INACTIVE' || input.status === 'OUT_OF_STOCK' || input.status === 'ARCHIVED'
+    ? input.status
+    : 'all';
+  const featured = input.featured === 'featured' || input.featured === 'not-featured' ? input.featured : 'all';
+
+  return {
+    search: normalizeText(input.search),
+    status,
+    featured,
+    categoryId: normalizeText(input.categoryId),
+  };
+}
+
+function normalizeProductSorting(input: AdminProductListInput): AdminProductSorting {
+  const validSortKeys: ProductListSortKey[] = ['name', 'category', 'price', 'stock', 'status', 'createdAt'];
+
+  return {
+    sortKey: typeof input.sortKey === 'string' && validSortKeys.includes(input.sortKey as ProductListSortKey) ? input.sortKey as ProductListSortKey : 'createdAt',
+    direction: input.direction === 'asc' ? 'asc' : 'desc',
+  };
+}
+
 function validateProductPayload(payload: Partial<AdminProductPayload>, requireBaseFields: boolean): ProductCreateInput | ProductUpdateInput {
   const name = payload.name === undefined ? undefined : normalizeText(payload.name);
   const slug = payload.slug === undefined ? undefined : normalizeText(payload.slug);
@@ -134,6 +189,40 @@ function getLocalFallbackProducts(): AdminCatalogProduct[] {
   }));
 }
 
+function filterLocalProducts(products: AdminCatalogProduct[], filters: AdminProductFilters): AdminCatalogProduct[] {
+  const search = filters.search.toLowerCase();
+
+  return products
+    .filter((product) => !search || [product.name, product.slug, product.categoryName].some((value) => value.toLowerCase().includes(search)))
+    .filter((product) => filters.status === 'all' || product.status === filters.status)
+    .filter((product) => {
+      if (filters.featured === 'featured') return product.featured;
+      if (filters.featured === 'not-featured') return !product.featured;
+      return true;
+    });
+}
+
+function sortLocalProducts(products: AdminCatalogProduct[], sorting: AdminProductSorting): AdminCatalogProduct[] {
+  return [...products].sort((firstProduct, secondProduct) => {
+    const firstValue = sorting.sortKey === 'price' ? firstProduct.price
+      : sorting.sortKey === 'stock' ? firstProduct.stock
+        : sorting.sortKey === 'status' ? firstProduct.status
+          : sorting.sortKey === 'createdAt' ? firstProduct.createdAt ?? ''
+            : sorting.sortKey === 'category' ? firstProduct.categoryName
+              : firstProduct.name;
+    const secondValue = sorting.sortKey === 'price' ? secondProduct.price
+      : sorting.sortKey === 'stock' ? secondProduct.stock
+        : sorting.sortKey === 'status' ? secondProduct.status
+          : sorting.sortKey === 'createdAt' ? secondProduct.createdAt ?? ''
+            : sorting.sortKey === 'category' ? secondProduct.categoryName
+              : secondProduct.name;
+
+    if (firstValue < secondValue) return sorting.direction === 'asc' ? -1 : 1;
+    if (firstValue > secondValue) return sorting.direction === 'asc' ? 1 : -1;
+    return firstProduct.name.localeCompare(secondProduct.name, 'es-AR');
+  });
+}
+
 async function assertValidCategory(categoryId: string | null | undefined): Promise<void> {
   if (categoryId === undefined || categoryId === null) return;
 
@@ -162,30 +251,63 @@ async function assertUniqueSlug(productId: string, slug: string | undefined): Pr
   }
 }
 
-export async function getAdminCatalog(): Promise<AdminCatalogPayload> {
+export async function getAdminCatalog(input: AdminProductListInput = {}): Promise<AdminCatalogPayload> {
   const supabase = getSupabaseAdminClient();
+  const page = normalizePage(input.page);
+  const limit = normalizeLimit(input.limit);
+  const filters = normalizeProductFilters(input);
+  const sorting = normalizeProductSorting(input);
 
   if (!supabase) {
+    const filteredProducts = sortLocalProducts(filterLocalProducts(getLocalFallbackProducts(), filters), sorting);
+    const pagination = createPagination(page, limit, filteredProducts.length);
+    const products = filteredProducts.slice((page - 1) * limit, page * limit);
+
     return {
-      products: getLocalFallbackProducts(),
+      success: true,
+      data: products,
+      products,
       categories: [],
       source: 'local-fallback',
+      pagination,
+      filters,
+      sorting,
+      error: null,
     };
   }
 
-  const [products, categories] = await Promise.all([
-    listAllProducts(supabase),
-    listActiveCategories(supabase),
-  ]);
+  const categories = await listActiveCategories(supabase);
+  const search = filters.search.toLowerCase();
+  const searchCategoryIds = search
+    ? categories
+      .filter((category) => category.name.toLowerCase().includes(search) || category.slug.toLowerCase().includes(search))
+      .map((category) => category.id)
+    : [];
+  const result = await listProductsPaginated(supabase, {
+    page,
+    limit,
+    filters: {
+      ...filters,
+      searchCategoryIds,
+    },
+    sorting,
+  });
+  const products = result.products.map(adaptAdminCatalogProduct);
 
   return {
-    products: products.map(adaptAdminCatalogProduct),
+    success: true,
+    data: products,
+    products,
     categories: categories.map((category) => ({
       id: category.id,
       name: category.name,
       slug: category.slug,
     })),
     source: 'supabase',
+    pagination: createPagination(page, limit, result.total),
+    filters,
+    sorting,
+    error: null,
   };
 }
 

@@ -2,6 +2,7 @@
 -- Apply this manually in Supabase SQL editor or through your preferred migration flow.
 
 create extension if not exists pgcrypto;
+create extension if not exists pg_trgm;
 
 create type product_status as enum (
   'ACTIVE',
@@ -227,6 +228,10 @@ create index if not exists idx_products_category_id on products(category_id);
 create index if not exists idx_products_status on products(status);
 create index if not exists idx_products_featured on products(featured);
 create index if not exists idx_products_price on products(price);
+create index if not exists idx_products_status_featured_name on products(status, featured, name);
+create index if not exists idx_products_status_category_name on products(status, category_id, name);
+create index if not exists idx_products_name_trgm on products using gin (name gin_trgm_ops);
+create index if not exists idx_products_slug_trgm on products using gin (slug gin_trgm_ops);
 
 create index if not exists idx_customers_dni on customers(dni);
 create index if not exists idx_customers_phone on customers(phone);
@@ -250,6 +255,11 @@ create index if not exists idx_sales_customer_date on sales(customer_id, sale_da
 create index if not exists idx_sales_item_count on sales(item_count);
 create index if not exists idx_sales_payment_plan_type on sales(payment_plan_type);
 create index if not exists idx_sales_collection_status on sales(collection_status);
+create index if not exists idx_sales_collection_status_date on sales(collection_status, sale_date desc);
+create index if not exists idx_sales_status_date on sales(sale_status, sale_date desc);
+create index if not exists idx_sales_sale_number_trgm on sales using gin (sale_number gin_trgm_ops);
+create index if not exists idx_sales_delivery_full_name_trgm on sales using gin (delivery_full_name gin_trgm_ops);
+create index if not exists idx_sales_delivery_phone_trgm on sales using gin (delivery_phone gin_trgm_ops);
 
 create index if not exists idx_sale_items_sale_id on sale_items(sale_id);
 create index if not exists idx_sale_items_product_id on sale_items(product_id);
@@ -264,11 +274,13 @@ create index if not exists idx_installments_sale_id on installments(sale_id);
 create index if not exists idx_installments_due_date on installments(due_date);
 create index if not exists idx_installments_status on installments(status);
 create index if not exists idx_installments_status_due_date on installments(status, due_date);
+create index if not exists idx_installments_sale_status_due_date on installments(sale_id, status, due_date);
 
 create index if not exists idx_payments_sale_id on payments(sale_id);
 create index if not exists idx_payments_customer_id on payments(customer_id);
 create index if not exists idx_payments_payment_date on payments(payment_date);
 create index if not exists idx_payments_status on payments(status);
+create index if not exists idx_payments_status_payment_date on payments(status, payment_date desc);
 create index if not exists idx_payment_allocations_payment_id on payment_allocations(payment_id);
 create index if not exists idx_payment_allocations_installment_id on payment_allocations(installment_id);
 create index if not exists idx_payment_allocations_status on payment_allocations(status);

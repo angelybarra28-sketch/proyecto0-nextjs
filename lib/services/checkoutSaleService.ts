@@ -1,15 +1,16 @@
 import { createCheckoutSaleTransaction } from '@/lib/repositories/saleRepository';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
-import { getProductByLegacyId } from '@/lib/services/catalogService';
+import { getProducts } from '@/lib/services/catalogService';
+import type { Product } from '@/lib/types';
 import type { CheckoutSaleInput, CheckoutSaleResult, CheckoutSaleRpcItem } from '@/lib/supabase/types';
 
-async function assertValidCheckoutInput(input: CheckoutSaleInput): Promise<void> {
+function assertValidCheckoutInput(input: CheckoutSaleInput, productsByLegacyId: Map<number, Product>): void {
   if (!input.checkoutRequestId) {
     throw new Error('Missing checkout request id.');
   }
 
   for (const item of input.items) {
-    const catalogProduct = await getProductByLegacyId(item.legacyProductId);
+    const catalogProduct = productsByLegacyId.get(item.legacyProductId);
 
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
       throw new Error(`Invalid quantity for product ${item.legacyProductId}.`);
@@ -36,10 +37,16 @@ export async function persistCheckoutSale(input: CheckoutSaleInput): Promise<Che
     return { persisted: false };
   }
 
-  await assertValidCheckoutInput(input);
+  const productsByLegacyId = new Map(
+    (await getProducts())
+      .filter((product) => product.id > 0)
+      .map((product) => [product.id, product])
+  );
 
-  const items: CheckoutSaleRpcItem[] = await Promise.all(input.items.map(async (item) => {
-    const catalogProduct = await getProductByLegacyId(item.legacyProductId);
+  assertValidCheckoutInput(input, productsByLegacyId);
+
+  const items: CheckoutSaleRpcItem[] = input.items.map((item) => {
+    const catalogProduct = productsByLegacyId.get(item.legacyProductId);
     const unitSubtotal = item.originalPrice ?? item.price;
     const lineSubtotal = unitSubtotal * item.quantity;
     const lineTotal = item.price * item.quantity;
@@ -56,7 +63,7 @@ export async function persistCheckoutSale(input: CheckoutSaleInput): Promise<Che
       lineTotal,
       imageUrl: catalogProduct?.imageUrl ?? item.imageUrl ?? null,
     };
-  }));
+  });
 
   const sale = await createCheckoutSaleTransaction(supabase, {
     checkoutRequestId: input.checkoutRequestId,

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CatalogProductRow } from '@/lib/adapters/catalogAdapter';
+import type { AdminSortDirection } from '@/lib/services/admin/types';
 
 export type ProductStatus = CatalogProductRow['status'];
 
@@ -19,6 +20,31 @@ export type ProductCreateInput = {
 };
 
 export type ProductUpdateInput = Partial<ProductCreateInput>;
+
+export type ProductListSortKey = 'name' | 'category' | 'price' | 'stock' | 'status' | 'createdAt';
+
+export type ProductListFilters = {
+  search: string;
+  status: ProductStatus | 'all';
+  featured: 'all' | 'featured' | 'not-featured';
+  categoryId: string;
+  searchCategoryIds?: string[];
+};
+
+export type PaginatedProductsInput = {
+  page: number;
+  limit: number;
+  filters: ProductListFilters;
+  sorting: {
+    sortKey: ProductListSortKey;
+    direction: AdminSortDirection;
+  };
+};
+
+export type PaginatedProductsResult = {
+  products: CatalogProductRow[];
+  total: number;
+};
 
 const productColumns = `
   id,
@@ -57,6 +83,15 @@ function activeProductsQuery(supabase: SupabaseClient) {
     .order('name', { ascending: true });
 }
 
+function getProductOrderColumn(sortKey: ProductListSortKey): string {
+  if (sortKey === 'price') return 'price';
+  if (sortKey === 'stock') return 'stock';
+  if (sortKey === 'status') return 'status';
+  if (sortKey === 'category') return 'category_id';
+  if (sortKey === 'createdAt') return 'created_at';
+  return 'name';
+}
+
 export async function listProducts(supabase: SupabaseClient): Promise<CatalogProductRow[]> {
   const { data, error } = await activeProductsQuery(supabase);
 
@@ -75,6 +110,58 @@ export async function listAllProducts(supabase: SupabaseClient): Promise<Catalog
   }
 
   return (data ?? []) as unknown as CatalogProductRow[];
+}
+
+export async function listProductsPaginated(
+  supabase: SupabaseClient,
+  input: PaginatedProductsInput
+): Promise<PaginatedProductsResult> {
+  const from = (input.page - 1) * input.limit;
+  const to = from + input.limit - 1;
+  let query = supabase
+    .from('products')
+    .select(productColumns, { count: 'exact' });
+
+  if (input.filters.status !== 'all') {
+    query = query.eq('status', input.filters.status);
+  }
+
+  if (input.filters.featured === 'featured') {
+    query = query.eq('featured', true);
+  }
+
+  if (input.filters.featured === 'not-featured') {
+    query = query.eq('featured', false);
+  }
+
+  if (input.filters.categoryId) {
+    query = query.eq('category_id', input.filters.categoryId);
+  }
+
+  if (input.filters.search) {
+    const search = input.filters.search.replaceAll('%', '').replaceAll(',', ' ').trim();
+    if (search) {
+      const categoryFilter = input.filters.searchCategoryIds?.length
+        ? `,category_id.in.(${input.filters.searchCategoryIds.join(',')})`
+        : '';
+      query = query.or(`name.ilike.%${search}%,slug.ilike.%${search}%${categoryFilter}`);
+    }
+  }
+
+  query = query
+    .order(getProductOrderColumn(input.sorting.sortKey), { ascending: input.sorting.direction === 'asc' })
+    .range(from, to);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    products: (data ?? []) as unknown as CatalogProductRow[],
+    total: count ?? 0,
+  };
 }
 
 export async function createProduct(
