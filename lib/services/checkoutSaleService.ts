@@ -10,6 +10,10 @@ function assertValidCheckoutInput(input: CheckoutSaleInput, productsByLegacyId: 
   }
 
   for (const item of input.items) {
+    if (!Number.isInteger(item.legacyProductId) || item.legacyProductId <= 0) {
+      throw new Error('Product must have a valid legacy product id while hybrid catalog mode is enabled.');
+    }
+
     const catalogProduct = productsByLegacyId.get(item.legacyProductId);
 
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
@@ -22,6 +26,10 @@ function assertValidCheckoutInput(input: CheckoutSaleInput, productsByLegacyId: 
 
     if (!catalogProduct) {
       throw new Error(`Product ${item.legacyProductId} no longer exists in the local catalog.`);
+    }
+
+    if (!Number.isInteger(catalogProduct.id) || catalogProduct.id <= 0) {
+      throw new Error(`Product ${catalogProduct.slug} is missing a stable legacy product id.`);
     }
 
     if (catalogProduct.stock < item.quantity) {
@@ -47,21 +55,27 @@ export async function persistCheckoutSale(input: CheckoutSaleInput): Promise<Che
 
   const items: CheckoutSaleRpcItem[] = input.items.map((item) => {
     const catalogProduct = productsByLegacyId.get(item.legacyProductId);
-    const unitSubtotal = item.originalPrice ?? item.price;
+    if (!catalogProduct) {
+      throw new Error(`Product ${item.legacyProductId} no longer exists in the catalog.`);
+    }
+
+    // Hybrid mode still persists legacy ids, but financial amounts are always server-priced.
+    const unitPrice = catalogProduct.priceNumber;
+    const unitSubtotal = unitPrice;
     const lineSubtotal = unitSubtotal * item.quantity;
-    const lineTotal = item.price * item.quantity;
+    const lineTotal = unitPrice * item.quantity;
 
     return {
       legacyProductId: item.legacyProductId,
-      name: catalogProduct?.name ?? item.name,
-      slug: catalogProduct?.slug ?? null,
-      category: catalogProduct?.categoria ?? null,
-      unitPrice: item.price,
+      name: catalogProduct.name,
+      slug: catalogProduct.slug,
+      category: catalogProduct.categoria,
+      unitPrice,
       quantity: item.quantity,
       lineSubtotal,
       lineDiscountAmount: Math.max(0, lineSubtotal - lineTotal),
       lineTotal,
-      imageUrl: catalogProduct?.imageUrl ?? item.imageUrl ?? null,
+      imageUrl: catalogProduct.imageUrl ?? item.imageUrl ?? null,
     };
   });
 

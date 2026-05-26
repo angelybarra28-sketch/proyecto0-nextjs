@@ -32,11 +32,13 @@ function toAppUser(profile: { userId: string; role: AppRole; fullName: string | 
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
 
     if (!supabase) {
+      setIsAuthLoading(false);
       return;
     }
 
@@ -47,6 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Error loading Supabase auth profile:', error);
         setUser(null);
+      } finally {
+        setIsAuthLoading(false);
       }
     };
 
@@ -122,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
+        isAuthLoading,
         login,
         register,
         logout,

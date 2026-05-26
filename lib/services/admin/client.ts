@@ -60,6 +60,7 @@ export async function registerAdminSalePayment(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      paymentRequestId: input.paymentRequestId,
       amount: input.amount,
       paymentMethod: input.paymentMethod,
       paymentDate: input.paymentDate,

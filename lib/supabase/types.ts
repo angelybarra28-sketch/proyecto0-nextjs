@@ -211,6 +211,7 @@ export interface AdminSaleDetail extends AdminSaleSummary {
 
 export interface RegisterPaymentInput {
   saleId: string;
+  paymentRequestId: string;
   amount: number;
   paymentMethod: PaymentMethod;
   paymentDate: string;

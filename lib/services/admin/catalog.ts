@@ -283,7 +283,7 @@ export async function getAdminCatalog(input: AdminProductListInput = {}): Promis
       .filter((category) => category.name.toLowerCase().includes(search) || category.slug.toLowerCase().includes(search))
       .map((category) => category.id)
     : [];
-  const result = await listProductsPaginated(supabase, {
+  let result = await listProductsPaginated(supabase, {
     page,
     limit,
     filters: {
@@ -292,6 +292,20 @@ export async function getAdminCatalog(input: AdminProductListInput = {}): Promis
     },
     sorting,
   });
+  const totalPages = Math.max(1, Math.ceil(result.total / limit));
+  const resolvedPage = Math.min(page, totalPages);
+
+  if (resolvedPage !== page) {
+    result = await listProductsPaginated(supabase, {
+      page: resolvedPage,
+      limit,
+      filters: {
+        ...filters,
+        searchCategoryIds,
+      },
+      sorting,
+    });
+  }
   const products = result.products.map(adaptAdminCatalogProduct);
 
   return {
@@ -304,7 +318,7 @@ export async function getAdminCatalog(input: AdminProductListInput = {}): Promis
       slug: category.slug,
     })),
     source: 'supabase',
-    pagination: createPagination(page, limit, result.total),
+    pagination: createPagination(resolvedPage, limit, result.total),
     filters,
     sorting,
     error: null,

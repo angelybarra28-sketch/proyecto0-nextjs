@@ -5,6 +5,7 @@ import {
   uploadProductImageObject,
   type StoredProductImage,
 } from '@/lib/storage/productImageStorage';
+import { getProductById } from '@/lib/repositories/productRepository';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
@@ -42,6 +43,12 @@ export async function uploadAdminProductImage(productId: string, file: File): Pr
   }
 
   validateProductImageFile(file);
+
+  const product = await getProductById(supabase, productId);
+
+  if (!product) {
+    throw new Error('Producto no encontrado');
+  }
 
   return uploadProductImageObject(supabase, file, createProductImagePath(productId, file));
 }

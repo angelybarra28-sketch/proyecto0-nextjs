@@ -102,13 +102,25 @@ export async function listAdminSalesPaginated(input: AdminSaleListInput = {}): P
   }
 
   await refreshFinancialStatuses(supabase);
-  const result = await getSalesPaginated(supabase, {
+  let result = await getSalesPaginated(supabase, {
     page,
     limit,
     filters,
     sorting,
   });
-  const pagination = createPagination(page, limit, result.total);
+  const totalPages = Math.max(1, Math.ceil(result.total / limit));
+  const resolvedPage = Math.min(page, totalPages);
+
+  if (resolvedPage !== page) {
+    result = await getSalesPaginated(supabase, {
+      page: resolvedPage,
+      limit,
+      filters,
+      sorting,
+    });
+  }
+
+  const pagination = createPagination(resolvedPage, limit, result.total);
 
   return {
     success: true,

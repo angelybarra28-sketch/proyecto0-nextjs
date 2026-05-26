@@ -20,6 +20,7 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [paymentNotes, setPaymentNotes] = useState('');
   const [paymentError, setPaymentError] = useState('');
+  const [paymentRequestId, setPaymentRequestId] = useState<string | null>(null);
   const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
   }, [isAdmin, saleId]);
 
   const registerPayment = async () => {
-    if (!sale) return;
+    if (!sale || isRegisteringPayment) return;
 
     const amount = Number(paymentAmount);
 
@@ -51,12 +52,29 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
       return;
     }
 
+    if (amount > sale.remainingAmount) {
+      setPaymentError('El monto no puede superar el saldo pendiente');
+      return;
+    }
+
+    const parsedPaymentDate = new Date(paymentDate);
+    const maxPaymentDate = new Date();
+    maxPaymentDate.setDate(maxPaymentDate.getDate() + 7);
+
+    if (!paymentDate || Number.isNaN(parsedPaymentDate.getTime()) || parsedPaymentDate > maxPaymentDate) {
+      setPaymentError('Ingresá una fecha de pago válida');
+      return;
+    }
+
     setIsRegisteringPayment(true);
     setPaymentError('');
+    const requestId = paymentRequestId ?? crypto.randomUUID();
+    setPaymentRequestId(requestId);
 
     try {
       await registerAdminSalePayment({
         saleId: sale.id,
+        paymentRequestId: requestId,
         amount,
         paymentMethod,
         paymentDate,
@@ -67,6 +85,7 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
       setSale(updatedSale);
       setPaymentAmount('');
       setPaymentNotes('');
+      setPaymentRequestId(null);
     } catch (paymentLoadError: unknown) {
       console.error('Error registering payment:', paymentLoadError);
       setPaymentError(paymentLoadError instanceof Error ? paymentLoadError.message : 'No se pudo registrar el pago');

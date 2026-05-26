@@ -14,16 +14,16 @@ function isAbortError(error: unknown): boolean {
 }
 
 export function useAdminAccess() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isAuthLoading, user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (!isAuthLoading && !isAdmin) {
       router.push('/auth');
     }
-  }, [isAdmin, router]);
+  }, [isAdmin, isAuthLoading, router]);
 
-  return { isAdmin, user };
+  return { isAdmin, isAuthLoading, user };
 }
 
 export function useAdminSales(enabled: boolean, query: AdminSaleListInput = {}) {
@@ -44,6 +44,7 @@ export function useAdminSales(enabled: boolean, query: AdminSaleListInput = {}) 
       .then((payload) => {
         setSales(payload.sales);
         setPagination(payload.pagination);
+        setSalesError('');
       })
       .catch((error: unknown) => {
         if (isAbortError(error)) return;
@@ -123,7 +124,9 @@ export function useAdminUsers(enabled: boolean) {
       return;
     }
 
-    window.setTimeout(() => setUsers(getAllUsers()), 0);
+    const timeoutId = window.setTimeout(() => setUsers(getAllUsers()), 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [enabled, getAllUsers]);
 
   const handleDeleteUser = (id: string) => {

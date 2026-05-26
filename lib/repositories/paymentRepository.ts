@@ -20,6 +20,7 @@ export async function registerSalePayment(
   const { data, error } = await supabase
     .rpc('register_sale_payment', {
       p_sale_id: input.saleId,
+      p_payment_request_id: input.paymentRequestId,
       p_amount: input.amount,
       p_payment_method: input.paymentMethod,
       p_payment_date: input.paymentDate,

@@ -245,6 +245,21 @@ export async function getProductBySlug(
   return data as unknown as CatalogProductRow | null;
 }
 
+export async function getProductById(
+  supabase: SupabaseClient,
+  productId: string
+): Promise<CatalogProductRow | null> {
+  const { data, error } = await productsQuery(supabase)
+    .eq('id', productId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as unknown as CatalogProductRow | null;
+}
+
 export async function getProductByLegacyId(
   supabase: SupabaseClient,
   legacyProductId: number

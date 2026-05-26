@@ -10,6 +10,7 @@ interface Props {
 }
 
 interface PaymentRequestBody {
+  paymentRequestId: string;
   amount: number;
   paymentMethod: PaymentMethod;
   paymentDate: string;
@@ -26,6 +27,7 @@ export async function POST(request: Request, { params }: Props) {
 
     const result = await registerAdminPayment({
       saleId: id,
+      paymentRequestId: body.paymentRequestId,
       amount: body.amount,
       paymentMethod: body.paymentMethod,
       paymentDate: body.paymentDate,

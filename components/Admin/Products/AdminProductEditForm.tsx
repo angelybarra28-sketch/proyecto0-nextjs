@@ -70,13 +70,18 @@ export function AdminProductEditForm({
 
     setIsUploading(true);
     setImageError('');
+    const uploadedImages: Array<{ url: string }> = [];
 
     try {
-      const uploadedImages = await Promise.all(
-        Array.from(files).map((file) => uploadAdminProductImage(product.id, file))
-      );
+      for (const file of Array.from(files)) {
+        uploadedImages.push(await uploadAdminProductImage(product.id, file));
+      }
+
       setCarouselImages(toImagesText([...currentCarouselImages, ...uploadedImages.map((image) => image.url)]));
     } catch (uploadError) {
+      if (uploadedImages.length > 0) {
+        setCarouselImages(toImagesText([...currentCarouselImages, ...uploadedImages.map((image) => image.url)]));
+      }
       console.error('Error uploading carousel product images:', uploadError);
       setImageError(uploadError instanceof Error ? uploadError.message : 'No se pudieron subir las imágenes');
     } finally {
