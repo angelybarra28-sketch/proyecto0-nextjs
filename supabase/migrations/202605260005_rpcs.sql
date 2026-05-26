@@ -180,6 +180,7 @@ with bounds as (
 ), product_health_metrics as (
   select jsonb_build_object(
     'outOfStock', count(*) filter (where stock <= 0),
+    'lowStock', count(*) filter (where stock > 0 and stock <= 5),
     'inactive', count(*) filter (where status <> 'ACTIVE')
   ) as metrics
   from products
@@ -310,6 +311,10 @@ declare
   v_item_count integer;
   v_phone text;
   v_email text;
+  v_item jsonb;
+  v_legacy_product_id integer;
+  v_quantity integer;
+  v_product record;
   v_installment_number integer;
   v_installment_amount numeric(12, 2);
   v_due_date date;
@@ -382,6 +387,44 @@ begin
   if v_customer_id is null then
     raise exception 'could not create or reuse customer';
   end if;
+
+  -- Stock is operational: product rows are locked and decremented inside this
+  -- checkout transaction. Any later exception rolls back both sale and stock.
+  for v_item in select value from jsonb_array_elements(p_items) loop
+    v_legacy_product_id := nullif(v_item->>'legacyProductId', '')::integer;
+    v_quantity := nullif(v_item->>'quantity', '')::integer;
+
+    if v_legacy_product_id is null or v_legacy_product_id <= 0 then
+      raise exception 'product legacy id is required while hybrid catalog mode is enabled';
+    end if;
+
+    if v_quantity is null or v_quantity <= 0 then
+      raise exception 'item quantity must be greater than zero';
+    end if;
+
+    select id, stock, status
+    into v_product
+    from products
+    where legacy_product_id = v_legacy_product_id
+    for update;
+
+    if not found then
+      raise exception 'product % not found', v_legacy_product_id;
+    end if;
+
+    if v_product.status <> 'ACTIVE' then
+      raise exception 'product % is not active', v_legacy_product_id;
+    end if;
+
+    if v_product.stock < v_quantity then
+      raise exception 'insufficient stock for product %', v_legacy_product_id;
+    end if;
+
+    update products
+    set stock = stock - v_quantity,
+        updated_at = now()
+    where id = v_product.id;
+  end loop;
 
   select
     coalesce(sum((item->>'lineSubtotal')::numeric), 0)::numeric(12, 2),

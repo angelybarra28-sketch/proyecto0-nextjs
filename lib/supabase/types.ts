@@ -271,6 +271,7 @@ export interface CustomerRankingMetric {
 
 export interface ProductHealthMetric {
   outOfStock: number;
+  lowStock: number;
   inactive: number;
 }
 

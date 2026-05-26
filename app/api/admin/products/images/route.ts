@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server';
 import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
 import { logAdminAction } from '@/lib/services/admin/audit';
 import { deleteAdminProductImage, uploadAdminProductImage } from '@/lib/services/admin/productImages';
-import { logServerError } from '@/lib/server/logging';
+import { errorResponse } from '@/lib/server/apiErrors';
+import { createRequestContext, logServerError } from '@/lib/server/logging';
+import { measureAsync } from '@/lib/server/runtimeMetrics';
 
 export async function POST(request: Request) {
+  const context = createRequestContext(request);
+
   try {
     const authorizationError = await requireStrictAdminUser();
     if (authorizationError) return authorizationError;
@@ -14,14 +18,14 @@ export async function POST(request: Request) {
     const file = formData.get('file');
 
     if (typeof productId !== 'string' || !productId) {
-      return NextResponse.json({ message: 'Producto inválido' }, { status: 400 });
+      return errorResponse(new Error('Producto inválido'), context.requestId, 400);
     }
 
     if (!(file instanceof File)) {
-      return NextResponse.json({ message: 'Imagen inválida' }, { status: 400 });
+      return errorResponse(new Error('Imagen inválida'), context.requestId, 400);
     }
 
-    const image = await uploadAdminProductImage(productId, file);
+    const image = await measureAsync('admin.products.images', 'upload', () => uploadAdminProductImage(productId, file), context.requestId);
     const adminUser = await getAdminUserContext((role) => role === 'ADMIN');
     await logAdminAction({
       adminUserId: adminUser?.userId ?? null,
@@ -35,15 +39,16 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ image });
+    return NextResponse.json({ image }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
-    logServerError({ area: 'admin.products.images', action: 'upload', entity: 'product', error });
-    const message = error instanceof Error ? error.message : 'No se pudo subir la imagen';
-    return NextResponse.json({ message }, { status: 400 });
+    logServerError({ area: 'admin.products.images', action: 'upload', entity: 'product', requestId: context.requestId, error });
+    return errorResponse(error, context.requestId, 400);
   }
 }
 
 export async function DELETE(request: Request) {
+  const context = createRequestContext(request);
+
   try {
     const authorizationError = await requireStrictAdminUser();
     if (authorizationError) return authorizationError;
@@ -51,11 +56,11 @@ export async function DELETE(request: Request) {
     const payload = await request.json() as { productId?: unknown; url?: unknown };
 
     if (typeof payload.url !== 'string' || !payload.url) {
-      return NextResponse.json({ message: 'URL inválida' }, { status: 400 });
+      return errorResponse(new Error('URL inválida'), context.requestId, 400);
     }
 
     const productId = typeof payload.productId === 'string' ? payload.productId : undefined;
-    const deleted = await deleteAdminProductImage(payload.url, productId);
+    const deleted = await measureAsync('admin.products.images', 'delete', () => deleteAdminProductImage(payload.url as string, productId), context.requestId);
     const adminUser = await getAdminUserContext((role) => role === 'ADMIN');
     await logAdminAction({
       adminUserId: adminUser?.userId ?? null,
@@ -68,10 +73,9 @@ export async function DELETE(request: Request) {
       },
     });
 
-    return NextResponse.json({ deleted });
+    return NextResponse.json({ deleted }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
-    logServerError({ area: 'admin.products.images', action: 'delete', entity: 'product', error });
-    const message = error instanceof Error ? error.message : 'No se pudo eliminar la imagen';
-    return NextResponse.json({ message }, { status: 400 });
+    logServerError({ area: 'admin.products.images', action: 'delete', entity: 'product', requestId: context.requestId, error });
+    return errorResponse(error, context.requestId, 400);
   }
 }

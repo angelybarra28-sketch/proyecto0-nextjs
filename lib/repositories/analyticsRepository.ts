@@ -122,6 +122,7 @@ function mapDashboardAnalytics(row: DashboardAnalyticsRpcRow): AdminDashboardSta
       const item = value as Record<string, unknown>;
       return {
         outOfStock: toNumber(item.outOfStock),
+        lowStock: toNumber(item.lowStock),
         inactive: toNumber(item.inactive),
       } satisfies ProductHealthMetric;
     })(),

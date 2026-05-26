@@ -8,7 +8,15 @@
     "start": "next start",
     "lint": "eslint",
     "test:integration": "node --test tests/integration/*.test.mjs",
+    "test:db": "node --test tests/db/*.test.mjs",
+    "test:db:watch": "node --test --watch tests/db/*.test.mjs",
+    "test:db:reset": "node --test tests/db/reset.test.mjs",
+    "test:db:setup": "node scripts/setup-local-test-env.mjs",
     "check:runtime": "node scripts/check-runtime.mjs",
+    "verify:production": "node scripts/verify-production.mjs",
+    "maintenance:check-storage": "node scripts/check-storage-consistency.mjs",
+    "maintenance:runtime-contract": "node scripts/check-runtime-contract.mjs",
+    "maintenance:analytics-refresh": "node scripts/refresh-analytics.mjs",
     "maintenance:refresh-financial-statuses": "node scripts/refresh-financial-statuses.mjs"
   },
   "dependencies": {

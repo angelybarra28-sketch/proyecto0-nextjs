@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const requiredEnv = [
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'NEXT_PUBLIC_SITE_URL',
-];
+const isTestRuntime = Boolean(process.env.TEST_SUPABASE_URL || process.env.TEST_SUPABASE_SERVICE_ROLE_KEY);
+const supabaseUrl = process.env.TEST_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.TEST_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const requiredEnv = isTestRuntime
+  ? ['TEST_SUPABASE_URL', 'TEST_SUPABASE_SERVICE_ROLE_KEY']
+  : ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'NEXT_PUBLIC_SITE_URL'];
 
 function fail(message) {
   console.error(`[runtime-check] FAIL: ${message}`);
@@ -25,8 +26,8 @@ for (const key of requiredEnv) {
 if (process.exitCode) process.exit();
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  supabaseUrl,
+  serviceRoleKey,
   { auth: { persistSession: false, autoRefreshToken: false } }
 );
 

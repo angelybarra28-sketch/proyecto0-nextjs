@@ -2,6 +2,7 @@
 
 ## Operaciones Atómicas
 - `create_checkout_sale`: crea cliente, venta, items y cuotas dentro de una RPC transaccional.
+- `create_checkout_sale`: valida y descuenta `products.stock` dentro de la misma transacción; si falla stock, la venta completa se revierte.
 - `register_sale_payment`: registra pago, allocations, actualiza cuotas y actualiza `sales` dentro de una RPC transaccional.
 - `refresh_financial_statuses`: recalcula estados vencidos y cobranza. Ya no se ejecuta en lecturas admin.
 
@@ -14,6 +15,12 @@
 - El checkout financiero persiste `legacy_product_id` mientras el carrito público siga usando ids numéricos.
 - Productos sin `legacy_product_id` estable no deben entrar al checkout persistido.
 - El precio financiero se recalcula server-side desde el catálogo real.
+
+## Stock Operativo
+- `products.stock` es la fuente oficial de stock.
+- No existe reserva temporal ni expiración de carrito: la concurrencia se controla al confirmar la venta en `create_checkout_sale`.
+- Productos inactivos o sin `legacy_product_id` estable no son vendibles en el modo híbrido actual.
+- Una venta cancelada no repone stock automáticamente todavía; cualquier ajuste se hace manualmente desde admin.
 
 ## Service Role
 - Escrituras financieras y admin usan `SUPABASE_SERVICE_ROLE_KEY` solo desde servidor.

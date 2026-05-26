@@ -141,7 +141,11 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                     </td>
                     <td>{product.categoryName}</td>
                     <td>{formatCurrency(product.price)}</td>
-                    <td>{product.stock}</td>
+                    <td>
+                      {product.stock}{' '}
+                      {product.stock === 0 && <span className={styles.adminReadonlyBadge}>Sin stock</span>}
+                      {product.stock > 0 && product.stock <= 5 && <span className={styles.adminReadonlyBadge}>Bajo stock</span>}
+                    </td>
                     <td>{product.featured ? 'Sí' : 'No'}</td>
                     <td>
                       <span className={`${styles.status} ${styles[getStatusClass(product.status === 'ACTIVE' ? 'PAID' : 'CANCELLED')]}`}>

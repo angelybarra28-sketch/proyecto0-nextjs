@@ -34,3 +34,21 @@ test('runtime contract validation covers critical financial objects', () => {
   assert.match(schema, /create_checkout_sale/);
   assert.match(schema, /payments', 'payment_request_id/);
 });
+
+test('checkout decrements stock transactionally and rejects overselling', () => {
+  assert.match(schema, /for v_item in select value from jsonb_array_elements\(p_items\)/);
+  assert.match(schema, /from products\s+where legacy_product_id = v_legacy_product_id\s+for update/s);
+  assert.match(schema, /insufficient stock for product/);
+  assert.match(schema, /set stock = stock - v_quantity/);
+});
+
+test('checkout rejects inactive products and invalid quantities', () => {
+  assert.match(schema, /product % is not active/);
+  assert.match(schema, /item quantity must be greater than zero/);
+  assert.match(schema, /product legacy id is required while hybrid catalog mode is enabled/);
+});
+
+test('analytics contract includes low stock and out of stock metrics', () => {
+  assert.match(schema, /'outOfStock', count\(\*\) filter \(where stock <= 0\)/);
+  assert.match(schema, /'lowStock', count\(\*\) filter \(where stock > 0 and stock <= 5\)/);
+});

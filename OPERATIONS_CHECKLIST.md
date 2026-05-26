@@ -37,3 +37,13 @@
 - Crear bucket `product-images`.
 - Verificar que service-role no esté expuesto en variables públicas.
 - Ejecutar `npm run lint` y `npm run build` antes de publicar.
+
+## Supabase Local Para Tests DB
+- Instalar Docker Desktop y Supabase CLI.
+- Ejecutar `supabase start`.
+- Exportar variables de test con credenciales locales:
+  - `TEST_SUPABASE_URL=http://127.0.0.1:54321`
+  - `TEST_SUPABASE_SERVICE_ROLE_KEY=<service_role local impresa por supabase start>`
+- Aplicar migraciones: `supabase db reset`.
+- Crear bucket local: `npm run test:db:setup`.
+- Validar: `npm run check:runtime` y `npm run test:db`.
