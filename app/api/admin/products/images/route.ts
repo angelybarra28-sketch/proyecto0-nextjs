@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
 import { logAdminAction } from '@/lib/services/admin/audit';
 import { deleteAdminProductImage, uploadAdminProductImage } from '@/lib/services/admin/productImages';
+import { logServerError } from '@/lib/server/logging';
 
 export async function POST(request: Request) {
   try {
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ image });
   } catch (error) {
-    console.error('Error uploading product image:', error);
+    logServerError({ area: 'admin.products.images', action: 'upload', entity: 'product', error });
     const message = error instanceof Error ? error.message : 'No se pudo subir la imagen';
     return NextResponse.json({ message }, { status: 400 });
   }
@@ -69,7 +70,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ deleted });
   } catch (error) {
-    console.error('Error deleting product image:', error);
+    logServerError({ area: 'admin.products.images', action: 'delete', entity: 'product', error });
     const message = error instanceof Error ? error.message : 'No se pudo eliminar la imagen';
     return NextResponse.json({ message }, { status: 400 });
   }

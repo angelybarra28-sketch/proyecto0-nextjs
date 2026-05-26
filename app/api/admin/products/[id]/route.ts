@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
 import { logAdminAction } from '@/lib/services/admin/audit';
 import { updateAdminProduct, type AdminProductPayload } from '@/lib/services/adminCatalogService';
+import { logServerError } from '@/lib/server/logging';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -29,7 +30,8 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return NextResponse.json({ product });
   } catch (error) {
-    console.error('Error updating admin product:', error);
+    const { id } = await context.params;
+    logServerError({ area: 'admin.products', action: 'update', entity: 'product', entityId: id, error });
     const message = error instanceof Error ? error.message : 'No se pudo actualizar el producto';
     return NextResponse.json({ message }, { status: 400 });
   }

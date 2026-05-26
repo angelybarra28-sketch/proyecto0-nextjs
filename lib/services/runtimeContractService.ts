@@ -25,7 +25,8 @@ export async function assertRuntimeContract(context: string): Promise<void> {
       `Contrato de base de datos incompleto para ${context}. ` +
       `Tablas faltantes: ${cachedStatus.missingTables.join(', ') || 'ninguna'}. ` +
       `Columnas faltantes: ${cachedStatus.missingColumns.join(', ') || 'ninguna'}. ` +
-      `RPCs faltantes: ${cachedStatus.missingFunctions.join(', ') || 'ninguna'}.`
+      `RPCs faltantes: ${cachedStatus.missingFunctions.join(', ') || 'ninguna'}. ` +
+      `Extensiones faltantes: ${cachedStatus.missingExtensions.join(', ') || 'ninguna'}.`
     );
   }
 }

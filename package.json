@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:integration": "node --test tests/integration/*.test.mjs"
+    "test:integration": "node --test tests/integration/*.test.mjs",
+    "check:runtime": "node scripts/check-runtime.mjs",
+    "maintenance:refresh-financial-statuses": "node scripts/refresh-financial-statuses.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

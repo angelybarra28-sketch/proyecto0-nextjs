@@ -5,6 +5,7 @@ export type RuntimeContractStatus = {
   missingTables: string[];
   missingColumns: string[];
   missingFunctions: string[];
+  missingExtensions: string[];
 };
 
 function toStringArray(value: unknown): string[] {
@@ -25,5 +26,6 @@ export async function validateRuntimeContract(supabase: SupabaseClient): Promise
     missingTables: toStringArray(row.missingTables),
     missingColumns: toStringArray(row.missingColumns),
     missingFunctions: toStringArray(row.missingFunctions),
+    missingExtensions: toStringArray(row.missingExtensions),
   };
 }

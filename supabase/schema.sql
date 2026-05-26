@@ -526,10 +526,19 @@ declare
   v_missing_tables text[] := array[]::text[];
   v_missing_columns text[] := array[]::text[];
   v_missing_functions text[] := array[]::text[];
+  v_missing_extensions text[] := array[]::text[];
   v_table text;
   v_column record;
   v_function text;
 begin
+  if not exists (select 1 from pg_extension where extname = 'pgcrypto') then
+    v_missing_extensions := array_append(v_missing_extensions, 'pgcrypto');
+  end if;
+
+  if not exists (select 1 from pg_extension where extname = 'pg_trgm') then
+    v_missing_extensions := array_append(v_missing_extensions, 'pg_trgm');
+  end if;
+
   foreach v_table in array array['categories','products','customers','profiles','sales','sale_items','installments','payments','payment_allocations','admin_audit_logs'] loop
     if to_regclass('public.' || v_table) is null then
       v_missing_tables := array_append(v_missing_tables, v_table);
@@ -568,7 +577,8 @@ begin
   end loop;
 
   return jsonb_build_object(
-    'ok', cardinality(v_missing_tables) = 0 and cardinality(v_missing_columns) = 0 and cardinality(v_missing_functions) = 0,
+    'ok', cardinality(v_missing_tables) = 0 and cardinality(v_missing_columns) = 0 and cardinality(v_missing_functions) = 0 and cardinality(v_missing_extensions) = 0,
+    'missingExtensions', v_missing_extensions,
     'missingTables', v_missing_tables,
     'missingColumns', v_missing_columns,
     'missingFunctions', v_missing_functions
