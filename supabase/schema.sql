@@ -285,6 +285,216 @@ create index if not exists idx_payment_allocations_payment_id on payment_allocat
 create index if not exists idx_payment_allocations_installment_id on payment_allocations(installment_id);
 create index if not exists idx_payment_allocations_status on payment_allocations(status);
 
+create or replace function get_admin_dashboard_analytics()
+returns table (
+  today_sales_count integer,
+  today_sold_amount numeric,
+  current_month_sales_count integer,
+  current_month_sold_amount numeric,
+  current_month_collected_amount numeric,
+  previous_month_sold_amount numeric,
+  average_ticket numeric,
+  total_debt numeric,
+  overdue_debt numeric,
+  overdue_installments integer,
+  overdue_sales integer,
+  customers_with_debt integer,
+  collected_percentage numeric,
+  monthly_collected numeric,
+  monthly jsonb,
+  daily_sales jsonb,
+  aging_buckets jsonb,
+  top_products jsonb,
+  top_categories jsonb,
+  top_customers jsonb,
+  customer_analytics jsonb,
+  product_health jsonb
+)
+language sql
+security definer
+set search_path = public
+as $$
+with bounds as (
+  select
+    date_trunc('day', now()) as today_start,
+    date_trunc('month', now()) as month_start,
+    date_trunc('month', now()) - interval '1 month' as previous_month_start,
+    date_trunc('month', now()) + interval '1 month' as next_month_start,
+    current_date as today_date
+), active_sales as (
+  select *
+  from sales
+  where sale_status <> 'CANCELLED'
+), today_sales as (
+  select
+    count(*)::integer as sales_count,
+    coalesce(sum(total_amount), 0)::numeric as sold_amount
+  from active_sales, bounds
+  where sale_date >= bounds.today_start
+), month_sales as (
+  select
+    count(*)::integer as sales_count,
+    coalesce(sum(total_amount), 0)::numeric as sold_amount,
+    coalesce(avg(total_amount), 0)::numeric as average_ticket
+  from active_sales, bounds
+  where sale_date >= bounds.month_start
+    and sale_date < bounds.next_month_start
+), previous_month_sales as (
+  select coalesce(sum(total_amount), 0)::numeric as sold_amount
+  from active_sales, bounds
+  where sale_date >= bounds.previous_month_start
+    and sale_date < bounds.month_start
+), month_payments as (
+  select coalesce(sum(amount), 0)::numeric as collected_amount
+  from payments, bounds
+  where status = 'CONFIRMED'
+    and payment_date >= bounds.month_start
+    and payment_date < bounds.next_month_start
+), debt_sales as (
+  select *
+  from sales
+  where remaining_amount > 0
+    and sale_status <> 'CANCELLED'
+), debt_summary as (
+  select
+    coalesce(sum(remaining_amount), 0)::numeric as total_debt,
+    coalesce(sum(remaining_amount) filter (where collection_status = 'OVERDUE'), 0)::numeric as overdue_debt,
+    count(*) filter (where collection_status = 'OVERDUE')::integer as overdue_sales,
+    count(distinct customer_id)::integer as customers_with_debt
+  from debt_sales
+), installment_summary as (
+  select count(*)::integer as overdue_installments
+  from installments, bounds
+  where remaining_amount > 0
+    and due_date < bounds.today_date
+), collection_ratio as (
+  select
+    case
+      when coalesce(sum(total_amount), 0) = 0 then 0
+      else (coalesce(sum(paid_amount), 0) / nullif(sum(total_amount), 0)) * 100
+    end::numeric as collected_percentage
+  from active_sales
+), monthly_metrics as (
+  select coalesce(jsonb_agg(metric order by metric->>'month'), '[]'::jsonb) as metrics
+  from (
+    select jsonb_build_object(
+      'month', to_char(months.month, 'YYYY-MM'),
+      'salesCount', coalesce(s.sales_count, 0),
+      'revenue', coalesce(s.revenue, 0),
+      'collected', coalesce(p.collected, 0)
+    ) as metric
+    from generate_series(date_trunc('month', now()) - interval '11 months', date_trunc('month', now()), interval '1 month') months(month)
+    left join (
+      select date_trunc('month', sale_date) as month, count(*)::integer as sales_count, sum(total_amount)::numeric as revenue
+      from active_sales
+      group by 1
+    ) s on s.month = months.month
+    left join (
+      select date_trunc('month', payment_date) as month, sum(amount)::numeric as collected
+      from payments
+      where status = 'CONFIRMED'
+      group by 1
+    ) p on p.month = months.month
+  ) rows
+), daily_metrics as (
+  select coalesce(jsonb_agg(metric order by metric->>'date'), '[]'::jsonb) as metrics
+  from (
+    select jsonb_build_object(
+      'date', to_char(days.day, 'YYYY-MM-DD'),
+      'salesCount', coalesce(s.sales_count, 0),
+      'revenue', coalesce(s.revenue, 0)
+    ) as metric
+    from generate_series(current_date - interval '29 days', current_date, interval '1 day') days(day)
+    left join (
+      select date_trunc('day', sale_date)::date as day, count(*)::integer as sales_count, sum(total_amount)::numeric as revenue
+      from active_sales
+      where sale_date >= current_date - interval '29 days'
+      group by 1
+    ) s on s.day = days.day::date
+  ) rows
+), aging as (
+  select jsonb_build_array(
+    jsonb_build_object('bucket', '0-30', 'amount', coalesce(sum(remaining_amount) filter (where current_date - due_date between 0 and 30), 0), 'installmentsCount', count(*) filter (where current_date - due_date between 0 and 30)),
+    jsonb_build_object('bucket', '31-60', 'amount', coalesce(sum(remaining_amount) filter (where current_date - due_date between 31 and 60), 0), 'installmentsCount', count(*) filter (where current_date - due_date between 31 and 60)),
+    jsonb_build_object('bucket', '61-90', 'amount', coalesce(sum(remaining_amount) filter (where current_date - due_date between 61 and 90), 0), 'installmentsCount', count(*) filter (where current_date - due_date between 61 and 90)),
+    jsonb_build_object('bucket', '90+', 'amount', coalesce(sum(remaining_amount) filter (where current_date - due_date > 90), 0), 'installmentsCount', count(*) filter (where current_date - due_date > 90))
+  ) as buckets
+  from installments
+  where remaining_amount > 0
+    and due_date < current_date
+), product_ranking as (
+  select coalesce(jsonb_agg(metric order by (metric->>'quantity')::integer desc, (metric->>'amount')::numeric desc), '[]'::jsonb) as metrics
+  from (
+    select jsonb_build_object('label', product_name_snapshot, 'quantity', sum(quantity), 'amount', sum(line_total)) as metric
+    from sale_items
+    group by product_name_snapshot
+    order by sum(quantity) desc, sum(line_total) desc
+    limit 5
+  ) rows
+), category_ranking as (
+  select coalesce(jsonb_agg(metric order by (metric->>'quantity')::integer desc, (metric->>'amount')::numeric desc), '[]'::jsonb) as metrics
+  from (
+    select jsonb_build_object('label', coalesce(category_name_snapshot, 'Sin categoría'), 'quantity', sum(quantity), 'amount', sum(line_total)) as metric
+    from sale_items
+    group by coalesce(category_name_snapshot, 'Sin categoría')
+    order by sum(quantity) desc, sum(line_total) desc
+    limit 5
+  ) rows
+), customer_ranking as (
+  select coalesce(jsonb_agg(metric order by (metric->>'amount')::numeric desc, (metric->>'salesCount')::integer desc), '[]'::jsonb) as metrics
+  from (
+    select jsonb_build_object(
+      'customerId', s.customer_id,
+      'customerName', coalesce(c.full_name, s.delivery_full_name, 'Cliente sin nombre'),
+      'salesCount', count(*),
+      'amount', sum(s.total_amount),
+      'lastPurchaseDate', max(s.sale_date)
+    ) as metric
+    from active_sales s
+    left join customers c on c.id = s.customer_id
+    group by s.customer_id, coalesce(c.full_name, s.delivery_full_name, 'Cliente sin nombre')
+    order by sum(s.total_amount) desc, count(*) desc
+    limit 5
+  ) rows
+), customer_metrics as (
+  select jsonb_build_object(
+    'newThisMonth', (select count(*) from customers, bounds where created_at >= bounds.month_start and created_at < bounds.next_month_start),
+    'withDebt', (select customers_with_debt from debt_summary),
+    'averagePurchaseFrequency', coalesce((select avg(sales_count) from (select count(*) as sales_count from active_sales group by customer_id) grouped), 0)
+  ) as metrics
+), product_health_metrics as (
+  select jsonb_build_object(
+    'outOfStock', count(*) filter (where stock <= 0),
+    'inactive', count(*) filter (where status <> 'ACTIVE')
+  ) as metrics
+  from products
+)
+select
+  today_sales.sales_count,
+  today_sales.sold_amount,
+  month_sales.sales_count,
+  month_sales.sold_amount,
+  month_payments.collected_amount,
+  previous_month_sales.sold_amount,
+  month_sales.average_ticket,
+  debt_summary.total_debt,
+  debt_summary.overdue_debt,
+  installment_summary.overdue_installments,
+  debt_summary.overdue_sales,
+  debt_summary.customers_with_debt,
+  collection_ratio.collected_percentage,
+  month_payments.collected_amount,
+  monthly_metrics.metrics,
+  daily_metrics.metrics,
+  aging.buckets,
+  product_ranking.metrics,
+  category_ranking.metrics,
+  customer_ranking.metrics,
+  customer_metrics.metrics,
+  product_health_metrics.metrics
+from today_sales, month_sales, previous_month_sales, month_payments, debt_summary, installment_summary, collection_ratio, monthly_metrics, daily_metrics, aging, product_ranking, category_ranking, customer_ranking, customer_metrics, product_health_metrics;
+$$;
+
 alter table categories enable row level security;
 alter table products enable row level security;
 alter table customers enable row level security;
