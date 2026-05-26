@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { updateAdminProduct, type AdminProductPayload } from '@/lib/services/adminCatalogService';
 
 type RouteContext = {
@@ -14,6 +15,17 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const payload = await request.json() as Partial<AdminProductPayload>;
     const product = await updateAdminProduct(id, payload);
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: payload.status !== undefined && Object.keys(payload).length === 1 ? 'product_status_updated' : 'product_updated',
+      entity: 'product',
+      entityId: id,
+      metadata: {
+        fields: Object.keys(payload),
+        status: payload.status,
+      },
+    });
 
     return NextResponse.json({ product });
   } catch (error) {

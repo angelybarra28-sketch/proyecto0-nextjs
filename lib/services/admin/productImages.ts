@@ -25,6 +25,17 @@ function createProductImagePath(productId: string, file: File): string {
   return `products/${productId}/${Date.now()}-${randomUUID()}.${getExtension(file)}`;
 }
 
+function assertValidProductImagePath(path: string, productId?: string): void {
+  const escapedProductId = productId?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = escapedProductId
+    ? new RegExp(`^products/${escapedProductId}/[a-zA-Z0-9._-]+$`)
+    : /^products\/[0-9a-fA-F-]{36}\/[a-zA-Z0-9._-]+$/;
+
+  if (!pattern.test(path) || path.includes('..')) {
+    throw new Error('Ruta de imagen no permitida');
+  }
+}
+
 export function validateProductImageFile(file: File): void {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
     throw new Error('Tipo de imagen no permitido. Usá JPG, PNG, WebP o GIF.');
@@ -53,7 +64,7 @@ export async function uploadAdminProductImage(productId: string, file: File): Pr
   return uploadProductImageObject(supabase, file, createProductImagePath(productId, file));
 }
 
-export async function deleteAdminProductImage(url: string): Promise<boolean> {
+export async function deleteAdminProductImage(url: string, productId?: string): Promise<boolean> {
   const supabase = getSupabaseAdminClient();
 
   if (!supabase) {
@@ -65,6 +76,8 @@ export async function deleteAdminProductImage(url: string): Promise<boolean> {
   if (!path) {
     return false;
   }
+
+  assertValidProductImagePath(path, productId);
 
   await deleteProductImageObject(supabase, path);
   return true;

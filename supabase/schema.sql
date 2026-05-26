@@ -130,6 +130,16 @@ create table if not exists profiles (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists admin_audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  admin_user_id uuid references auth.users(id) on delete set null,
+  action text not null,
+  entity text not null,
+  entity_id text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists sales (
   id uuid primary key default gen_random_uuid(),
   sale_number text not null unique default ('SALE-' || upper(substr(gen_random_uuid()::text, 1, 8))),
@@ -243,6 +253,9 @@ create index if not exists idx_customers_email on customers(email);
 create index if not exists idx_customers_full_name on customers(full_name);
 create index if not exists idx_profiles_role on profiles(role);
 create index if not exists idx_profiles_is_active on profiles(is_active);
+create index if not exists idx_admin_audit_logs_admin_user_id on admin_audit_logs(admin_user_id);
+create index if not exists idx_admin_audit_logs_entity on admin_audit_logs(entity, entity_id);
+create index if not exists idx_admin_audit_logs_action_created_at on admin_audit_logs(action, created_at desc);
 create unique index if not exists idx_customers_phone_unique
   on customers(phone)
   where phone is not null and phone <> '';
@@ -507,6 +520,7 @@ alter table categories enable row level security;
 alter table products enable row level security;
 alter table customers enable row level security;
 alter table profiles enable row level security;
+alter table admin_audit_logs enable row level security;
 alter table sales enable row level security;
 alter table sale_items enable row level security;
 alter table installments enable row level security;

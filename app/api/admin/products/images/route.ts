@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { deleteAdminProductImage, uploadAdminProductImage } from '@/lib/services/admin/productImages';
 
 export async function POST(request: Request) {
@@ -20,6 +21,18 @@ export async function POST(request: Request) {
     }
 
     const image = await uploadAdminProductImage(productId, file);
+    const adminUser = await getAdminUserContext((role) => role === 'ADMIN');
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'product_image_uploaded',
+      entity: 'product',
+      entityId: productId,
+      metadata: {
+        path: image.path,
+        contentType: file.type,
+        size: file.size,
+      },
+    });
 
     return NextResponse.json({ image });
   } catch (error) {
@@ -34,13 +47,25 @@ export async function DELETE(request: Request) {
     const authorizationError = await requireStrictAdminUser();
     if (authorizationError) return authorizationError;
 
-    const payload = await request.json() as { url?: unknown };
+    const payload = await request.json() as { productId?: unknown; url?: unknown };
 
     if (typeof payload.url !== 'string' || !payload.url) {
       return NextResponse.json({ message: 'URL inválida' }, { status: 400 });
     }
 
-    const deleted = await deleteAdminProductImage(payload.url);
+    const productId = typeof payload.productId === 'string' ? payload.productId : undefined;
+    const deleted = await deleteAdminProductImage(payload.url, productId);
+    const adminUser = await getAdminUserContext((role) => role === 'ADMIN');
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'product_image_deleted',
+      entity: 'product',
+      entityId: productId ?? null,
+      metadata: {
+        url: payload.url,
+        deleted,
+      },
+    });
 
     return NextResponse.json({ deleted });
   } catch (error) {

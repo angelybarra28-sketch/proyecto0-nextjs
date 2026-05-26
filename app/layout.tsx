@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { CartProvider } from "@/lib/cartContext";
 import { AuthProvider } from "@/lib/authContext";
+import { getMetadataBaseUrl } from "@/env/client";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: getMetadataBaseUrl(),
   title: "ElectroBlancos - Sábanas y Electrodomésticos",
   description: "Tienda de sábanas, blanquería y electrodomésticos de calidad",
 };

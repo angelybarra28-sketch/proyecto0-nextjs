@@ -1,17 +1,17 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { getOptionalServerEnv } from '@/env/server';
 
 let cachedClient: SupabaseClient | null = null;
 
 export function getSupabaseAdminClient(): SupabaseClient | null {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const env = getOptionalServerEnv();
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!env) {
     return null;
   }
 
   if (!cachedClient) {
-    cachedClient = createClient(supabaseUrl, serviceRoleKey, {
+    cachedClient = createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,

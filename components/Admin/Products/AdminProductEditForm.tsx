@@ -94,7 +94,7 @@ export function AdminProductEditForm({
     setImageError('');
 
     try {
-      await deleteAdminProductImage(url);
+      await deleteAdminProductImage(url, product.id);
       onRemove();
     } catch (deleteError) {
       console.error('Error deleting product image:', deleteError);

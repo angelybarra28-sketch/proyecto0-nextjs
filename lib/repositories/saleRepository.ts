@@ -568,8 +568,6 @@ export async function getOverdueInstallmentsCount(supabase: SupabaseClient): Pro
 }
 
 export async function getCollectionSummary(supabase: SupabaseClient): Promise<CollectionSummary> {
-  await refreshFinancialStatuses(supabase);
-
   const { data, error } = await supabase
     .from('sales')
     .select('customer_id, remaining_amount, collection_status')

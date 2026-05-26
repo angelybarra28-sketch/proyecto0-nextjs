@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { registerAdminPayment } from '@/lib/services/paymentService';
 import type { PaymentMethod } from '@/lib/supabase/types';
 
@@ -32,6 +33,20 @@ export async function POST(request: Request, { params }: Props) {
       paymentMethod: body.paymentMethod,
       paymentDate: body.paymentDate,
       notes: body.notes,
+    });
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'payment_registered',
+      entity: 'sale',
+      entityId: id,
+      metadata: {
+        paymentId: result.paymentId,
+        paymentRequestId: body.paymentRequestId,
+        amount: body.amount,
+        paymentMethod: body.paymentMethod,
+        collectionStatus: result.collectionStatus,
+      },
     });
 
     return NextResponse.json({ payment: result });

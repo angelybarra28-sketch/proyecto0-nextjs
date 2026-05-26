@@ -172,13 +172,13 @@ export async function uploadAdminProductImage(
   return payload.image;
 }
 
-export async function deleteAdminProductImage(url: string): Promise<boolean> {
+export async function deleteAdminProductImage(url: string, productId?: string): Promise<boolean> {
   const response = await fetch('/api/admin/products/images', {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ productId, url }),
   });
 
   if (!response.ok) {

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getOptionalServerEnv } from '@/env/server';
 
 const DEFAULT_BUCKET = 'product-images';
 
@@ -8,7 +9,7 @@ export type StoredProductImage = {
 };
 
 export function getProductImagesBucket(): string {
-  return process.env.SUPABASE_PRODUCT_IMAGES_BUCKET || DEFAULT_BUCKET;
+  return getOptionalServerEnv()?.productImagesBucket ?? DEFAULT_BUCKET;
 }
 
 export async function uploadProductImageObject(

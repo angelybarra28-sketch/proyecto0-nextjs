@@ -77,7 +77,6 @@ export async function listAdminSales(limit = 50): Promise<AdminSaleSummary[]> {
     return [];
   }
 
-  await refreshFinancialStatuses(supabase);
   return getSalesWithCustomer(supabase, limit);
 }
 
@@ -101,7 +100,6 @@ export async function listAdminSalesPaginated(input: AdminSaleListInput = {}): P
     };
   }
 
-  await refreshFinancialStatuses(supabase);
   let result = await getSalesPaginated(supabase, {
     page,
     limit,
@@ -140,7 +138,6 @@ export async function listRecentAdminSales(limit = 10): Promise<AdminSaleSummary
     return [];
   }
 
-  await refreshFinancialStatuses(supabase);
   return getRecentSales(supabase, limit);
 }
 
@@ -151,8 +148,17 @@ export async function getAdminSaleDetail(saleId: string): Promise<AdminSaleDetai
     return null;
   }
 
-  await refreshFinancialStatuses(supabase);
   return getSaleById(supabase, saleId);
+}
+
+export async function refreshAdminFinancialStatuses(): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+
+  if (!supabase) {
+    return;
+  }
+
+  await refreshFinancialStatuses(supabase);
 }
 
 export async function getAdminCollectionSummary(): Promise<CollectionSummary> {
