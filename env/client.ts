@@ -1,30 +1,15 @@
-function readEnv(name: string): string | undefined {
-  const value = process.env[name];
-  return value && value.trim() ? value.trim() : undefined;
-}
-
-function requireEnv(name: string): string {
-  const value = readEnv(name);
-
-  if (!value) {
-    throw new Error(`Missing required client environment variable: ${name}`);
-  }
-
-  return value;
-}
-
 export function getClientEnv() {
   return {
-    supabaseUrl: requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    supabaseAnonKey: requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
-    siteUrl: requireEnv('NEXT_PUBLIC_SITE_URL'),
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL!,
   };
 }
 
 export function getSupabaseClientEnv() {
   return {
-    supabaseUrl: requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    supabaseAnonKey: requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   };
 }
 
@@ -45,7 +30,7 @@ export function getOptionalSupabaseClientEnv() {
 }
 
 export function getMetadataBaseUrl(): URL | undefined {
-  const siteUrl = readEnv('NEXT_PUBLIC_SITE_URL');
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
   if (!siteUrl) {
     return undefined;

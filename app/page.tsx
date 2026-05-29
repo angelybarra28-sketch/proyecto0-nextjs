@@ -1,3 +1,6 @@
+console.log('SUPABASE URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+console.log('SITE URL:', process.env.NEXT_PUBLIC_SITE_URL);
+
 import { Suspense } from 'react';
 import Header from '@/components/Layout/Header';
 import BannerCarousel from '@/components/Sections/BannerCarousel';

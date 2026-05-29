@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { User, AuthState } from './types';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { canAccessAdmin, type AppRole } from '@/lib/auth/permissions';
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     const supabase = getSupabaseBrowserClient();
 
     if (!supabase) return false;
@@ -77,9 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const profile = await getCurrentAuthProfile();
     setUser(profile && profile.isActive ? toAppUser(profile) : null);
     return Boolean(profile?.isActive);
-  };
+  }, []);
 
-  const register = async (userData: Omit<User, 'id' | 'createdAt' | 'role'>): Promise<{ success: boolean; message: string }> => {
+  const register = useCallback(async (userData: Omit<User, 'id' | 'createdAt' | 'role'>): Promise<{ success: boolean; message: string }> => {
     const supabase = getSupabaseBrowserClient();
 
     if (!supabase) {
@@ -104,36 +104,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return { success: true, message: 'Usuario registrado correctamente' };
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
     await supabase?.auth.signOut();
     setUser(null);
-  };
+  }, []);
 
-  const getAllUsers = (): User[] => {
+  const getAllUsers = useCallback((): User[] => {
     return [];
-  };
+  }, []);
 
-  const deleteUser = (id: string) => {
+  const deleteUser = useCallback((id: string) => {
     console.warn(`User deletion must be handled server-side. Ignored user id: ${id}`);
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      isAdmin: user?.role === 'admin',
+      isAuthLoading,
+      login,
+      register,
+      logout,
+      getAllUsers,
+      deleteUser,
+    }),
+    [user, isAuthLoading, login, register, logout, getAllUsers, deleteUser]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin',
-        isAuthLoading,
-        login,
-        register,
-        logout,
-        getAllUsers,
-        deleteUser,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

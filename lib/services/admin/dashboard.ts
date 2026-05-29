@@ -9,7 +9,8 @@ export async function getAdminDashboard(): Promise<AdminDashboardStats | null> {
     await assertRuntimeContract('admin dashboard');
     return await getAdminDashboardAnalytics();
   } catch (error) {
-    console.error('Error loading dashboard analytics RPC, falling back to repository aggregation:', error);
+    const errorMessage = error instanceof Error ? error.message : 'unknown error';
+    console.error(`Dashboard load failed (${errorMessage}), falling back to repository aggregation:`, error);
   }
 
   const supabase = getSupabaseAdminClient();

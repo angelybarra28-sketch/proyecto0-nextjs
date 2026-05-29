@@ -26,7 +26,9 @@ export function useAdminAccess() {
   return { isAdmin, isAuthLoading, user };
 }
 
-export function useAdminSales(enabled: boolean, query: AdminSaleListInput = {}) {
+const DEFAULT_ADMIN_SALE_QUERY: AdminSaleListInput = {};
+
+export function useAdminSales(enabled: boolean, query: AdminSaleListInput = DEFAULT_ADMIN_SALE_QUERY) {
   const [sales, setSales] = useState<AdminSaleSummary[]>([]);
   const [pagination, setPagination] = useState<AdminPagination | null>(null);
   const [isLoadingSales, setIsLoadingSales] = useState(true);
@@ -37,26 +39,28 @@ export function useAdminSales(enabled: boolean, query: AdminSaleListInput = {}) 
       return;
     }
 
+    let isMounted = true;
     const controller = new AbortController();
-    const loadingTimeoutId = window.setTimeout(() => setIsLoadingSales(true), 0);
+    setIsLoadingSales(true);
 
     fetchAdminSales(query, controller.signal)
       .then((payload) => {
+        if (!isMounted) return;
         setSales(payload.sales);
         setPagination(payload.pagination);
         setSalesError('');
       })
       .catch((error: unknown) => {
-        if (isAbortError(error)) return;
+        if (isAbortError(error) || !isMounted) return;
         console.error('Error loading sales:', error);
         setSalesError('No se pudieron cargar las ventas reales desde Supabase');
       })
       .finally(() => {
-        if (!controller.signal.aborted) setIsLoadingSales(false);
+        if (isMounted) setIsLoadingSales(false);
       });
 
     return () => {
-      window.clearTimeout(loadingTimeoutId);
+      isMounted = false;
       controller.abort();
     };
   }, [enabled, query]);
@@ -77,16 +81,23 @@ export function useAdminCollectionSummary(enabled: boolean) {
       return;
     }
 
+    let isMounted = true;
     const controller = new AbortController();
 
     fetchCollectionSummary(controller.signal)
-      .then(setCollectionSummary)
+      .then((payload) => {
+        if (!isMounted) return;
+        setCollectionSummary(payload);
+      })
       .catch((error: unknown) => {
-        if (isAbortError(error)) return;
+        if (isAbortError(error) || !isMounted) return;
         console.error('Error loading collection summary:', error);
       });
 
-    return () => controller.abort();
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, [enabled]);
 
   return collectionSummary;
@@ -100,16 +111,23 @@ export function useAdminDashboard(enabled: boolean) {
       return;
     }
 
+    let isMounted = true;
     const controller = new AbortController();
 
     fetchAdminDashboard(controller.signal)
-      .then(setDashboard)
+      .then((payload) => {
+        if (!isMounted) return;
+        setDashboard(payload);
+      })
       .catch((error: unknown) => {
-        if (isAbortError(error)) return;
+        if (isAbortError(error) || !isMounted) return;
         console.error('Error loading dashboard:', error);
       });
 
-    return () => controller.abort();
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, [enabled]);
 
   return dashboard;

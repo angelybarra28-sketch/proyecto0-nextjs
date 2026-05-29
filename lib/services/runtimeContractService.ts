@@ -17,7 +17,10 @@ export async function assertRuntimeContract(context: string): Promise<void> {
   try {
     cachedStatus = await validateRuntimeContract(supabase);
   } catch (error) {
-    throw new Error(`No se pudo validar el contrato de base de datos para ${context}: ${error instanceof Error ? error.message : 'error desconocido'}`);
+    throw new Error(
+      `No se pudo validar el contrato de base de datos para ${context}: ${error instanceof Error ? error.message : 'error desconocido'}`,
+      { cause: error }
+    );
   }
 
   if (!cachedStatus.ok) {
