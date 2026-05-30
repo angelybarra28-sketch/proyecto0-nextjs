@@ -237,6 +237,11 @@
   color: #991b1b;
 }
 
+.status.overdue {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
 .backLink {
   text-align: center;
   margin-top: 30px;

@@ -10,7 +10,16 @@ export function formatCurrency(value: number) {
 }
 
 export function getStatusClass(status: SaleStatus | CollectionStatus) {
-  if (status === 'CANCELLED' || status === 'OVERDUE') return 'cancelled';
-  if (status === 'DELIVERED' || status === 'CONFIRMED' || status === 'PAID') return 'completed';
+  if (status === 'CANCELLED') return 'cancelled';
+  if (status === 'OVERDUE') return 'overdue';
+
+  if (
+    status === 'DELIVERED' ||
+    status === 'CONFIRMED' ||
+    status === 'PAID'
+  ) {
+    return 'completed';
+  }
+
   return 'pending';
 }
