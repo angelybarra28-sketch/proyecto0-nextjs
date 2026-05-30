@@ -17,7 +17,6 @@ export default function CheckoutPage() {
   const { items, clearCart } = useCart();
   const isSubmittingRef = useRef(false);
   const checkoutRequestIdRef = useRef<string | null>(null);
-  const [orderPlaced] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     address: '',
@@ -62,72 +61,38 @@ export default function CheckoutPage() {
       createCheckoutSaleInput(formData, items, checkoutRequestIdRef.current)
     );
 
-    // Construir mensaje para WhatsApp
-    const phoneNumber = '5491158056418';
-    let message = `Hola soy ${formData.fullName}, estoy interesada en estos productos y quisiera saber el precio, formas de pago y la disponibilidad:\n\n`;
-
-    if (saleResult.saleNumber) {
-      message += `Pedido: ${saleResult.saleNumber}\n\n`;
-    }
-    
-    items.forEach((item) => {
-      message += `- ${item.name} (Cantidad: ${item.quantity})\n`;
-    });
-
-    const totalPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
-    message += `\nTotal: $${totalPrice.toLocaleString('es-AR')}`;
-
-    // Codificar mensaje para URL
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-
-    // Redireccionar a WhatsApp
-    window.open(whatsappUrl, '_blank');
-
     if (saleResult.persisted) {
+      // Construir mensaje para WhatsApp
+      const phoneNumber = '5491158056418';
+      let message = `Hola soy ${formData.fullName}, estoy interesada en estos productos y quisiera saber el precio, formas de pago y la disponibilidad:\n\n`;
+
+      if (saleResult.saleNumber) {
+        message += `Pedido: ${saleResult.saleNumber}\n\n`;
+      }
+
+      items.forEach((item) => {
+        message += `- ${item.name} (Cantidad: ${item.quantity})\n`;
+      });
+
+      const totalPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
+      message += `\nTotal: $${totalPrice.toLocaleString('es-AR')}`;
+
+      // Codificar mensaje para URL
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+
+      // Redireccionar a WhatsApp
+      window.open(whatsappUrl, '_blank');
+
       clearCart();
       checkoutRequestIdRef.current = null;
     } else {
       console.warn('No se confirmo la persistencia de la venta; el carrito se conserva.');
+      alert('No se pudo confirmar tu pedido. Intentá de nuevo o contactanos por WhatsApp.');
     }
 
     isSubmittingRef.current = false;
   };
-
-  if (orderPlaced) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: '#1e1d1b',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#f5f2ec'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          padding: '2rem',
-          backgroundColor: '#262422',
-          borderRadius: '8px',
-          border: '1px solid #363330'
-        }}>
-          <h1 style={{ marginBottom: '1rem', color: '#28a745' }}>✓ Pedido realizad correctamente</h1>
-          <p style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Gracias por tu compra</p>
-          <p style={{ color: '#b8a89c', marginBottom: '2rem' }}>Serás redirigido en breve...</p>
-          <Link 
-            href="/" 
-            style={{
-              color: '#2563eb',
-              textDecoration: 'none',
-              fontWeight: 'bold'
-            }}
-          >
-            Volver al inicio
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>

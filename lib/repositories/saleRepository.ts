@@ -205,7 +205,7 @@ function toNumber(value: number | string): number {
   return typeof value === 'number' ? value : Number(value);
 }
 
-function toCollectionStatus(remainingAmount: number): 'PENDING' | 'PAID' {
+function toCollectionStatus(remainingAmount: number): CollectionStatus {
   return remainingAmount > 0 ? 'PENDING' : 'PAID';
 }
 

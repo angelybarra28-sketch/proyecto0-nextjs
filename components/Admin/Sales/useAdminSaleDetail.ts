@@ -26,20 +26,27 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
   useEffect(() => {
     if (!isAdmin) return;
 
+    let isMounted = true;
     const controller = new AbortController();
 
     fetchAdminSaleDetail(saleId, controller.signal)
-      .then(setSale)
+      .then((data) => {
+        if (!isMounted) return;
+        setSale(data);
+      })
       .catch((loadError: unknown) => {
-        if (isAbortError(loadError)) return;
+        if (isAbortError(loadError) || !isMounted) return;
         console.error('Error loading sale detail:', loadError);
         setError('No se pudo cargar el detalle de la venta');
       })
       .finally(() => {
-        if (!controller.signal.aborted) setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       });
 
-    return () => controller.abort();
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, [isAdmin, saleId]);
 
   const registerPayment = async () => {

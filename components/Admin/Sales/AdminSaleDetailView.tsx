@@ -146,7 +146,7 @@ export function AdminSaleDetailView({
                         <td>{formatCurrency(installment.remainingAmount)}</td>
                         <td>{installment.overdueDays > 0 ? `${installment.overdueDays} días` : '-'}</td>
                         <td>
-                          <span className={`${styles.status} ${styles[getStatusClass(installment.status === 'OVERDUE' ? 'CANCELLED' : installment.status === 'PAID' ? 'PAID' : 'PENDING')]}`}>
+                          <span className={`${styles.status} ${styles[getStatusClass(installment.status === 'OVERDUE' ? 'OVERDUE' : installment.status === 'PAID' ? 'PAID' : 'PENDING')]}`}>
                             {installment.status}
                           </span>
                         </td>
