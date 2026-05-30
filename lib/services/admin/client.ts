@@ -2,6 +2,7 @@ import type { AdminDashboardStats, AdminSaleDetail, CollectionSummary, RegisterP
 import type { AdminCatalogPayload, AdminProductListInput, AdminProductPayload } from '@/lib/services/adminCatalogService';
 import type { AdminSaleListInput, AdminSalesPayload } from '@/lib/services/adminSalesService';
 import type { AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
+import type { AdminUserView } from '@/lib/types';
 
 export type UploadedProductImage = {
   path: string;
@@ -188,4 +189,34 @@ export async function deleteAdminProductImage(url: string, productId?: string): 
 
   const payload = await response.json() as { deleted: boolean };
   return payload.deleted;
+}
+
+export async function fetchAdminUsers(signal?: AbortSignal): Promise<AdminUserView[]> {
+  const response = await fetch('/api/admin/users', { signal });
+
+  if (!response.ok) {
+    throw new Error('No se pudieron cargar los usuarios');
+  }
+
+  const payload = await response.json() as { users: AdminUserView[] };
+  return payload.users;
+}
+
+export async function toggleAdminUser(userId: string, isActive: boolean, signal?: AbortSignal): Promise<{ previousIsActive: boolean; newIsActive: boolean }> {
+  const response = await fetch(`/api/admin/users/${userId}`, {
+    method: 'PATCH',
+    signal,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ isActive }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo actualizar el estado del usuario');
+  }
+
+  const payload = await response.json() as { previousIsActive: boolean; newIsActive: boolean };
+  return payload;
 }

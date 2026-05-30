@@ -60,6 +60,19 @@ export interface AuthState {
   isAuthLoading: boolean;
 }
 
+// Tipo para administración de usuarios (fuentes: auth.users + profiles)
+export interface AdminUserView {
+  id: string;
+  email: string;
+  nombreApellido: string;
+  telefono: string;
+  domicilio: string;
+  dni: string;
+  role: 'ADMIN' | 'STAFF' | 'CUSTOMER';
+  isActive: boolean;
+  createdAt: string;
+}
+
 // ========================================
 // TIPOS PARA SISTEMA DE FILTROS PROFESIONAL
 // ========================================

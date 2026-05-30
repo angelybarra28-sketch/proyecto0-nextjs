@@ -10,8 +10,6 @@ interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   register: (userData: Omit<User, 'id' | 'createdAt' | 'role'>) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
-  getAllUsers: () => User[];
-  deleteUser: (id: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -112,14 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const getAllUsers = useCallback((): User[] => {
-    return [];
-  }, []);
-
-  const deleteUser = useCallback((id: string) => {
-    console.warn(`User deletion must be handled server-side. Ignored user id: ${id}`);
-  }, []);
-
   const value = useMemo(
     () => ({
       user,
@@ -129,10 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
-      getAllUsers,
-      deleteUser,
     }),
-    [user, isAuthLoading, login, register, logout, getAllUsers, deleteUser]
+    [user, isAuthLoading, login, register, logout]
   );
 
   return (

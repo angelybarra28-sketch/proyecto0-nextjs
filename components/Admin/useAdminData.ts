@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/authContext';
-import { fetchAdminDashboard, fetchAdminSales, fetchCollectionSummary } from '@/lib/services/admin/client';
+import { fetchAdminDashboard, fetchAdminSales, fetchAdminUsers, fetchCollectionSummary, toggleAdminUser } from '@/lib/services/admin/client';
 import type { AdminSaleListInput } from '@/lib/services/adminSalesService';
-import type { User } from '@/lib/types';
+import type { User, AdminUserView } from '@/lib/types';
 import type { AdminDashboardStats, AdminSaleSummary, CollectionSummary } from '@/lib/supabase/types';
 import type { AdminPagination } from '@/lib/services/admin/types';
 
@@ -134,25 +134,64 @@ export function useAdminDashboard(enabled: boolean) {
 }
 
 export function useAdminUsers(enabled: boolean) {
-  const { getAllUsers, deleteUser } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUserView[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [usersError, setUsersError] = useState('');
+
+  const loadUsers = useCallback(async (signal?: AbortSignal) => {
+    setIsLoadingUsers(true);
+    setUsersError('');
+
+    try {
+      const data = await fetchAdminUsers(signal);
+      setUsers(data);
+    } catch (error) {
+      if (signal?.aborted) return;
+      console.error('Error loading users:', error);
+      setUsersError('No se pudieron cargar los usuarios');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!enabled) {
       return;
     }
 
-    const timeoutId = window.setTimeout(() => setUsers(getAllUsers()), 0);
+    let isMounted = true;
+    const controller = new AbortController();
 
-    return () => window.clearTimeout(timeoutId);
-  }, [enabled, getAllUsers]);
+    fetchAdminUsers(controller.signal)
+      .then((data) => {
+        if (!isMounted) return;
+        setUsers(data);
+        setUsersError('');
+      })
+      .catch((error: unknown) => {
+        if (isAbortError(error) || !isMounted) return;
+        console.error('Error loading users:', error);
+        setUsersError('No se pudieron cargar los usuarios');
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingUsers(false);
+      });
 
-  const handleDeleteUser = (id: string) => {
-    if (confirm('¿Está seguro de eliminar este usuario?')) {
-      deleteUser(id);
-      setUsers(getAllUsers());
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [enabled]);
+
+  const handleToggleUser = async (id: string, isActive: boolean) => {
+    try {
+      await toggleAdminUser(id, isActive);
+      await loadUsers();
+    } catch (error) {
+      console.error('Error toggling user:', error);
+      alert(error instanceof Error ? error.message : 'No se pudo actualizar el usuario');
     }
   };
 
-  return { users, handleDeleteUser };
+  return { users, isLoadingUsers, usersError, handleToggleUser, reloadUsers: loadUsers };
 }

@@ -14,7 +14,7 @@ export function AdminOverviewPage() {
   const { sales, isLoadingSales, salesError } = useAdminSales(isAdmin);
   const collectionSummary = useAdminCollectionSummary(isAdmin);
   const dashboard = useAdminDashboard(isAdmin);
-  const { users, handleDeleteUser } = useAdminUsers(isAdmin);
+  const { users, handleToggleUser } = useAdminUsers(isAdmin);
 
   if (!isAdmin) return null;
 
@@ -27,7 +27,7 @@ export function AdminOverviewPage() {
         <FinancialDashboardSection dashboard={dashboard} />
         {dashboard && <RankingsSection dashboard={dashboard} />}
         <CollectionSummarySection collectionSummary={collectionSummary} />
-        <AdminUsersSection users={users} onDeleteUser={handleDeleteUser} />
+        <AdminUsersSection users={users} onToggleUser={handleToggleUser} />
         <AdminSalesTable sales={sales} isLoadingSales={isLoadingSales} salesError={salesError} />
       </div>
 

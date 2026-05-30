@@ -10,7 +10,7 @@ import styles from '@/styles/Admin.module.css';
 export function AdminCustomersPage() {
   const { isAdmin } = useAdminAccess();
   const { sales } = useAdminSales(isAdmin);
-  const { users, handleDeleteUser } = useAdminUsers(isAdmin);
+  const { users, handleToggleUser } = useAdminUsers(isAdmin);
 
   if (!isAdmin) return null;
 
@@ -20,7 +20,7 @@ export function AdminCustomersPage() {
       <div className={styles.sections}>
         <CustomerMetricsSection sales={sales} />
         <CustomerSalesSummarySection sales={sales} />
-        <AdminUsersSection users={users} onDeleteUser={handleDeleteUser} />
+        <AdminUsersSection users={users} onToggleUser={handleToggleUser} />
       </div>
       <div className={styles.backLink}>
         <Link href="/admin">Volver al panel</Link>
