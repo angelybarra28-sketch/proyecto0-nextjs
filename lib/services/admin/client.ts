@@ -228,3 +228,102 @@ export async function toggleAdminUser(userId: string, isActive: boolean, signal?
   const payload = await response.json() as { previousIsActive: boolean; newIsActive: boolean };
   return payload;
 }
+
+export async function fetchCreditAccounts(signal?: AbortSignal): Promise<{ accounts: import('@/lib/types').CreditAccountSummary[]; dashboard: import('@/lib/types').CreditDashboard | null }> {
+  const response = await fetch('/api/admin/credit-accounts?dashboard=true', { signal });
+
+  if (!response.ok) {
+    throw new Error('No se pudieron cargar las cuentas corrientes');
+  }
+
+  return await response.json() as { accounts: import('@/lib/types').CreditAccountSummary[]; dashboard: import('@/lib/types').CreditDashboard | null };
+}
+
+export async function createCreditAccount(
+  input: Omit<import('@/lib/types').CreateCreditAccountInput, 'saleDate'> & { saleDate?: string }
+): Promise<import('@/lib/types').CreditAccountSummary> {
+  const response = await fetch('/api/admin/credit-accounts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo crear la cuenta corriente');
+  }
+
+  const payload = await response.json() as { account: import('@/lib/types').CreditAccountSummary };
+  return payload.account;
+}
+
+export async function fetchCreditAccountDetail(accountId: string, signal?: AbortSignal): Promise<import('@/lib/types').CreditAccountDetail> {
+  const response = await fetch(`/api/admin/credit-accounts/${accountId}`, { signal });
+
+  if (!response.ok) {
+    throw new Error('No se pudo cargar el detalle de la cuenta corriente');
+  }
+
+  const payload = await response.json() as { account: import('@/lib/types').CreditAccountDetail };
+  return payload.account;
+}
+
+export async function registerCreditPayment(
+  accountId: string,
+  input: { amount: number; paymentDate?: string; notes?: string }
+): Promise<import('@/lib/types').CreditAccountDetail> {
+  const response = await fetch(`/api/admin/credit-accounts/${accountId}/payments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo registrar el pago');
+  }
+
+  const payload = await response.json() as { account: import('@/lib/types').CreditAccountDetail };
+  return payload.account;
+}
+
+export async function addCreditCollectionNote(
+  accountId: string,
+  input: {
+    contactType: 'CALL' | 'WHATSAPP' | 'VISIT' | 'OTHER';
+    result: 'NOTE' | 'PROMISE' | 'NO_CONTACT' | 'PARTIAL_PAYMENT' | 'PAID' | 'OTHER';
+    notes: string;
+    createdBy: string;
+  }
+): Promise<import('@/lib/types').CreditCollectionNote> {
+  const response = await fetch(`/api/admin/credit-accounts/${accountId}/notes`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo guardar la gestion');
+  }
+
+  const payload = await response.json() as { note: import('@/lib/types').CreditCollectionNote };
+  return payload.note;
+}
+
+export async function fetchCreditCollectionRoute(signal?: AbortSignal): Promise<import('@/lib/types').CollectionRouteItem[]> {
+  const response = await fetch('/api/admin/credit-accounts/overdue', { signal });
+
+  if (!response.ok) {
+    throw new Error('No se pudo cargar la ruta de cobranza');
+  }
+
+  const payload = await response.json() as { route: import('@/lib/types').CollectionRouteItem[] };
+  return payload.route;
+}

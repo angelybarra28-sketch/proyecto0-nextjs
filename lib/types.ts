@@ -145,3 +145,125 @@ export interface ProductStats {
   averagePrice: number;
   tagFrequency: Map<string, number>;
 }
+
+// ========================================
+// TIPOS PARA CUENTA CORRIENTE (CRÉDITO)
+// ========================================
+
+export interface CreditAccount {
+  id: string;
+  customerId: string;
+  productName: string;
+  quantity: number;
+  installmentCount: number;
+  installmentAmount: number;
+  saleDate: string;
+  notes: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreditPayment {
+  id: string;
+  creditAccountId: string;
+  amount: number;
+  paymentDate: string;
+  notes: string;
+  createdAt: string;
+}
+
+export interface CreditAccountSummary extends CreditAccount {
+  total: number;
+  paid: number;
+  remaining: number;
+  paymentCount: number;
+}
+
+export interface CreditDashboard {
+  totalFinanced: number;
+  totalCollected: number;
+  totalPending: number;
+  customerCount: number;
+  customersWithDebt: number;
+}
+
+export interface CreateCreditAccountInput {
+  customerId: string;
+  productName: string;
+  quantity?: number;
+  installmentCount?: number;
+  installmentAmount: number;
+  saleDate?: string;
+  notes?: string;
+}
+
+export interface RegisterCreditPaymentInput {
+  amount: number;
+  paymentDate?: string;
+  notes?: string;
+}
+
+// ========================================
+// TIPOS PARA CRONOGRAMA DE CUOTAS Y COBRANZA
+// ========================================
+
+export interface CreditInstallment {
+  id: string;
+  creditAccountId: string;
+  installmentNumber: number;
+  dueDate: string;
+  originalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  status: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreditPaymentAllocation {
+  id: string;
+  creditPaymentId: string;
+  creditInstallmentId: string;
+  amount: number;
+  createdAt: string;
+}
+
+export interface CreditCollectionNote {
+  id: string;
+  creditAccountId: string;
+  contactType: 'CALL' | 'WHATSAPP' | 'VISIT' | 'OTHER';
+  result: 'NOTE' | 'PROMISE' | 'NO_CONTACT' | 'PARTIAL_PAYMENT' | 'PAID' | 'OTHER';
+  notes: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface CreditAccountDetail extends CreditAccountSummary {
+  customer: {
+    id: string;
+    fullName: string;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+  };
+  installments: CreditInstallment[];
+  payments: CreditPayment[];
+  collectionNotes: CreditCollectionNote[];
+}
+
+export interface CollectionRouteItem {
+  creditAccountId: string;
+  customerId: string;
+  customerFullName: string;
+  customerPhone: string | null;
+  customerAddress: string | null;
+  productName: string;
+  totalDebt: number;
+  overdueAmount: number;
+  daysOverdue: number;
+  firstOverdueDate: string;
+  installmentCount: number;
+  paidInstallments: number;
+  overdueInstallments: number;
+}
