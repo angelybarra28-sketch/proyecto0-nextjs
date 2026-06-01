@@ -191,8 +191,16 @@ export async function deleteAdminProductImage(url: string, productId?: string): 
   return payload.deleted;
 }
 
-export async function fetchAdminUsers(signal?: AbortSignal): Promise<AdminUserView[]> {
-  const response = await fetch('/api/admin/users', { signal });
+export async function fetchAdminUsers(signal?: AbortSignal, options?: { page?: number; limit?: number }): Promise<AdminUserView[]> {
+  const searchParams = new URLSearchParams();
+  if (options?.page !== undefined && options.page !== null) {
+    searchParams.set('page', String(options.page));
+  }
+  if (options?.limit !== undefined && options.limit !== null) {
+    searchParams.set('limit', String(options.limit));
+  }
+  const query = searchParams.toString();
+  const response = await fetch(`/api/admin/users${query ? `?${query}` : ''}`, { signal });
 
   if (!response.ok) {
     throw new Error('No se pudieron cargar los usuarios');

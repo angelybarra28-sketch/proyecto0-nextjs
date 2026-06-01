@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/authContext';
 import { fetchAdminDashboard, fetchAdminSales, fetchAdminUsers, fetchCollectionSummary, toggleAdminUser } from '@/lib/services/admin/client';
 import type { AdminSaleListInput } from '@/lib/services/adminSalesService';
-import type { User, AdminUserView } from '@/lib/types';
+import type { AdminUserView } from '@/lib/types';
 import type { AdminDashboardStats, AdminSaleSummary, CollectionSummary } from '@/lib/supabase/types';
 import type { AdminPagination } from '@/lib/services/admin/types';
 
@@ -183,7 +183,7 @@ export function useAdminUsers(enabled: boolean) {
     };
   }, [enabled]);
 
-  const handleToggleUser = async (id: string, isActive: boolean) => {
+  const handleToggleUser = useCallback(async (id: string, isActive: boolean) => {
     try {
       await toggleAdminUser(id, isActive);
       await loadUsers();
@@ -191,7 +191,7 @@ export function useAdminUsers(enabled: boolean) {
       console.error('Error toggling user:', error);
       alert(error instanceof Error ? error.message : 'No se pudo actualizar el usuario');
     }
-  };
+  }, [loadUsers]);
 
   return { users, isLoadingUsers, usersError, handleToggleUser, reloadUsers: loadUsers };
 }

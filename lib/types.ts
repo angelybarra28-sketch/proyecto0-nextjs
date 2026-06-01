@@ -71,6 +71,7 @@ export interface AdminUserView {
   role: 'ADMIN' | 'STAFF' | 'CUSTOMER';
   isActive: boolean;
   createdAt: string;
+  hasProfile: boolean;
 }
 
 // ========================================

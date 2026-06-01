@@ -1,4 +1,4 @@
-import { listUsersWithProfiles, updateUserActiveStatus } from '@/lib/repositories/userRepository';
+import { listUsersWithProfiles } from '@/lib/repositories/userRepository';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import type { AdminUserView } from '@/lib/types';
 import type { AdminUserContext } from '@/lib/auth/server';
@@ -19,41 +19,44 @@ function mapToAdminUserView(authUser: {
   full_name: string | null;
   is_active: boolean;
   created_at: string;
-}): AdminUserView {
+} | null | undefined): AdminUserView {
   return {
     id: authUser.id,
     email: authUser.email,
-    nombreApellido: profile.full_name ?? authUser.user_metadata.full_name ?? 'Usuario',
+    nombreApellido: profile?.full_name ?? authUser.user_metadata.full_name ?? 'Usuario sin perfil',
     telefono: authUser.user_metadata.phone ?? '',
     domicilio: authUser.user_metadata.address ?? '',
     dni: authUser.user_metadata.dni ?? '',
-    role: profile.role,
-    isActive: profile.is_active,
+    role: profile?.role ?? 'CUSTOMER',
+    isActive: profile?.is_active ?? true,
     createdAt: authUser.created_at,
+    hasProfile: !!profile,
   };
 }
 
-export async function listAdminUsers(): Promise<AdminUserView[]> {
+export async function listAdminUsers(options?: { page: number; limit: number }): Promise<{ users: AdminUserView[]; total?: number }> {
   const supabase = getSupabaseAdminClient();
 
   if (!supabase) {
     throw new Error('Supabase no está configurado');
   }
 
-  const { authUsers, profiles } = await listUsersWithProfiles(supabase);
+  const { authUsers, profiles, total } = await listUsersWithProfiles(
+    supabase,
+    options ? { page: options.page, perPage: options.limit } : undefined
+  );
 
   const profileByUserId = new Map<string, typeof profiles[number]>();
   for (const profile of profiles) {
     profileByUserId.set(profile.user_id, profile);
   }
 
-  return authUsers
-    .map((authUser) => {
-      const profile = profileByUserId.get(authUser.id);
-      if (!profile) return null;
-      return mapToAdminUserView(authUser, profile);
-    })
-    .filter((user): user is AdminUserView => user !== null);
+  const users = authUsers.map((authUser) => {
+    const profile = profileByUserId.get(authUser.id);
+    return mapToAdminUserView(authUser, profile);
+  });
+
+  return { users, total };
 }
 
 export async function toggleUserStatus(
@@ -71,35 +74,35 @@ export async function toggleUserStatus(
     throw new Error('SELF_DEACTIVATION');
   }
 
-  const { data: targetProfile, error: targetError } = await supabase
-    .from('profiles')
-    .select('role, is_active')
-    .eq('user_id', targetUserId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('toggle_user_active_atomic', {
+    p_target_user_id: targetUserId,
+    p_is_active: isActive,
+  });
 
-  if (targetError || !targetProfile) {
+  if (error) {
+    const msg = error.message ?? '';
+    if (msg.includes('SELF_DEACTIVATION')) {
+      throw new Error('SELF_DEACTIVATION');
+    }
+    if (msg.includes('LAST_ADMIN')) {
+      throw new Error('LAST_ADMIN');
+    }
+    if (msg.includes('USER_NOT_FOUND')) {
+      throw new Error('USER_NOT_FOUND');
+    }
+    if (msg.includes('PROFILE_UPDATE_NO_ROWS')) {
+      throw new Error('PROFILE_UPDATE_NO_ROWS');
+    }
+    throw error;
+  }
+
+  const result = data as { previous_is_active: boolean; new_is_active: boolean } | null;
+  if (!result) {
     throw new Error('USER_NOT_FOUND');
   }
 
-  const previousIsActive = targetProfile.is_active as boolean;
-
-  if (!isActive && targetProfile.role === 'ADMIN') {
-    const { count, error: countError } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('role', 'ADMIN')
-      .eq('is_active', true);
-
-    if (countError) {
-      throw countError;
-    }
-
-    if ((count ?? 0) <= 1) {
-      throw new Error('LAST_ADMIN');
-    }
-  }
-
-  await updateUserActiveStatus(supabase, targetUserId, isActive);
-
-  return { previousIsActive, newIsActive: isActive };
+  return {
+    previousIsActive: result.previous_is_active,
+    newIsActive: result.new_is_active,
+  };
 }
