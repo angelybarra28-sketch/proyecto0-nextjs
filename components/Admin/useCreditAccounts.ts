@@ -21,7 +21,11 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
-export function useCreditAccounts(enabled: boolean) {
+export function useCreditAccounts(
+  enabled: boolean,
+  search?: string,
+  statusFilter: 'active' | 'finished' | 'all' = 'active'
+) {
   const [accounts, setAccounts] = useState<CreditAccountSummary[]>([]);
   const [dashboard, setDashboard] = useState<CreditDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +35,7 @@ export function useCreditAccounts(enabled: boolean) {
     setIsLoading(true);
     setError('');
     try {
-      const data = await fetchCreditAccounts(signal);
+      const data = await fetchCreditAccounts(signal, { search, statusFilter });
       setAccounts(data.accounts);
       setDashboard(data.dashboard);
     } catch (err) {
@@ -41,7 +45,7 @@ export function useCreditAccounts(enabled: boolean) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [search, statusFilter]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -96,10 +100,10 @@ export function useCreditAccountDetail(accountId: string | null) {
     return () => controller.abort();
   }, [accountId, load]);
 
-  const addPayment = useCallback(async (amount: number, notes?: string) => {
+  const addPayment = useCallback(async (amount: number, paymentMethod?: string, notes?: string) => {
     if (!accountId) return;
     try {
-      const updated = await registerCreditPayment(accountId, { amount, notes });
+      const updated = await registerCreditPayment(accountId, { amount, paymentMethod, notes });
       setAccount(updated);
     } catch (err) {
       console.error('Error registering payment:', err);

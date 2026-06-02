@@ -3,11 +3,12 @@ import styles from '@/styles/Admin.module.css';
 
 type CreditPaymentFormProps = {
   remaining: number;
-  onSubmit: (amount: number, notes: string) => Promise<void>;
+  onSubmit: (amount: number, paymentMethod: string, notes: string) => Promise<void>;
 };
 
 export function CreditPaymentForm({ remaining, onSubmit }: CreditPaymentFormProps) {
   const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -17,8 +18,9 @@ export function CreditPaymentForm({ remaining, onSubmit }: CreditPaymentFormProp
     if (!value || value <= 0 || value > remaining) return;
     setIsSubmitting(true);
     try {
-      await onSubmit(value, notes);
+      await onSubmit(value, paymentMethod, notes);
       setAmount('');
+      setPaymentMethod('EFECTIVO');
       setNotes('');
     } finally {
       setIsSubmitting(false);
@@ -28,7 +30,7 @@ export function CreditPaymentForm({ remaining, onSubmit }: CreditPaymentFormProp
   return (
     <form onSubmit={handleSubmit} className={styles.section} style={{ marginTop: 16 }}>
       <h3 className={styles.sectionTitle}>Registrar Pago</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, fontWeight: 700, color: '#555' }}>
           Monto
           <input
@@ -41,6 +43,19 @@ export function CreditPaymentForm({ remaining, onSubmit }: CreditPaymentFormProp
             required
             style={{ minHeight: 38, border: '1px solid #ddd', borderRadius: 8, padding: '8px 10px' }}
           />
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, fontWeight: 700, color: '#555' }}>
+          Medio de Pago
+          <select
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+            style={{ minHeight: 38, border: '1px solid #ddd', borderRadius: 8, padding: '8px 10px' }}
+          >
+            <option value="EFECTIVO">Efectivo</option>
+            <option value="MERCADO_PAGO">Mercado Pago</option>
+            <option value="TRANSFERENCIA">Transferencia</option>
+            <option value="OTRO">Otro</option>
+          </select>
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, fontWeight: 700, color: '#555' }}>
           Observaciones

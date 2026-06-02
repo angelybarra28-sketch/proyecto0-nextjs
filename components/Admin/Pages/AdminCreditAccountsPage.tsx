@@ -11,7 +11,9 @@ import styles from '@/styles/Admin.module.css';
 
 export function AdminCreditAccountsPage() {
   const { isAdmin } = useAdminAccess();
-  const { accounts, dashboard, isLoading, error, reload } = useCreditAccounts(isAdmin);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'finished' | 'all'>('active');
+  const { accounts, dashboard, isLoading, error, reload } = useCreditAccounts(isAdmin, search, statusFilter);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
   const {
@@ -22,8 +24,8 @@ export function AdminCreditAccountsPage() {
     addNote,
   } = useCreditAccountDetail(selectedAccountId);
 
-  const handlePayment = async (amount: number, notes: string) => {
-    await addPayment(amount, notes);
+  const handlePayment = async (amount: number, paymentMethod: string, notes: string) => {
+    await addPayment(amount, paymentMethod, notes);
     await reload();
   };
 
@@ -62,12 +64,43 @@ export function AdminCreditAccountsPage() {
             <div className={styles.adminTableHeader}>
               <div>
                 <h2 className={styles.sectionTitle}>Cuentas Corrientes</h2>
-                <p className={styles.adminTableSummary}>{accounts.length} cuenta(s) activa(s)</p>
+                <p className={styles.adminTableSummary}>{accounts.length} cuenta(s)</p>
               </div>
-              <button onClick={() => reload()} className={styles.adminActionButton} disabled={isLoading}>
-                {isLoading ? 'Cargando...' : 'Actualizar'}
-              </button>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <Link href="/admin/importacion-cartera">
+                  <button className={styles.adminActionButton}>Importar Cartera</button>
+                </Link>
+                <button onClick={() => reload()} className={styles.adminActionButton} disabled={isLoading}>
+                  {isLoading ? 'Cargando...' : 'Actualizar'}
+                </button>
+              </div>
             </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 700, color: '#555' }}>
+                Buscar
+                <input
+                  type="text"
+                  placeholder="N° tarjeta, cliente, artículo..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{ minHeight: 38, border: '1px solid #ddd', borderRadius: 8, padding: '8px 10px' }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 700, color: '#555' }}>
+                Estado
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                  style={{ minHeight: 38, border: '1px solid #ddd', borderRadius: 8, padding: '8px 10px' }}
+                >
+                  <option value="active">Activas</option>
+                  <option value="finished">Finalizadas</option>
+                  <option value="all">Todas</option>
+                </select>
+              </label>
+            </div>
+
             <CreditAccountsTable accounts={accounts} onSelectAccount={setSelectedAccountId} />
           </section>
         )}

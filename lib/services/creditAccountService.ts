@@ -26,6 +26,7 @@ function calculateSummary(
   account: {
     id: string;
     customer_id: string;
+    operation_number: string | null;
     product_name: string;
     quantity: number;
     installment_count: number;
@@ -43,6 +44,7 @@ function calculateSummary(
   return {
     id: account.id,
     customerId: account.customer_id,
+    operationNumber: account.operation_number,
     productName: account.product_name,
     quantity: account.quantity,
     installmentCount: account.installment_count,
@@ -89,6 +91,7 @@ function mapPayment(payment: {
   id: string;
   credit_account_id: string;
   amount: number;
+  payment_method: string;
   payment_date: string;
   notes: string | null;
   created_at: string;
@@ -97,6 +100,7 @@ function mapPayment(payment: {
     id: payment.id,
     creditAccountId: payment.credit_account_id,
     amount: Number(payment.amount),
+    paymentMethod: payment.payment_method as CreditPayment['paymentMethod'],
     paymentDate: payment.payment_date,
     notes: payment.notes ?? '',
     createdAt: payment.created_at,
@@ -123,7 +127,10 @@ function mapCollectionNote(note: {
   };
 }
 
-export async function listCreditAccountSummaries(): Promise<CreditAccountSummary[]> {
+export async function listCreditAccountSummaries(options?: {
+  search?: string;
+  statusFilter?: 'active' | 'finished' | 'all';
+}): Promise<CreditAccountSummary[]> {
   const supabase = getSupabaseAdminClient();
   if (!supabase) {
     throw new Error('Supabase no está configurado');
@@ -138,9 +145,41 @@ export async function listCreditAccountSummaries(): Promise<CreditAccountSummary
     installmentsByAccount.set(inst.credit_account_id, list);
   }
 
-  return accounts.map((account) =>
+  let summaries = accounts.map((account) =>
     calculateSummary(account, installmentsByAccount.get(account.id) ?? [])
   );
+
+  const statusFilter = options?.statusFilter ?? 'active';
+  if (statusFilter === 'active') {
+    summaries = summaries.filter((s) => s.remaining > 0);
+  } else if (statusFilter === 'finished') {
+    summaries = summaries.filter((s) => s.remaining <= 0);
+  }
+
+  const search = (options?.search ?? '').trim().toLowerCase();
+  if (search) {
+    const customerIds = summaries.map((s) => s.customerId);
+    const { data: customers } = await supabase
+      .from('customers')
+      .select('id, full_name, phone')
+      .in('id', customerIds);
+
+    const customerMap = new Map(
+      (customers ?? []).map((c: { id: string; full_name: string; phone: string | null }) => [c.id, c])
+    );
+
+    summaries = summaries.filter((s) => {
+      const customer = customerMap.get(s.customerId);
+      return (
+        (s.operationNumber && s.operationNumber.toLowerCase().includes(search)) ||
+        s.productName.toLowerCase().includes(search) ||
+        (customer?.full_name ?? '').toLowerCase().includes(search) ||
+        (customer?.phone ?? '').toLowerCase().includes(search)
+      );
+    });
+  }
+
+  return summaries;
 }
 
 export async function getCreditAccountDetail(accountId: string): Promise<CreditAccountDetail> {
@@ -186,6 +225,7 @@ export async function createCreditAccount(
 
   const account = await insertCreditAccount(supabase, {
     customer_id: input.customerId,
+    operation_number: input.operationNumber ?? null,
     product_name: input.productName,
     quantity: input.quantity ?? 1,
     installment_count: input.installmentCount ?? 8,
@@ -226,6 +266,7 @@ export async function registerCreditPayment(
     credit_account_id: accountId,
     amount: input.amount,
     payment_date: input.paymentDate ?? new Date().toISOString(),
+    payment_method: input.paymentMethod,
     notes: input.notes ?? null,
   });
 
@@ -272,6 +313,11 @@ export async function getCreditDashboard(): Promise<CreditDashboard> {
       totalPending: 0,
       customerCount: 0,
       customersWithDebt: 0,
+      activeAccounts: 0,
+      finishedAccounts: 0,
+      currentMonthCollected: 0,
+      previousMonthCollected: 0,
+      monthlyCollection: [],
     };
   }
 
@@ -281,6 +327,11 @@ export async function getCreditDashboard(): Promise<CreditDashboard> {
     totalPending: Number(row.total_pending),
     customerCount: Number(row.customer_count),
     customersWithDebt: Number(row.customers_with_debt),
+    activeAccounts: Number(row.active_accounts),
+    finishedAccounts: Number(row.finished_accounts),
+    currentMonthCollected: Number(row.current_month_collected),
+    previousMonthCollected: Number(row.previous_month_collected),
+    monthlyCollection: row.monthly_collection ?? [],
   };
 }
 
@@ -298,6 +349,7 @@ export async function getCollectionRoute(): Promise<CollectionRouteItem[]> {
     customerFullName: row.customer_full_name,
     customerPhone: row.customer_phone,
     customerAddress: row.customer_address,
+    operationNumber: row.operation_number,
     productName: row.product_name,
     totalDebt: Number(row.total_debt),
     overdueAmount: Number(row.overdue_amount),

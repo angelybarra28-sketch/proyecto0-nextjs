@@ -153,6 +153,7 @@ export interface ProductStats {
 export interface CreditAccount {
   id: string;
   customerId: string;
+  operationNumber?: string | null;
   productName: string;
   quantity: number;
   installmentCount: number;
@@ -164,10 +165,13 @@ export interface CreditAccount {
   updatedAt: string;
 }
 
+export type CreditPaymentMethod = 'EFECTIVO' | 'MERCADO_PAGO' | 'TRANSFERENCIA' | 'OTRO';
+
 export interface CreditPayment {
   id: string;
   creditAccountId: string;
   amount: number;
+  paymentMethod: CreditPaymentMethod;
   paymentDate: string;
   notes: string;
   createdAt: string;
@@ -180,16 +184,27 @@ export interface CreditAccountSummary extends CreditAccount {
   paymentCount: number;
 }
 
+export interface MonthlyCreditMetric {
+  month: string;
+  collected: number;
+}
+
 export interface CreditDashboard {
   totalFinanced: number;
   totalCollected: number;
   totalPending: number;
   customerCount: number;
   customersWithDebt: number;
+  activeAccounts: number;
+  finishedAccounts: number;
+  currentMonthCollected: number;
+  previousMonthCollected: number;
+  monthlyCollection: MonthlyCreditMetric[];
 }
 
 export interface CreateCreditAccountInput {
   customerId: string;
+  operationNumber?: string;
   productName: string;
   quantity?: number;
   installmentCount?: number;
@@ -200,6 +215,7 @@ export interface CreateCreditAccountInput {
 
 export interface RegisterCreditPaymentInput {
   amount: number;
+  paymentMethod?: CreditPaymentMethod;
   paymentDate?: string;
   notes?: string;
 }
@@ -258,6 +274,7 @@ export interface CollectionRouteItem {
   customerFullName: string;
   customerPhone: string | null;
   customerAddress: string | null;
+  operationNumber?: string | null;
   productName: string;
   totalDebt: number;
   overdueAmount: number;
@@ -266,4 +283,58 @@ export interface CollectionRouteItem {
   installmentCount: number;
   paidInstallments: number;
   overdueInstallments: number;
+}
+
+// ========================================
+// TIPOS PARA IMPORTADOR DE CARTERA
+// ========================================
+
+export interface ImportPortfolioPayment {
+  amount: number;
+  paymentDate: string;
+  paymentMethod?: CreditPaymentMethod;
+}
+
+export interface ImportPortfolioRow {
+  operationNumber?: string | null;
+  customerFullName: string;
+  customerPhone?: string | null;
+  customerAddress?: string | null;
+  betweenStreets?: string | null;
+  productName: string;
+  saleDate: string;
+  installmentCount: number;
+  installmentAmount: number;
+  totalAmount: number;
+  accumulatedPayment: number;
+  remainingAmount: number;
+  payments: ImportPortfolioPayment[];
+}
+
+export interface ImportValidationError {
+  rowIndex: number;
+  message: string;
+}
+
+export interface ImportValidationWarning {
+  rowIndex: number;
+  message: string;
+}
+
+export interface ImportPortfolioPreview {
+  rows: ImportPortfolioRow[];
+  rowCount: number;
+  uniqueCustomers: number;
+  accountCount: number;
+  totalPayments: number;
+  totalFinanced: number;
+  totalCollected: number;
+  errors: ImportValidationError[];
+  warnings: ImportValidationWarning[];
+}
+
+export interface ImportPortfolioResult {
+  imported: number;
+  failed: number;
+  details: { rowIndex: number; creditAccountId?: string; error?: string }[];
 }

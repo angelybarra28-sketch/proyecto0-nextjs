@@ -18,6 +18,7 @@ export async function POST(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const body = (await request.json()) as {
       amount?: number;
+      paymentMethod?: string;
       paymentDate?: string;
       notes?: string;
     };
@@ -28,6 +29,7 @@ export async function POST(request: Request, context: RouteContext) {
 
     const account = await registerCreditPayment(id, {
       amount: body.amount,
+      paymentMethod: body.paymentMethod as import('@/lib/types').CreditPaymentMethod,
       paymentDate: body.paymentDate,
       notes: body.notes,
     });

@@ -26,7 +26,7 @@ function statusBadge(status: string) {
 
 type CreditAccountDetailViewProps = {
   account: CreditAccountDetail;
-  onPayment: (amount: number, notes: string) => Promise<void>;
+  onPayment: (amount: number, paymentMethod: string, notes: string) => Promise<void>;
   onAddNote: (input: { contactType: 'CALL' | 'WHATSAPP' | 'VISIT' | 'OTHER'; result: 'NOTE' | 'PROMISE' | 'NO_CONTACT' | 'PARTIAL_PAYMENT' | 'PAID' | 'OTHER'; notes: string; createdBy: string }) => Promise<void>;
 };
 
@@ -46,6 +46,10 @@ export function CreditAccountDetailView({ account, onPayment, onAddNote }: Credi
         <h2 className={styles.sectionTitle}>{account.productName}</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
           <div>
+            <p style={{ fontSize: 12, color: '#666', margin: 0 }}>N° Tarjeta</p>
+            <p style={{ fontWeight: 600, margin: '4px 0 0' }}>{account.operationNumber ?? '-'}</p>
+          </div>
+          <div>
             <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Cliente</p>
             <p style={{ fontWeight: 600, margin: '4px 0 0' }}>{account.customer.fullName}</p>
           </div>
@@ -63,7 +67,7 @@ export function CreditAccountDetailView({ account, onPayment, onAddNote }: Credi
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginTop: 16, padding: 16, background: '#f9fafb', borderRadius: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginTop: 16, padding: 16, background: '#f9fafb', borderRadius: 10, color: '#333' }}>
           <div>
             <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Cuota</p>
             <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 18 }}>{formatCurrency(account.installmentAmount)}</p>
@@ -132,6 +136,7 @@ export function CreditAccountDetailView({ account, onPayment, onAddNote }: Credi
                 <tr>
                   <th>Fecha</th>
                   <th>Monto</th>
+                  <th>Medio</th>
                   <th>Observaciones</th>
                 </tr>
               </thead>
@@ -140,6 +145,7 @@ export function CreditAccountDetailView({ account, onPayment, onAddNote }: Credi
                   <tr key={p.id}>
                     <td>{formatDate(p.paymentDate)}</td>
                     <td>{formatCurrency(p.amount)}</td>
+                    <td>{p.paymentMethod}</td>
                     <td>{p.notes || '-'}</td>
                   </tr>
                 ))}
@@ -220,7 +226,7 @@ export function CreditAccountDetailView({ account, onPayment, onAddNote }: Credi
               style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }}
             />
           </div>
-          <button type="submit" className={styles.button}>Agregar gestion</button>
+          <button type="submit" className={styles.adminActionButton}>Agregar gestion</button>
         </form>
       </section>
 

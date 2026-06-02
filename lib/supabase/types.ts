@@ -281,6 +281,19 @@ export interface CustomerAnalyticsMetric {
   averagePurchaseFrequency: number;
 }
 
+export interface CreditDashboardMetrics {
+  totalFinanced: number;
+  totalCollected: number;
+  totalPending: number;
+  customerCount: number;
+  customersWithDebt: number;
+  activeAccounts: number;
+  finishedAccounts: number;
+  currentMonthCollected: number;
+  previousMonthCollected: number;
+  monthlyCollection: MonthlyMetric[];
+}
+
 export interface AdminDashboardStats {
   todaySalesCount?: number;
   todaySoldAmount?: number;
@@ -298,4 +311,5 @@ export interface AdminDashboardStats {
   topCustomers: CustomerRankingMetric[];
   customerAnalytics?: CustomerAnalyticsMetric;
   productHealth?: ProductHealthMetric;
+  credit?: CreditDashboardMetrics;
 }

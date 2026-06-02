@@ -229,8 +229,15 @@ export async function toggleAdminUser(userId: string, isActive: boolean, signal?
   return payload;
 }
 
-export async function fetchCreditAccounts(signal?: AbortSignal): Promise<{ accounts: import('@/lib/types').CreditAccountSummary[]; dashboard: import('@/lib/types').CreditDashboard | null }> {
-  const response = await fetch('/api/admin/credit-accounts?dashboard=true', { signal });
+export async function fetchCreditAccounts(
+  signal?: AbortSignal,
+  options?: { search?: string; statusFilter?: 'active' | 'finished' | 'all' }
+): Promise<{ accounts: import('@/lib/types').CreditAccountSummary[]; dashboard: import('@/lib/types').CreditDashboard | null }> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('dashboard', 'true');
+  if (options?.search) searchParams.set('search', options.search);
+  if (options?.statusFilter) searchParams.set('statusFilter', options.statusFilter);
+  const response = await fetch(`/api/admin/credit-accounts?${searchParams.toString()}`, { signal });
 
   if (!response.ok) {
     throw new Error('No se pudieron cargar las cuentas corrientes');
@@ -272,7 +279,7 @@ export async function fetchCreditAccountDetail(accountId: string, signal?: Abort
 
 export async function registerCreditPayment(
   accountId: string,
-  input: { amount: number; paymentDate?: string; notes?: string }
+  input: { amount: number; paymentMethod?: string; paymentDate?: string; notes?: string }
 ): Promise<import('@/lib/types').CreditAccountDetail> {
   const response = await fetch(`/api/admin/credit-accounts/${accountId}/payments`, {
     method: 'POST',
@@ -326,4 +333,37 @@ export async function fetchCreditCollectionRoute(signal?: AbortSignal): Promise<
 
   const payload = await response.json() as { route: import('@/lib/types').CollectionRouteItem[] };
   return payload.route;
+}
+
+export async function previewPortfolioImport(formData: FormData): Promise<import('@/lib/types').ImportPortfolioPreview> {
+  const response = await fetch('/api/admin/importacion-cartera/preview', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo generar el preview');
+  }
+
+  const payload = await response.json() as { preview: import('@/lib/types').ImportPortfolioPreview };
+  return payload.preview;
+}
+
+export async function executePortfolioImport(rows: import('@/lib/types').ImportPortfolioRow[]): Promise<import('@/lib/types').ImportPortfolioResult> {
+  const response = await fetch('/api/admin/importacion-cartera/import', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ rows }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo importar la cartera');
+  }
+
+  const payload = await response.json() as { result: import('@/lib/types').ImportPortfolioResult };
+  return payload.result;
 }

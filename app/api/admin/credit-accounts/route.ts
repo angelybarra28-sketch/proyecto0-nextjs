@@ -17,8 +17,10 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const withDashboard = url.searchParams.get('dashboard') === 'true';
+    const search = url.searchParams.get('search') ?? undefined;
+    const statusFilter = url.searchParams.get('statusFilter') as 'active' | 'finished' | 'all' | undefined;
 
-    const accounts = await listCreditAccountSummaries();
+    const accounts = await listCreditAccountSummaries({ search, statusFilter });
 
     if (withDashboard) {
       const dashboard = await getCreditDashboard();
@@ -47,6 +49,7 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as {
       customerId?: string;
+      operationNumber?: string;
       productName?: string;
       quantity?: number;
       installmentCount?: number;
@@ -67,6 +70,7 @@ export async function POST(request: Request) {
 
     const account = await createCreditAccount({
       customerId: body.customerId,
+      operationNumber: body.operationNumber,
       productName: body.productName,
       quantity: body.quantity,
       installmentCount: body.installmentCount,

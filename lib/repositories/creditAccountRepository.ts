@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export interface DbCreditAccount {
   id: string;
   customer_id: string;
+  operation_number: string | null;
   product_name: string;
   quantity: number;
   installment_count: number;
@@ -18,6 +19,7 @@ export interface DbCreditPayment {
   id: string;
   credit_account_id: string;
   amount: number;
+  payment_method: string;
   payment_date: string;
   notes: string | null;
   created_at: string;
@@ -160,6 +162,7 @@ export async function insertCreditAccount(
   supabase: SupabaseClient,
   input: {
     customer_id: string;
+    operation_number?: string | null;
     product_name: string;
     quantity: number;
     installment_count: number;
@@ -172,6 +175,7 @@ export async function insertCreditAccount(
     .from('credit_accounts')
     .insert({
       customer_id: input.customer_id,
+      operation_number: input.operation_number ?? null,
       product_name: input.product_name,
       quantity: input.quantity,
       installment_count: input.installment_count,
@@ -218,6 +222,7 @@ export async function insertCreditPayment(
     credit_account_id: string;
     amount: number;
     payment_date: string;
+    payment_method?: string;
     notes: string | null;
   }
 ): Promise<DbCreditPayment> {
@@ -227,6 +232,7 @@ export async function insertCreditPayment(
       credit_account_id: input.credit_account_id,
       amount: input.amount,
       payment_date: input.payment_date,
+      payment_method: input.payment_method ?? 'EFECTIVO',
       notes: input.notes,
     })
     .select()
@@ -295,6 +301,11 @@ export async function getCreditDashboardFromRpc(
   total_pending: number;
   customer_count: number;
   customers_with_debt: number;
+  active_accounts: number;
+  finished_accounts: number;
+  current_month_collected: number;
+  previous_month_collected: number;
+  monthly_collection: { month: string; collected: number }[];
 } | null> {
   const { data, error } = await supabase.rpc('get_credit_dashboard');
 
@@ -308,9 +319,43 @@ export async function getCreditDashboardFromRpc(
     total_pending: number;
     customer_count: number;
     customers_with_debt: number;
+    active_accounts: number;
+    finished_accounts: number;
+    current_month_collected: number;
+    previous_month_collected: number;
+    monthly_collection: { month: string; collected: number }[];
   } | null;
 
   return row;
+}
+
+export async function importPortfolioRow(
+  supabase: SupabaseClient,
+  row: import('@/lib/types').ImportPortfolioRow
+): Promise<{ creditAccountId: string; customerId: string; paymentsImported: number }> {
+  const { data, error } = await supabase.rpc('import_credit_portfolio_row', {
+    p_data: row,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const result = data as {
+    credit_account_id: string;
+    customer_id: string;
+    payments_imported: number;
+  } | null;
+
+  if (!result) {
+    throw new Error('IMPORT_PORTFOLIO_ROW_NO_RESULT');
+  }
+
+  return {
+    creditAccountId: result.credit_account_id,
+    customerId: result.customer_id,
+    paymentsImported: result.payments_imported,
+  };
 }
 
 export async function getCollectionRouteFromRpc(
@@ -321,6 +366,7 @@ export async function getCollectionRouteFromRpc(
   customer_full_name: string;
   customer_phone: string | null;
   customer_address: string | null;
+  operation_number: string | null;
   product_name: string;
   total_debt: number;
   overdue_amount: number;
@@ -345,6 +391,7 @@ export async function getCollectionRouteFromRpc(
     customer_full_name: string;
     customer_phone: string | null;
     customer_address: string | null;
+    operation_number: string | null;
     product_name: string;
     total_debt: number;
     overdue_amount: number;

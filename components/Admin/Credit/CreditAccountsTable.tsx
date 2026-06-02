@@ -20,6 +20,7 @@ export function CreditAccountsTable({ accounts, onSelectAccount }: CreditAccount
       <table className={styles.table}>
         <thead>
           <tr>
+            <th>N° Tarjeta</th>
             <th>Artículo</th>
             <th>Cuota</th>
             <th>Total</th>
@@ -33,6 +34,7 @@ export function CreditAccountsTable({ accounts, onSelectAccount }: CreditAccount
         <tbody>
           {accounts.map((acc) => (
             <tr key={acc.id}>
+              <td>{acc.operationNumber ?? '-'}</td>
               <td>{acc.productName}</td>
               <td>
                 {formatCurrency(acc.installmentAmount)} x {acc.installmentCount}
