@@ -222,6 +222,23 @@ export function previewPortfolioFile(buffer: ArrayBuffer): ImportPortfolioPrevie
   };
 }
 
+function extractSupabaseError(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as { message?: string; details?: string; hint?: string; code?: string };
+    if (e.message) {
+      const parts = [e.message];
+      if (e.details) parts.push(`details: ${e.details}`);
+      if (e.hint) parts.push(`hint: ${e.hint}`);
+      if (e.code) parts.push(`code: ${e.code}`);
+      return parts.join(' | ');
+    }
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return String(err);
+}
+
 export async function importPortfolioBatch(
   supabase: SupabaseClient,
   rows: ImportPortfolioRow[]
@@ -238,7 +255,9 @@ export async function importPortfolioBatch(
       details.push({ rowIndex: i, creditAccountId: result.creditAccountId });
     } catch (err) {
       failed++;
-      details.push({ rowIndex: i, error: err instanceof Error ? err.message : 'Error desconocido' });
+      const errorMsg = extractSupabaseError(err);
+      console.error(`[importPortfolioBatch] Fila ${i + 1} error:`, err);
+      details.push({ rowIndex: i, error: errorMsg });
     }
   }
 

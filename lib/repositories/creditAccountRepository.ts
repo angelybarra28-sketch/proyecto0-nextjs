@@ -333,11 +333,19 @@ export async function importPortfolioRow(
   supabase: SupabaseClient,
   row: import('@/lib/types').ImportPortfolioRow
 ): Promise<{ creditAccountId: string; customerId: string; paymentsImported: number }> {
+  console.error('[importPortfolioRow] RPC input:', JSON.stringify(row, null, 2));
+
   const { data, error } = await supabase.rpc('import_credit_portfolio_row', {
     p_data: row,
   });
 
   if (error) {
+    console.error('[importPortfolioRow] Supabase RPC error:', {
+      message: error.message,
+      details: (error as { details?: string }).details,
+      hint: (error as { hint?: string }).hint,
+      code: (error as { code?: string }).code,
+    });
     throw error;
   }
 

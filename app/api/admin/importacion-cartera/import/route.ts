@@ -29,6 +29,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ result }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
+    const e = error as { message?: string; details?: string; hint?: string; code?: string };
+    console.error('[importPortfolio API] Uncaught error:', {
+      message: e.message,
+      details: e.details,
+      hint: e.hint,
+      code: e.code,
+      raw: error,
+    });
     logServerError({ area: 'admin.importPortfolio', action: 'import', requestId: context.requestId, error });
     return errorResponse(error, context.requestId, 500);
   }
