@@ -31,9 +31,26 @@ export function AdminOverviewPage() {
         <AdminSalesTable sales={sales} isLoadingSales={isLoadingSales} salesError={salesError} />
       </div>
 
-      <div className={styles.backLink}>
-        <Link href="/">Volver al inicio</Link>
-      </div>
+      <div
+  style={{
+    display: 'flex',
+    gap: '12px',
+    flexWrap: 'wrap',
+    marginTop: '24px',
+  }}
+>
+  <Link href="/admin/importacion-cartera">
+    <button className={styles.adminActionButton}>
+      Importar Cartera Excel
+    </button>
+  </Link>
+
+  <Link href="/">
+    <button className={styles.adminActionButton}>
+      Volver al inicio
+    </button>
+  </Link>
+</div>
     </div>
   );
 }

@@ -335,9 +335,42 @@ export async function importPortfolioRow(
 ): Promise<{ creditAccountId: string; customerId: string; paymentsImported: number }> {
   console.error('[importPortfolioRow] RPC input:', JSON.stringify(row, null, 2));
 
-  const { data, error } = await supabase.rpc('import_credit_portfolio_row', {
-    p_data: row,
-  });
+  const payload = {
+  operation_number: row.operationNumber,
+  product_name: row.productName,
+  sale_date: row.saleDate,
+  installment_count: row.installmentCount,
+  installment_amount: row.installmentAmount,
+  total_amount: row.totalAmount,
+  accumulated_payment: row.accumulatedPayment,
+  remaining_amount: row.remainingAmount,
+
+  customer: {
+    full_name: row.customerFullName,
+    phone: row.customerPhone,
+    address: row.customerAddress,
+    between_streets: row.betweenStreets,
+  },
+
+  payments: row.payments.map((p) => ({
+    amount: p.amount,
+    payment_date: p.paymentDate,
+    payment_method: p.paymentMethod,
+    notes: p.notes ?? null,
+  })),
+};
+
+console.log(
+  '[importPortfolioRow] RPC payload:',
+  JSON.stringify(payload, null, 2)
+);
+
+const { data, error } = await supabase.rpc(
+  'import_credit_portfolio_row',
+  {
+    p_data: payload,
+  }
+);
 
   if (error) {
     console.error('[importPortfolioRow] Supabase RPC error:', {
