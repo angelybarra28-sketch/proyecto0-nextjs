@@ -156,25 +156,30 @@ export async function listCreditAccountSummaries(options?: {
     summaries = summaries.filter((s) => s.remaining <= 0);
   }
 
+  // Cargar nombres de clientes para mostrar en tabla y permitir búsqueda
+  const customerIds = [...new Set(summaries.map((s) => s.customerId))];
+  const { data: customers } = await supabase
+    .from('customers')
+    .select('id, full_name, phone')
+    .in('id', customerIds);
+
+  const customerMap = new Map(
+    (customers ?? []).map((c: { id: string; full_name: string; phone: string | null }) => [c.id, c])
+  );
+
+  summaries = summaries.map((s) => ({
+    ...s,
+    customerName: customerMap.get(s.customerId)?.full_name ?? 'Cliente desconocido',
+  }));
+
   const search = (options?.search ?? '').trim().toLowerCase();
   if (search) {
-    const customerIds = summaries.map((s) => s.customerId);
-    const { data: customers } = await supabase
-      .from('customers')
-      .select('id, full_name, phone')
-      .in('id', customerIds);
-
-    const customerMap = new Map(
-      (customers ?? []).map((c: { id: string; full_name: string; phone: string | null }) => [c.id, c])
-    );
-
     summaries = summaries.filter((s) => {
-      const customer = customerMap.get(s.customerId);
       return (
         (s.operationNumber && s.operationNumber.toLowerCase().includes(search)) ||
         s.productName.toLowerCase().includes(search) ||
-        (customer?.full_name ?? '').toLowerCase().includes(search) ||
-        (customer?.phone ?? '').toLowerCase().includes(search)
+        (s.customerName ?? '').toLowerCase().includes(search) ||
+        (customerMap.get(s.customerId)?.phone ?? '').toLowerCase().includes(search)
       );
     });
   }

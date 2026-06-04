@@ -1,5 +1,6 @@
 import type { CreditDashboard } from '@/lib/types';
 import styles from '@/styles/Admin.module.css';
+import { CreditMonthlyChart } from './CreditMonthlyChart';
 
 type CreditDashboardSectionProps = {
   dashboard: CreditDashboard | null;
@@ -59,7 +60,8 @@ export function CreditDashboardSection({ dashboard }: CreditDashboardSectionProp
       {dashboard.monthlyCollection.length > 0 && (
         <div>
           <h3 className={styles.sectionTitle} style={{ fontSize: 16, marginTop: 16 }}>Evolución Mensual de Cobranzas</h3>
-          <div className={styles.tableContainer}>
+          <CreditMonthlyChart data={dashboard.monthlyCollection} />
+          <div className={styles.tableContainer} style={{ marginTop: 16 }}>
             <table className={styles.table}>
               <thead>
                 <tr>

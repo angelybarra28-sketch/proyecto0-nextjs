@@ -7,6 +7,7 @@ import { useCreditAccounts, useCreditAccountDetail } from '@/components/Admin/us
 import { CreditDashboardSection } from '@/components/Admin/Credit/CreditDashboardSection';
 import { CreditAccountsTable } from '@/components/Admin/Credit/CreditAccountsTable';
 import { CreditAccountDetailView } from '@/components/Admin/Credit/CreditAccountDetailView';
+import { exportCreditAccountsToExcel } from '@/components/Admin/Credit/creditExport';
 import styles from '@/styles/Admin.module.css';
 
 export function AdminCreditAccountsPage() {
@@ -67,6 +68,13 @@ export function AdminCreditAccountsPage() {
                 <p className={styles.adminTableSummary}>{accounts.length} cuenta(s)</p>
               </div>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => exportCreditAccountsToExcel(accounts)}
+                  className={styles.adminActionButton}
+                  disabled={accounts.length === 0}
+                >
+                  Exportar Excel
+                </button>
                 <button onClick={() => reload()} className={styles.adminActionButton} disabled={isLoading}>
                   {isLoading ? 'Cargando...' : 'Actualizar'}
                 </button>

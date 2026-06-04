@@ -5,6 +5,10 @@ function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
 }
 
+function formatDate(value: string): string {
+  return new Date(value).toLocaleDateString('es-AR');
+}
+
 type CreditAccountsTableProps = {
   accounts: CreditAccountSummary[];
   onSelectAccount?: (id: string) => void;
@@ -20,8 +24,10 @@ export function CreditAccountsTable({ accounts, onSelectAccount }: CreditAccount
       <table className={styles.table}>
         <thead>
           <tr>
+            <th>Cliente</th>
             <th>N° Tarjeta</th>
             <th>Artículo</th>
+            <th>Fecha Venta</th>
             <th>Cuota</th>
             <th>Total</th>
             <th>Pagado</th>
@@ -34,8 +40,10 @@ export function CreditAccountsTable({ accounts, onSelectAccount }: CreditAccount
         <tbody>
           {accounts.map((acc) => (
             <tr key={acc.id}>
+              <td>{acc.customerName ?? '—'}</td>
               <td>{acc.operationNumber ?? '-'}</td>
               <td>{acc.productName}</td>
+              <td>{formatDate(acc.saleDate)}</td>
               <td>
                 {formatCurrency(acc.installmentAmount)} x {acc.installmentCount}
               </td>

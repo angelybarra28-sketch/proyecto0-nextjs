@@ -31,39 +31,33 @@ const DEFAULT_ADMIN_SALE_QUERY: AdminSaleListInput = {};
 export function useAdminSales(enabled: boolean, query: AdminSaleListInput = DEFAULT_ADMIN_SALE_QUERY) {
   const [sales, setSales] = useState<AdminSaleSummary[]>([]);
   const [pagination, setPagination] = useState<AdminPagination | null>(null);
-  const [isLoadingSales, setIsLoadingSales] = useState(true);
+  const [isLoadingSales, setIsLoadingSales] = useState(false);
   const [salesError, setSalesError] = useState('');
+
+  const loadSales = useCallback(async (signal?: AbortSignal) => {
+    setIsLoadingSales(true);
+    setSalesError('');
+    try {
+      const payload = await fetchAdminSales(query, signal);
+      setSales(payload.sales);
+      setPagination(payload.pagination);
+    } catch (error: unknown) {
+      if (isAbortError(error) || signal?.aborted) return;
+      console.error('Error loading sales:', error);
+      setSalesError('No se pudieron cargar las ventas reales desde Supabase');
+    } finally {
+      setIsLoadingSales(false);
+    }
+  }, [query]);
 
   useEffect(() => {
     if (!enabled) {
       return;
     }
-
-    let isMounted = true;
     const controller = new AbortController();
-    setIsLoadingSales(true);
-
-    fetchAdminSales(query, controller.signal)
-      .then((payload) => {
-        if (!isMounted) return;
-        setSales(payload.sales);
-        setPagination(payload.pagination);
-        setSalesError('');
-      })
-      .catch((error: unknown) => {
-        if (isAbortError(error) || !isMounted) return;
-        console.error('Error loading sales:', error);
-        setSalesError('No se pudieron cargar las ventas reales desde Supabase');
-      })
-      .finally(() => {
-        if (isMounted) setIsLoadingSales(false);
-      });
-
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [enabled, query]);
+    loadSales(controller.signal);
+    return () => controller.abort();
+  }, [enabled, loadSales]);
 
   const overdueSales = useMemo(
     () => sales.filter((sale) => sale.collectionStatus === 'OVERDUE'),

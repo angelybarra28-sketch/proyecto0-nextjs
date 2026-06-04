@@ -182,6 +182,7 @@ export interface CreditAccountSummary extends CreditAccount {
   paid: number;
   remaining: number;
   paymentCount: number;
+  customerName?: string;
 }
 
 export interface MonthlyCreditMetric {
@@ -293,6 +294,7 @@ export interface ImportPortfolioPayment {
   amount: number;
   paymentDate: string;
   paymentMethod?: CreditPaymentMethod;
+  notes?: string;
 }
 
 export interface ImportPortfolioRow {
