@@ -302,6 +302,8 @@ export interface ImportPortfolioRow {
   customerAddress?: string | null;
   betweenStreets?: string | null;
   productName: string;
+  // TODO: leer quantity desde Excel cuando se defina la columna de importación
+  quantity?: number;
   saleDate: string;
   installmentCount: number;
   installmentAmount: number;
@@ -336,5 +338,7 @@ export interface ImportPortfolioPreview {
 export interface ImportPortfolioResult {
   imported: number;
   failed: number;
+  skipped: number;
   details: { rowIndex: number; creditAccountId?: string; error?: string }[];
+  skippedDetails?: { rowIndex: number; operationNumber?: string | null; reason: string }[];
 }

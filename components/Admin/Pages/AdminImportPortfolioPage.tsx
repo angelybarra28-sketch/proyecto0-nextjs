@@ -184,10 +184,25 @@ export function AdminImportPortfolioPage() {
                 <p style={{ fontWeight: 700, fontSize: 18, margin: '4px 0 0', color: '#065f46' }}>{result.imported}</p>
               </div>
               <div style={{ background: '#f9fafb', borderRadius: 8, padding: 12, color: '#333' }}>
+                <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Omitidos por duplicado</p>
+                <p style={{ fontWeight: 700, fontSize: 18, margin: '4px 0 0', color: '#92400e' }}>{result.skipped}</p>
+              </div>
+              <div style={{ background: '#f9fafb', borderRadius: 8, padding: 12, color: '#333' }}>
                 <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Fallidos</p>
                 <p style={{ fontWeight: 700, fontSize: 18, margin: '4px 0 0', color: '#991b1b' }}>{result.failed}</p>
               </div>
             </div>
+
+            {result.skippedDetails && result.skippedDetails.length > 0 && (
+              <div style={{ background: '#fef3c7', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                <p style={{ fontWeight: 700, color: '#92400e', marginBottom: 8 }}>Cuentas omitidas ({result.skippedDetails.length})</p>
+                <ul style={{ margin: 0, paddingLeft: 20, color: '#92400e' }}>
+                  {result.skippedDetails.map((d, i) => (
+                    <li key={i}>Fila {d.rowIndex + 1}: Tarjeta {d.operationNumber ?? '-'} — {d.reason}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {result.details.some((d) => d.error) && (
               <div style={{ background: '#fee2e2', borderRadius: 8, padding: 16, marginBottom: 16 }}>

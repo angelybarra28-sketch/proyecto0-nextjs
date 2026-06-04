@@ -67,9 +67,6 @@ export function AdminCreditAccountsPage() {
                 <p className={styles.adminTableSummary}>{accounts.length} cuenta(s)</p>
               </div>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Link href="/admin/importacion-cartera">
-                  <button className={styles.adminActionButton}>Importar Cartera</button>
-                </Link>
                 <button onClick={() => reload()} className={styles.adminActionButton} disabled={isLoading}>
                   {isLoading ? 'Cargando...' : 'Actualizar'}
                 </button>
@@ -102,6 +99,12 @@ export function AdminCreditAccountsPage() {
             </div>
 
             <CreditAccountsTable accounts={accounts} onSelectAccount={setSelectedAccountId} />
+
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <Link href="/admin/importacion-cartera" style={{ fontSize: 14, color: '#667eea', textDecoration: 'none' }}>
+                + Importar nueva cartera desde Excel
+              </Link>
+            </div>
           </section>
         )}
       </div>

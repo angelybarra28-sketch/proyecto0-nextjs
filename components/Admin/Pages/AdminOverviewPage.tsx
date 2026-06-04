@@ -32,25 +32,31 @@ export function AdminOverviewPage() {
       </div>
 
       <div
-  style={{
-    display: 'flex',
-    gap: '12px',
-    flexWrap: 'wrap',
-    marginTop: '24px',
-  }}
->
-  <Link href="/admin/importacion-cartera">
-    <button className={styles.adminActionButton}>
-      Importar Cartera Excel
-    </button>
-  </Link>
+        style={{
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap',
+          marginTop: '24px',
+        }}
+      >
+        <Link href="/admin/cuenta-corriente">
+          <button className={styles.adminActionButton}>
+            Cuenta Corriente
+          </button>
+        </Link>
 
-  <Link href="/">
-    <button className={styles.adminActionButton}>
-      Volver al inicio
-    </button>
-  </Link>
-</div>
+        <Link href="/admin/importacion-cartera">
+          <button className={styles.adminActionButton}>
+            Importar Cartera Excel
+          </button>
+        </Link>
+
+        <Link href="/">
+          <button className={styles.adminActionButton}>
+            Volver al inicio
+          </button>
+        </Link>
+      </div>
     </div>
   );
 }

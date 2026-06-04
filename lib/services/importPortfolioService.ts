@@ -82,7 +82,13 @@ function mapRow(row: Record<string, unknown>, headers: string[]): ImportPortfoli
   const customerAddress = String(findValue(row, headers, ['DIRECCION', 'DOMICILIO', 'DIRECCIÓN']) ?? '').trim() || null;
   const betweenStreets = String(findValue(row, headers, ['ENTRE_CALLES', 'ENTRECALLES', 'REFERENCIA']) ?? '').trim() || null;
   const operationNumber = String(findValue(row, headers, ['NUMERO_TARJETA', 'NUM_TARJETA', 'TARJETA', 'NÚMERO_TARJETA']) ?? '').trim() || null;
-  const productName = String(findValue(row, headers, ['ARTICULO', 'ARTÍCULO', 'PRODUCTO', 'DESCRIPCION', 'DESCRIPCIÓN']) ?? '').trim() || 'Artículo no especificado';
+  const productName = String(findValue(row, headers, [
+    'ARTICULO', 'ARTÍCULO', 'PRODUCTO', 'DESCRIPCION', 'DESCRIPCIÓN',
+    'ITEM', 'DETALLE', 'ART', 'ART.', 'PRODUCTOS', 'CONCEPTO',
+    'DESCRIPCION_ARTICULO', 'ARTICULO_VENDIDO', 'MERCADERIA', 'MERCADERÍA',
+  ]) ?? '').trim() || 'Artículo no especificado';
+  // TODO: leer cantidad desde columna de Excel cuando se normalice el formato
+  // const quantity = parseNumber(findValue(row, headers, ['CANTIDAD', 'QTY', 'UNIDADES', 'CANT'])) ?? 1;
 
   const installmentCount = parseNumber(findValue(row, headers, ['CANTIDAD_CUOTAS', 'CUOTAS', 'N_CUOTAS', 'N*CUOTAS', 'NÚMERO_CUOTAS'])) ?? 0;
   const installmentAmount = parseNumber(findValue(row, headers, ['VALOR_CUOTA', 'CUOTA', 'MONTO_CUOTA'])) ?? 0;
@@ -183,6 +189,10 @@ export function previewPortfolioFile(buffer: ArrayBuffer): ImportPortfolioPrevie
       warnings.push({ rowIndex: i, message: `RESTANTE (${row.remainingAmount}) difiere de total - acumulado` });
     }
 
+    if (row.productName === 'Artículo no especificado') {
+      warnings.push({ rowIndex: i, message: `No se encontró una columna de producto reconocida (Tarjeta: ${row.operationNumber ?? 'sin número'})` });
+    }
+
     if (row.operationNumber) {
       const list = operationNumbers.get(row.operationNumber) ?? [];
       list.push(i);
@@ -244,11 +254,36 @@ export async function importPortfolioBatch(
   rows: ImportPortfolioRow[]
 ): Promise<ImportPortfolioResult> {
   const details: { rowIndex: number; creditAccountId?: string; error?: string }[] = [];
+  const skippedDetails: { rowIndex: number; operationNumber?: string | null; reason: string }[] = [];
   let imported = 0;
   let failed = 0;
+  let skipped = 0;
+
+  // Pre-cargar operation_numbers existentes para evitar duplicados (Opción A: control en Node.js)
+  const operationNumbers = rows
+    .map((r) => r.operationNumber)
+    .filter((n): n is string => !!n);
+
+  const existingNumbers = new Set<string>();
+  if (operationNumbers.length > 0) {
+    const { data, error } = await supabase
+      .from('credit_accounts')
+      .select('operation_number')
+      .in('operation_number', operationNumbers);
+    if (!error && data) {
+      for (const d of data) {
+        if (d.operation_number) existingNumbers.add(d.operation_number);
+      }
+    }
+  }
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
+    if (row.operationNumber && existingNumbers.has(row.operationNumber)) {
+      skipped++;
+      skippedDetails.push({ rowIndex: i, operationNumber: row.operationNumber, reason: 'Cuenta ya importada' });
+      continue;
+    }
     try {
       const result = await importPortfolioRow(supabase, row);
       imported++;
@@ -261,5 +296,5 @@ export async function importPortfolioBatch(
     }
   }
 
-  return { imported, failed, details };
+  return { imported, failed, skipped, details, skippedDetails };
 }
