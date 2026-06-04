@@ -126,6 +126,46 @@ export function AdminImportPortfolioPage() {
               </div>
             </div>
 
+            {/* Columnas críticas faltantes */}
+            {preview.missingColumns.length > 0 && (
+              <div style={{ background: '#fee2e2', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                <p style={{ fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>Columnas críticas faltantes ({preview.missingColumns.length})</p>
+                <ul style={{ margin: 0, paddingLeft: 20, color: '#991b1b' }}>
+                  {preview.missingColumns.map((col, i) => (
+                    <li key={i}>{col}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Modo seguro: resumen de importabilidad */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
+              <div style={{ background: '#f0fdf4', borderRadius: 8, padding: 12, color: '#333', border: '1px solid #bbf7d0' }}>
+                <p style={{ fontSize: 12, color: '#166534', margin: 0 }}>Importables</p>
+                <p style={{ fontWeight: 700, fontSize: 18, margin: '4px 0 0', color: '#065f46' }}>{preview.stats.importableCount}</p>
+              </div>
+              <div style={{ background: '#fef3c7', borderRadius: 8, padding: 12, color: '#333', border: '1px solid #fde68a' }}>
+                <p style={{ fontSize: 12, color: '#92400e', margin: 0 }}>Duplicadas en archivo</p>
+                <p style={{ fontWeight: 700, fontSize: 18, margin: '4px 0 0', color: '#92400e' }}>{preview.stats.duplicateInFileCount}</p>
+              </div>
+              <div style={{ background: '#fee2e2', borderRadius: 8, padding: 12, color: '#333', border: '1px solid #fecaca' }}>
+                <p style={{ fontSize: 12, color: '#991b1b', margin: 0 }}>Inválidas</p>
+                <p style={{ fontWeight: 700, fontSize: 18, margin: '4px 0 0', color: '#991b1b' }}>{preview.stats.invalidCount}</p>
+              </div>
+            </div>
+
+            {/* Estadísticas de calidad */}
+            <div style={{ background: '#f9fafb', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+              <p style={{ fontWeight: 700, color: '#374151', marginBottom: 12, fontSize: 14 }}>Calidad de datos detectada</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, fontSize: 13, color: '#4b5563' }}>
+                <div>Producto vacío: <strong>{preview.stats.emptyProductCount}</strong></div>
+                <div>Sin fecha de venta: <strong>{preview.stats.missingSaleDateCount}</strong></div>
+                <div>Sin dirección: <strong>{preview.stats.missingAddressCount}</strong></div>
+                <div>Sin tarjeta: <strong>{preview.stats.missingOperationNumberCount}</strong></div>
+                <div>Sin nombre: <strong>{preview.stats.missingNameCount}</strong></div>
+              </div>
+            </div>
+
             {preview.errors.length > 0 && (
               <div style={{ background: '#fee2e2', borderRadius: 8, padding: 16, marginBottom: 16 }}>
                 <p style={{ fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>Errores bloqueantes ({preview.errors.length})</p>

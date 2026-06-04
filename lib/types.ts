@@ -325,6 +325,18 @@ export interface ImportValidationWarning {
   message: string;
 }
 
+export interface ImportPortfolioStats {
+  emptyProductCount: number;
+  missingSaleDateCount: number;
+  missingAddressCount: number;
+  missingOperationNumberCount: number;
+  missingNameCount: number;
+  duplicateInFileCount: number;
+  existingInDbCount: number;
+  invalidCount: number;
+  importableCount: number;
+}
+
 export interface ImportPortfolioPreview {
   rows: ImportPortfolioRow[];
   rowCount: number;
@@ -333,8 +345,10 @@ export interface ImportPortfolioPreview {
   totalPayments: number;
   totalFinanced: number;
   totalCollected: number;
+  stats: ImportPortfolioStats;
   errors: ImportValidationError[];
   warnings: ImportValidationWarning[];
+  missingColumns: string[];
 }
 
 export interface ImportPortfolioResult {
