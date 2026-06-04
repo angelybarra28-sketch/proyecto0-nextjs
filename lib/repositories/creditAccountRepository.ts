@@ -313,7 +313,9 @@ export async function getCreditDashboardFromRpc(
     throw error;
   }
 
-  const row = data as {
+  const row = Array.isArray(data) ? data[0] : data;
+
+  return row as {
     total_financed: number;
     total_collected: number;
     total_pending: number;
@@ -325,8 +327,6 @@ export async function getCreditDashboardFromRpc(
     previous_month_collected: number;
     monthly_collection: { month: string; collected: number }[];
   } | null;
-
-  return row;
 }
 
 export async function importPortfolioRow(

@@ -31,13 +31,21 @@ export function useCreditAccounts(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const load = useCallback(async (signal?: AbortSignal) => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const data = await fetchCreditAccounts(signal, { search, statusFilter });
-      setAccounts(data.accounts);
-      setDashboard(data.dashboard);
+const load = useCallback(async (signal?: AbortSignal) => {
+  setIsLoading(true);
+  setError('');
+
+  try {
+    const data = await fetchCreditAccounts(signal, {
+      search,
+      statusFilter,
+    });
+
+    console.log('ACCOUNTS RESPONSE:', data);
+    console.log('DASHBOARD:', data.dashboard);
+
+    setAccounts(data.accounts);
+    setDashboard(data.dashboard);
     } catch (err) {
       if (isAbortError(err) || signal?.aborted) return;
       console.error('Error loading credit accounts:', err);
