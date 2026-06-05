@@ -1,19 +1,20 @@
 .container {
   min-height: 100vh;
   padding: 40px 20px;
-  background: #f5f5f5;
+  background: #1e1d1b;
+  color: #f5f2ec;
 }
 
 .title {
   text-align: center;
-  color: #333;
+  color: #f5f2ec;
   font-size: 32px;
   margin-bottom: 10px;
 }
 
 .subtitle {
   text-align: center;
-  color: #666;
+  color: #d3cdc4;
   font-size: 18px;
   margin-bottom: 40px;
 }
@@ -24,24 +25,25 @@
 }
 
 .section {
-  background: white;
+  background: #262422;
   border-radius: 12px;
   padding: 30px;
   margin-bottom: 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #363330;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .sectionTitle {
-  color: #333;
+  color: #f5f2ec;
   font-size: 22px;
   margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid #4a433a;
 }
 
 .empty {
   text-align: center;
-  color: #999;
+  color: #d3cdc4;
   padding: 20px;
   font-style: italic;
 }
@@ -57,13 +59,15 @@
 }
 
 .adminAlertError {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(254, 226, 226, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
 }
 
 .adminAlertSuccess {
-  background: #d1fae5;
-  color: #065f46;
+  background: rgba(209, 250, 229, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
 }
 
 .tableContainer {
@@ -76,21 +80,28 @@
 }
 
 .table th {
-  background: #667eea;
-  color: white;
+  background: #4a433a;
+  color: #f5f2ec;
   padding: 12px;
   text-align: left;
   font-weight: 600;
+  border-bottom: 2px solid #5a5248;
 }
 
 .table td {
   padding: 12px;
-  border-bottom: 1px solid #eee;
-  color: #333;
+  border-bottom: 1px solid #363330;
+  color: #f5f2ec;
 }
 
 .table tr:hover {
-  background: #f9f9f9;
+  background: #2a2724;
+}
+
+.creditSubheader td {
+  font-weight: 700;
+  background: #363330;
+  color: #f5f2ec;
 }
 
 .adminTableHeader {
@@ -107,7 +118,7 @@
 
 .adminTableSummary {
   margin: 0;
-  color: #666;
+  color: #d3cdc4;
   font-size: 14px;
 }
 
@@ -116,8 +127,8 @@
   align-items: center;
   padding: 6px 10px;
   border-radius: 999px;
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(254, 243, 199, 0.12);
+  color: #fbbf24;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -130,16 +141,16 @@
   align-items: end;
   margin-bottom: 18px;
   padding: 16px;
-  border: 1px solid #eee;
+  border: 1px solid #363330;
   border-radius: 10px;
-  background: #fafafa;
+  background: #262422;
 }
 
 .adminTableToolbar label {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: #555;
+  color: #d3cdc4;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -148,13 +159,19 @@
 .adminTableToolbar input,
 .adminTableToolbar select {
   min-height: 38px;
-  border: 1px solid #ddd;
+  border: 1px solid #363330;
   border-radius: 8px;
   padding: 8px 10px;
-  background: white;
-  color: #333;
+  background: #1e1d1b;
+  color: #f5f2ec;
   font-size: 14px;
   text-transform: none;
+}
+
+.adminTableToolbar input:focus,
+.adminTableToolbar select:focus {
+  outline: none;
+  border-color: #f7c59f;
 }
 
 .adminRowActions {
@@ -164,20 +181,22 @@
 }
 
 .adminActionButton {
-  border: 1px solid #667eea;
-  border-radius: 6px;
+  border: 1px solid #5a5248;
+  border-radius: 8px;
   padding: 8px 10px;
-  background: white;
-  color: #4f46e5;
+  background: #4a433a;
+  color: #f5f2ec;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3), inset 1px 1px 2px rgba(255, 255, 255, 0.05);
 }
 
 .adminActionButton:hover:not(:disabled) {
-  background: #667eea;
-  color: white;
+  background: #5a5248;
+  color: #f5f2ec;
+  transform: translateY(-2px);
 }
 
 .adminActionButton:disabled,
@@ -192,12 +211,12 @@
   justify-content: space-between;
   gap: 12px;
   margin-top: 16px;
-  color: #555;
+  color: #d3cdc4;
   font-size: 14px;
 }
 
 .deleteBtn {
-  background: #ef4444;
+  background: #d4543b;
   color: white;
   border: none;
   padding: 8px 12px;
@@ -208,11 +227,11 @@
 }
 
 .deleteBtn:hover {
-  background: #dc2626;
+  background: #b9422a;
 }
 
 .deleteBtn:hover:disabled {
-  background: #ef4444;
+  background: #d4543b;
 }
 
 .status {
@@ -223,23 +242,23 @@
 }
 
 .status.pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(254, 243, 199, 0.12);
+  color: #fbbf24;
 }
 
 .status.completed {
-  background: #d1fae5;
-  color: #065f46;
+  background: rgba(209, 250, 229, 0.12);
+  color: #34d399;
 }
 
 .status.cancelled {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(254, 226, 226, 0.12);
+  color: #f87171;
 }
 
 .status.overdue {
-  background: #ffedd5;
-  color: #9a3412;
+  background: rgba(255, 237, 213, 0.12);
+  color: #fb923c;
 }
 
 .backLink {
@@ -248,7 +267,7 @@
 }
 
 .backLink a {
-  color: #667eea;
+  color: #f7c59f;
   text-decoration: none;
   font-weight: 600;
 }
@@ -273,18 +292,25 @@
   align-items: center;
   gap: 8px;
   padding: 8px;
-  border: 1px solid #eee;
+  border: 1px solid #363330;
   border-radius: 8px;
-  background: #fafafa;
+  background: #262422;
 }
 
 .imagePreviewThumb {
   width: 72px;
   height: 72px;
   border-radius: 6px;
-  background: #eee;
+  background: #363330;
   background-position: center;
   background-size: cover;
+}
+
+.actionButtonsRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
 }
 
 @media (max-width: 900px) {

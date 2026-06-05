@@ -31,14 +31,7 @@ export function AdminOverviewPage() {
         <AdminSalesTable sales={sales} isLoadingSales={isLoadingSales} salesError={salesError} />
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          gap: '12px',
-          flexWrap: 'wrap',
-          marginTop: '24px',
-        }}
-      >
+      <div className={styles.actionButtonsRow}>
         <Link href="/admin/cuenta-corriente">
           <button className={styles.adminActionButton}>
             Cuenta Corriente

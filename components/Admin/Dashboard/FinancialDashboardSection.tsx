@@ -25,7 +25,7 @@ export function FinancialDashboardSection({ dashboard }: FinancialDashboardSecti
               <tr><td>Clientes con deuda</td><td>{dashboard.collection.customersWithDebt}</td></tr>
               {dashboard.credit && (
                 <>
-                  <tr><td colSpan={2} style={{ fontWeight: 700, background: '#f9fafb' }}>Cuenta Corriente (Crédito)</td></tr>
+                  <tr className={styles.creditSubheader}><td colSpan={2}>Cuenta Corriente (Crédito)</td></tr>
                   <tr><td>Total Financiado (CC)</td><td>{formatCurrency(dashboard.credit.totalFinanced)}</td></tr>
                   <tr><td>Total Cobrado (CC)</td><td>{formatCurrency(dashboard.credit.totalCollected)}</td></tr>
                   <tr><td>Total Pendiente (CC)</td><td>{formatCurrency(dashboard.credit.totalPending)}</td></tr>

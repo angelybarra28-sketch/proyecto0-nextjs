@@ -135,7 +135,7 @@ export function AdminSalesTable({ sales, table, pagination, isLoadingSales, sale
                     </span>
                   </td>
                   <td>
-                    <Link href={`/admin/ventas/${sale.id}`} className={styles.deleteBtn}>
+                    <Link href={`/admin/ventas/${sale.id}`} className={styles.adminActionButton}>
                       Ver detalle
                     </Link>
                   </td>
