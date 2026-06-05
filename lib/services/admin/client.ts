@@ -449,11 +449,13 @@ export async function fetchControlMensual(signal?: AbortSignal): Promise<{
     saleDate: string;
     lastPaymentDate: string | null;
     remainingAmount: number;
+    originMonth: number | null;
+    originYear: number | null;
   }[];
   summary: {
     monthlyReplacement: number;
     finishedCards: number;
-    totalCollected: number;
+    currentMonthlyCollection: number;
     projectedNextMonth: number;
   };
 }> {
@@ -473,11 +475,13 @@ export async function fetchControlMensual(signal?: AbortSignal): Promise<{
       saleDate: string;
       lastPaymentDate: string | null;
       remainingAmount: number;
+      originMonth: number | null;
+      originYear: number | null;
     }[];
     summary: {
       monthlyReplacement: number;
       finishedCards: number;
-      totalCollected: number;
+      currentMonthlyCollection: number;
       projectedNextMonth: number;
     };
   };

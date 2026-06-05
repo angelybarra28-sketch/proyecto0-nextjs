@@ -68,6 +68,13 @@ END;
 $$;
 
 -- 3. Commercial metrics for the dashboard
+--
+-- Business definitions:
+--   current_monthly_collection = SUM(credit_payments.amount) where payment_date is in the current month
+--   monthly_replacement        = SUM(credit_accounts.installment_amount) where sale_date is in the current month
+--   finished_cards             = COUNT(*) of accounts with total_paid >= total_financed and last payment in current month
+--   finished_installments_amount = SUM(installment_amount) of those finished accounts
+--   projected_next_month       = current_monthly_collection + monthly_replacement - finished_installments_amount
 CREATE OR REPLACE FUNCTION get_credit_commercial_metrics()
 RETURNS TABLE (
   current_monthly_collection numeric,
@@ -80,45 +87,76 @@ LANGUAGE SQL
 SECURITY DEFINER
 SET search_path = public
 AS $$
-WITH active_accounts AS (
-  SELECT ca.id, ca.installment_amount
-  FROM credit_accounts ca
-  WHERE ca.is_active = true
-    AND (ca.installment_amount * ca.installment_count) > COALESCE((
-      SELECT SUM(cp.amount) FROM credit_payments cp WHERE cp.credit_account_id = ca.id
-    ), 0)
+WITH month_bounds AS (
+  SELECT
+    DATE_TRUNC('month', NOW()) AS month_start,
+    DATE_TRUNC('month', NOW()) + INTERVAL '1 month' AS month_end
 ),
-replacement AS (
-  SELECT COALESCE(SUM(ca.installment_amount), 0)::numeric AS amount
-  FROM credit_accounts ca
-  WHERE ca.sale_date >= DATE_TRUNC('month', NOW())
-),
-finished AS (
+account_aggregates AS (
   SELECT
     ca.id,
     ca.installment_amount,
-    (SELECT MAX(cp.payment_date) FROM credit_payments cp WHERE cp.credit_account_id = ca.id) AS last_payment_date
+    ca.sale_date,
+    (ca.installment_amount * ca.installment_count)::numeric AS total_financed,
+    COALESCE(SUM(cp.amount), 0)::numeric AS total_paid,
+    MAX(cp.payment_date) AS last_payment_date
   FROM credit_accounts ca
-  WHERE ca.is_active = true
-    AND (ca.installment_amount * ca.installment_count) <= COALESCE((
-      SELECT SUM(cp.amount) FROM credit_payments cp WHERE cp.credit_account_id = ca.id
-    ), 0)
-),
-finished_this_month AS (
-  SELECT COUNT(*)::integer AS cnt, COALESCE(SUM(installment_amount), 0)::numeric AS amount
-  FROM finished
-  WHERE last_payment_date >= DATE_TRUNC('month', NOW())
+  LEFT JOIN credit_payments cp ON cp.credit_account_id = ca.id
+  GROUP BY ca.id, ca.installment_amount, ca.installment_count, ca.sale_date
 )
 SELECT
-  COALESCE((SELECT SUM(installment_amount) FROM active_accounts), 0)::numeric AS current_monthly_collection,
-  COALESCE((SELECT amount FROM replacement), 0)::numeric AS monthly_replacement,
-  COALESCE((SELECT cnt FROM finished_this_month), 0)::integer AS finished_cards,
-  COALESCE((SELECT amount FROM finished_this_month), 0)::numeric AS finished_installments_amount,
+  -- 1. Cobranza Actual: sum of all payments received in the current month
+  COALESCE((
+    SELECT SUM(cp.amount)::numeric
+    FROM credit_payments cp
+    CROSS JOIN month_bounds mb
+    WHERE cp.payment_date >= mb.month_start
+      AND cp.payment_date < mb.month_end
+  ), 0)::numeric AS current_monthly_collection,
+
+  -- 2. Reposición del Mes: sum of installment_amount for accounts sold this month
+  COALESCE(SUM(
+    CASE WHEN aa.sale_date >= mb.month_start AND aa.sale_date < mb.month_end
+         THEN aa.installment_amount ELSE 0 END
+  ), 0)::numeric AS monthly_replacement,
+
+  -- 3. Tarjetas Terminadas del Mes: count of accounts with zero debt and last payment this month
+  COALESCE(SUM(
+    CASE WHEN aa.total_paid >= aa.total_financed
+          AND aa.last_payment_date >= mb.month_start
+          AND aa.last_payment_date < mb.month_end
+         THEN 1 ELSE 0 END
+  ), 0)::integer AS finished_cards,
+
+  -- 4. Monto de Tarjetas Terminadas del Mes
+  COALESCE(SUM(
+    CASE WHEN aa.total_paid >= aa.total_financed
+          AND aa.last_payment_date >= mb.month_start
+          AND aa.last_payment_date < mb.month_end
+         THEN aa.installment_amount ELSE 0 END
+  ), 0)::numeric AS finished_installments_amount,
+
+  -- 5. Proyección Próxima Cobranza
   (
-    COALESCE((SELECT SUM(installment_amount) FROM active_accounts), 0)
-    + COALESCE((SELECT amount FROM replacement), 0)
-    - COALESCE((SELECT amount FROM finished_this_month), 0)
-  )::numeric AS projected_next_month;
+    COALESCE((
+      SELECT SUM(cp.amount)::numeric
+      FROM credit_payments cp
+      CROSS JOIN month_bounds mb
+      WHERE cp.payment_date >= mb.month_start
+        AND cp.payment_date < mb.month_end
+    ), 0)
+    + COALESCE(SUM(
+        CASE WHEN aa.sale_date >= mb.month_start AND aa.sale_date < mb.month_end
+             THEN aa.installment_amount ELSE 0 END
+      ), 0)
+    - COALESCE(SUM(
+        CASE WHEN aa.total_paid >= aa.total_financed
+              AND aa.last_payment_date >= mb.month_start
+              AND aa.last_payment_date < mb.month_end
+             THEN aa.installment_amount ELSE 0 END
+      ), 0)
+  )::numeric AS projected_next_month
+FROM account_aggregates aa, month_bounds mb;
 $$;
 
 -- 4. Monthly control report rows

@@ -163,6 +163,8 @@ export interface CreditAccount {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  originMonth?: number | null;
+  originYear?: number | null;
 }
 
 export type CreditPaymentMethod = 'EFECTIVO' | 'MERCADO_PAGO' | 'TRANSFERENCIA' | 'OTRO';
@@ -313,6 +315,8 @@ export interface ImportPortfolioRow {
   accumulatedPayment: number;
   remainingAmount: number;
   payments: ImportPortfolioPayment[];
+  originMonth?: number | null;
+  originYear?: number | null;
 }
 
 export interface ImportValidationError {

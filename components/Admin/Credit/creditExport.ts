@@ -1,5 +1,7 @@
 import * as xlsx from 'xlsx';
 
+const MONTH_NAMES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+
 export interface ExportableAccount {
   customerName?: string;
   operationNumber?: string | null;
@@ -8,6 +10,8 @@ export interface ExportableAccount {
   total: number;
   paid: number;
   remaining: number;
+  originMonth?: number | null;
+  originYear?: number | null;
 }
 
 export function exportCreditAccountsToExcel(accounts: ExportableAccount[], fileName?: string) {
@@ -16,6 +20,8 @@ export function exportCreditAccountsToExcel(accounts: ExportableAccount[], fileN
     Tarjeta: acc.operationNumber ?? '-',
     Producto: acc.productName,
     'Fecha de Venta': new Date(acc.saleDate).toLocaleDateString('es-AR'),
+    'Mes Origen': acc.originMonth ? MONTH_NAMES[acc.originMonth - 1] : '-',
+    'Año Origen': acc.originYear ?? '-',
     'Total Financiado': acc.total,
     Pagado: acc.paid,
     Restante: acc.remaining,
@@ -38,12 +44,14 @@ export interface ControlMensualRow {
   saleDate: string;
   lastPaymentDate: string | null;
   remainingAmount: number;
+  originMonth?: number | null;
+  originYear?: number | null;
 }
 
 export interface ControlMensualSummary {
   monthlyReplacement: number;
   finishedCards: number;
-  totalCollected: number;
+  currentMonthlyCollection: number;
   projectedNextMonth: number;
 }
 
@@ -60,6 +68,8 @@ export function exportControlMensualToExcel(
     'Fecha de Venta': r.saleDate ? new Date(r.saleDate).toLocaleDateString('es-AR') : '-',
     'Fecha Último Pago': r.lastPaymentDate ? new Date(r.lastPaymentDate).toLocaleDateString('es-AR') : '-',
     'Saldo Pendiente': r.remainingAmount,
+    'Mes Origen': r.originMonth ? MONTH_NAMES[r.originMonth - 1] : '-',
+    'Año Origen': r.originYear ?? '-',
   }));
 
   // Add summary rows
@@ -67,7 +77,7 @@ export function exportControlMensualToExcel(
   data.push({ Cliente: 'RESUMEN' });
   data.push({ Cliente: 'Reposición del mes', Tarjeta: summary.monthlyReplacement });
   data.push({ Cliente: 'Tarjetas terminadas', Tarjeta: summary.finishedCards });
-  data.push({ Cliente: 'Total cobrado', Tarjeta: summary.totalCollected });
+  data.push({ Cliente: 'Cobranza Actual', Tarjeta: summary.currentMonthlyCollection });
   data.push({ Cliente: 'Proyección próxima cobranza', Tarjeta: summary.projectedNextMonth });
 
   const worksheet = xlsx.utils.json_to_sheet(data);

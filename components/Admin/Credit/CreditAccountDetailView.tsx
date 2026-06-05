@@ -34,6 +34,12 @@ function statusBadge(status: string) {
   }
 }
 
+const MONTH_NAMES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+
+function formatOriginMonth(month?: number | null): string {
+  return month && month >= 1 && month <= 12 ? MONTH_NAMES[month - 1] : '-';
+}
+
 function getAccountStatusLabel(account: CreditAccountDetail): { label: string; color: string; bg: string } {
   if (account.remaining <= 0) {
     return { label: 'Finalizada', color: '#065f46', bg: '#d1fae5' };
@@ -91,6 +97,14 @@ export function CreditAccountDetailView({ account, onPayment, onAddNote }: Credi
                 {accountStatus.label}
               </span>
             </p>
+          </div>
+          <div>
+            <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Mes de Origen</p>
+            <p style={{ fontWeight: 600, margin: '4px 0 0', fontSize: 16 }}>{formatOriginMonth(account.originMonth)}</p>
+          </div>
+          <div>
+            <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Año de Origen</p>
+            <p style={{ fontWeight: 600, margin: '4px 0 0', fontSize: 16 }}>{account.originYear ?? '-'}</p>
           </div>
         </div>
 

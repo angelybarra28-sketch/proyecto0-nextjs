@@ -13,6 +13,8 @@ export interface DbCreditAccount {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  origin_month?: number | null;
+  origin_year?: number | null;
 }
 
 export interface DbCreditPayment {
@@ -344,6 +346,8 @@ export async function importPortfolioRow(
   total_amount: row.totalAmount,
   accumulated_payment: row.accumulatedPayment,
   remaining_amount: row.remainingAmount,
+  origin_month: row.originMonth ?? null,
+  origin_year: row.originYear ?? null,
 
   customer: {
     full_name: row.customerFullName,

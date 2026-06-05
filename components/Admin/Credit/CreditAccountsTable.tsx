@@ -1,6 +1,8 @@
 import type { CreditAccountSummary } from '@/lib/types';
 import styles from '@/styles/Admin.module.css';
 
+const MONTH_NAMES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
 }
@@ -28,6 +30,8 @@ export function CreditAccountsTable({ accounts, onSelectAccount }: CreditAccount
             <th>N° Tarjeta</th>
             <th>Artículo</th>
             <th>Fecha Venta</th>
+            <th>Mes Origen</th>
+            <th>Año Origen</th>
             <th>Cuota</th>
             <th>Total</th>
             <th>Pagado</th>
@@ -44,6 +48,8 @@ export function CreditAccountsTable({ accounts, onSelectAccount }: CreditAccount
               <td>{acc.operationNumber ?? '-'}</td>
               <td>{acc.productName}</td>
               <td>{formatDate(acc.saleDate)}</td>
+              <td>{acc.originMonth ? MONTH_NAMES[acc.originMonth - 1] : '-'}</td>
+              <td>{acc.originYear ?? '-'}</td>
               <td>
                 {formatCurrency(acc.installmentAmount)} x {acc.installmentCount}
               </td>

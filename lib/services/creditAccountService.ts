@@ -36,6 +36,8 @@ function calculateSummary(
     is_active: boolean;
     created_at: string;
     updated_at: string;
+    origin_month?: number | null;
+    origin_year?: number | null;
   },
   installments: { original_amount: number; paid_amount: number; status: string }[]
 ): CreditAccountSummary {
@@ -54,6 +56,8 @@ function calculateSummary(
     isActive: account.is_active,
     createdAt: account.created_at,
     updatedAt: account.updated_at,
+    originMonth: account.origin_month ?? null,
+    originYear: account.origin_year ?? null,
     total,
     paid,
     remaining: Math.max(0, total - paid),

@@ -196,6 +196,13 @@ function mapRow(row: Record<string, unknown>, headers: string[]): ImportPortfoli
   const saleDate = parseSaleDate(saleDateRaw) ?? new Date().toISOString().split('T')[0];
 
   const mesValue = findValue(row, headers, ['MES', 'MES_ACTUAL']);
+  const mesNormalized = String(mesValue ?? '').trim().toUpperCase();
+  const originMonth = MONTH_MAP[mesNormalized] ?? null;
+
+  const yearValue = findValue(row, headers, ['AÑO', 'ANO', 'ANIO', 'YEAR']);
+  const originYear = parseNumber(yearValue) ?? null;
+
+  // Legacy: infer year for monthly payment columns when year is not explicit
   const mesYear = getYearFromMesColumn(mesValue) ?? new Date().getFullYear();
 
   const payments: ImportPortfolioPayment[] = [];
@@ -228,6 +235,8 @@ function mapRow(row: Record<string, unknown>, headers: string[]): ImportPortfoli
     accumulatedPayment,
     remainingAmount,
     payments,
+    originMonth,
+    originYear,
   };
 }
 
