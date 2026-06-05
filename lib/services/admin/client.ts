@@ -367,3 +367,118 @@ export async function executePortfolioImport(rows: import('@/lib/types').ImportP
   const payload = await response.json() as { result: import('@/lib/types').ImportPortfolioResult };
   return payload.result;
 }
+
+export async function fetchCleanSummary(signal?: AbortSignal): Promise<{
+  allocationCount: number;
+  paymentCount: number;
+  installmentCount: number;
+  accountCount: number;
+  customerCount: number;
+}> {
+  const response = await fetch('/api/admin/credit-accounts/clean-summary', { signal });
+
+  if (!response.ok) {
+    throw new Error('No se pudo cargar el resumen de limpieza');
+  }
+
+  return await response.json() as {
+    allocationCount: number;
+    paymentCount: number;
+    installmentCount: number;
+    accountCount: number;
+    customerCount: number;
+  };
+}
+
+export async function cleanCreditPortfolio(): Promise<{
+  allocationsDeleted: number;
+  paymentsDeleted: number;
+  installmentsDeleted: number;
+  accountsDeleted: number;
+  customersDeleted: number;
+  timestamp: string;
+}> {
+  const response = await fetch('/api/admin/credit-accounts/clean', {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo ejecutar la limpieza');
+  }
+
+  return await response.json() as {
+    allocationsDeleted: number;
+    paymentsDeleted: number;
+    installmentsDeleted: number;
+    accountsDeleted: number;
+    customersDeleted: number;
+    timestamp: string;
+  };
+}
+
+export async function fetchCommercialMetrics(signal?: AbortSignal): Promise<{
+  currentMonthlyCollection: number;
+  monthlyReplacement: number;
+  finishedCards: number;
+  finishedInstallmentsAmount: number;
+  projectedNextMonth: number;
+}> {
+  const response = await fetch('/api/admin/credit-accounts/commercial-metrics', { signal });
+
+  if (!response.ok) {
+    throw new Error('No se pudieron cargar las métricas comerciales');
+  }
+
+  return await response.json() as {
+    currentMonthlyCollection: number;
+    monthlyReplacement: number;
+    finishedCards: number;
+    finishedInstallmentsAmount: number;
+    projectedNextMonth: number;
+  };
+}
+
+export async function fetchControlMensual(signal?: AbortSignal): Promise<{
+  rows: {
+    customerName: string;
+    operationNumber: string;
+    productName: string;
+    installmentAmount: number;
+    status: string;
+    saleDate: string;
+    lastPaymentDate: string | null;
+    remainingAmount: number;
+  }[];
+  summary: {
+    monthlyReplacement: number;
+    finishedCards: number;
+    totalCollected: number;
+    projectedNextMonth: number;
+  };
+}> {
+  const response = await fetch('/api/admin/credit-accounts/control-mensual', { signal });
+
+  if (!response.ok) {
+    throw new Error('No se pudo cargar el control mensual');
+  }
+
+  return await response.json() as {
+    rows: {
+      customerName: string;
+      operationNumber: string;
+      productName: string;
+      installmentAmount: number;
+      status: string;
+      saleDate: string;
+      lastPaymentDate: string | null;
+      remainingAmount: number;
+    }[];
+    summary: {
+      monthlyReplacement: number;
+      finishedCards: number;
+      totalCollected: number;
+      projectedNextMonth: number;
+    };
+  };
+}

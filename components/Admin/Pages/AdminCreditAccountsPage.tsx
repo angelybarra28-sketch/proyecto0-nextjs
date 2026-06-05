@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAdminAccess } from '@/components/Admin/useAdminData';
 import { useCreditAccounts, useCreditAccountDetail } from '@/components/Admin/useCreditAccounts';
@@ -8,6 +8,7 @@ import { CreditDashboardSection } from '@/components/Admin/Credit/CreditDashboar
 import { CreditAccountsTable } from '@/components/Admin/Credit/CreditAccountsTable';
 import { CreditAccountDetailView } from '@/components/Admin/Credit/CreditAccountDetailView';
 import { exportCreditAccountsToExcel } from '@/components/Admin/Credit/creditExport';
+import { fetchCleanSummary, cleanCreditPortfolio } from '@/lib/services/admin/client';
 import styles from '@/styles/Admin.module.css';
 
 export function AdminCreditAccountsPage() {
@@ -16,6 +17,27 @@ export function AdminCreditAccountsPage() {
   const [statusFilter, setStatusFilter] = useState<'active' | 'finished' | 'all'>('active');
   const { accounts, dashboard, isLoading, error, reload } = useCreditAccounts(isAdmin, search, statusFilter);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+
+  const [showCleanModal, setShowCleanModal] = useState(false);
+  const [cleanSummary, setCleanSummary] = useState<{
+    allocationCount: number;
+    paymentCount: number;
+    installmentCount: number;
+    accountCount: number;
+    customerCount: number;
+  } | null>(null);
+  const [cleanResult, setCleanResult] = useState<{
+    allocationsDeleted: number;
+    paymentsDeleted: number;
+    installmentsDeleted: number;
+    accountsDeleted: number;
+    customersDeleted: number;
+    timestamp: string;
+  } | null>(null);
+  const [cleanConfirmText, setCleanConfirmText] = useState('');
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanError, setCleanError] = useState('');
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
   const {
     account: detail,
@@ -34,6 +56,65 @@ export function AdminCreditAccountsPage() {
     await addNote(input);
     await reload();
   };
+
+  const openCleanModal = useCallback(async () => {
+    setCleanResult(null);
+    setCleanConfirmText('');
+    setCleanError('');
+    setShowCleanModal(true);
+    setLoadingSummary(true);
+    try {
+      const summary = await fetchCleanSummary();
+      setCleanSummary(summary);
+    } catch (err) {
+      console.error('Error loading clean summary:', err);
+      setCleanError(
+        'No se pudo cargar el resumen previo. Verifique que la función get_credit_clean_summary exista en la base de datos. '
+        + 'Si no existe, aplique la migración SQL en Supabase.'
+      );
+    } finally {
+      setLoadingSummary(false);
+    }
+  }, []);
+
+  const closeCleanModal = useCallback(() => {
+    setShowCleanModal(false);
+    setCleanResult(null);
+    setCleanConfirmText('');
+    setCleanError('');
+  }, []);
+
+  const handleConfirmClean = useCallback(async () => {
+    if (cleanConfirmText !== 'ELIMINAR') return;
+    setCleaning(true);
+    setCleanError('');
+
+    try {
+      // Backup preventivo
+      const now = new Date();
+      const backupName = `BACKUP_CARTERA_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}.xlsx`;
+      try {
+        exportCreditAccountsToExcel(accounts, backupName);
+      } catch (backupErr) {
+        console.error('Backup export failed:', backupErr);
+        setCleanError('La exportación de backup falló. Limpieza cancelada.');
+        setCleaning(false);
+        return;
+      }
+
+      const result = await cleanCreditPortfolio();
+      setCleanResult(result);
+      await reload();
+    } catch (err) {
+      console.error('Error cleaning portfolio:', err);
+      setCleanError(
+        'No se pudo ejecutar la limpieza. Verifique que la función clean_credit_portfolio exista en la base de datos. '
+        + 'Si no existe, aplique la migración SQL en Supabase.'
+      );
+    } finally {
+      setCleaning(false);
+    }
+  }, [cleanConfirmText, accounts, reload]);
 
   if (!isAdmin) return null;
 
@@ -78,6 +159,9 @@ export function AdminCreditAccountsPage() {
                 <button onClick={() => reload()} className={styles.adminActionButton} disabled={isLoading}>
                   {isLoading ? 'Cargando...' : 'Actualizar'}
                 </button>
+                <button onClick={openCleanModal} className={styles.deleteBtn}>
+                  Limpiar Cartera de Prueba
+                </button>
               </div>
             </div>
 
@@ -120,6 +204,114 @@ export function AdminCreditAccountsPage() {
       <div className={styles.backLink}>
         <Link href="/admin">Volver al panel</Link>
       </div>
+
+      {showCleanModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: 12,
+            padding: 24,
+            maxWidth: 520,
+            width: '100%',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+          }}>
+            <h2 style={{ margin: '0 0 16px', fontSize: 22, color: '#991b1b' }}>⚠️ Limpiar Cartera de Prueba</h2>
+
+            {cleanError && (
+              <div className={styles.adminAlertError} style={{ marginBottom: 16 }}>{cleanError}</div>
+            )}
+
+            {!cleanResult ? (
+              <>
+                {loadingSummary ? (
+                  <p className={styles.empty}>Cargando resumen...</p>
+                ) : cleanSummary ? (
+                  <div style={{ marginBottom: 16 }}>
+                    <p style={{ fontSize: 14, color: '#666', marginBottom: 12 }}>
+                      Se eliminará la siguiente información de prueba:
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 14 }}>
+                      <div>Cuentas corrientes:</div>
+                      <div style={{ fontWeight: 700 }}>{cleanSummary.accountCount}</div>
+                      <div>Cuotas:</div>
+                      <div style={{ fontWeight: 700 }}>{cleanSummary.installmentCount}</div>
+                      <div>Pagos:</div>
+                      <div style={{ fontWeight: 700 }}>{cleanSummary.paymentCount}</div>
+                      <div>Clientes:</div>
+                      <div style={{ fontWeight: 700 }}>{cleanSummary.customerCount}</div>
+                    </div>
+                    <p style={{ fontSize: 12, color: '#92400e', marginTop: 12, background: '#fef3c7', padding: 8, borderRadius: 6 }}>
+                      <strong>Backup:</strong> Se generará automáticamente un archivo Excel antes de la limpieza.
+                    </p>
+                  </div>
+                ) : null}
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 16 }}>
+                  Para confirmar, escriba exactamente:
+                  <input
+                    type="text"
+                    placeholder="ELIMINAR"
+                    value={cleanConfirmText}
+                    onChange={(e) => setCleanConfirmText(e.target.value)}
+                    style={{ minHeight: 38, border: '1px solid #ddd', borderRadius: 8, padding: '8px 10px', fontSize: 14 }}
+                    disabled={cleaning}
+                  />
+                </label>
+
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                  <button onClick={closeCleanModal} className={styles.adminActionButton} disabled={cleaning}>
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConfirmClean}
+                    className={styles.deleteBtn}
+                    disabled={cleaning || cleanConfirmText !== 'ELIMINAR'}
+                  >
+                    {cleaning ? 'Limpiando...' : 'Confirmar Limpieza'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ marginBottom: 16 }}>
+                  <p style={{ fontSize: 14, color: '#065f46', marginBottom: 12, fontWeight: 700 }}>
+                    Limpieza completada exitosamente.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 14 }}>
+                    <div>Cuentas eliminadas:</div>
+                    <div style={{ fontWeight: 700 }}>{cleanResult.accountsDeleted}</div>
+                    <div>Cuotas eliminadas:</div>
+                    <div style={{ fontWeight: 700 }}>{cleanResult.installmentsDeleted}</div>
+                    <div>Pagos eliminados:</div>
+                    <div style={{ fontWeight: 700 }}>{cleanResult.paymentsDeleted}</div>
+                    <div>Clientes eliminados:</div>
+                    <div style={{ fontWeight: 700 }}>{cleanResult.customersDeleted}</div>
+                    <div>Fecha:</div>
+                    <div style={{ fontWeight: 700 }}>{cleanResult.timestamp}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={closeCleanModal} className={styles.adminActionButton}>
+                    Cerrar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
