@@ -85,12 +85,13 @@ export function AdminCreditAccountsPage() {
   }, []);
 
   const handleConfirmClean = useCallback(async () => {
+    if (cleaning) return;
     if (cleanConfirmText !== 'ELIMINAR') return;
     setCleaning(true);
     setCleanError('');
 
     try {
-      // Backup preventivo
+      // Backup preventivo (único disparo)
       const now = new Date();
       const backupName = `BACKUP_CARTERA_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}.xlsx`;
       try {
@@ -98,13 +99,13 @@ export function AdminCreditAccountsPage() {
       } catch (backupErr) {
         console.error('Backup export failed:', backupErr);
         setCleanError('La exportación de backup falló. Limpieza cancelada.');
-        setCleaning(false);
         return;
       }
 
       const result = await cleanCreditPortfolio();
       setCleanResult(result);
       await reload();
+      closeCleanModal();
     } catch (err) {
       console.error('Error cleaning portfolio:', err);
       setCleanError(
@@ -114,7 +115,7 @@ export function AdminCreditAccountsPage() {
     } finally {
       setCleaning(false);
     }
-  }, [cleanConfirmText, accounts, reload]);
+  }, [cleaning, cleanConfirmText, accounts, reload, closeCleanModal]);
 
   if (!isAdmin) return null;
 

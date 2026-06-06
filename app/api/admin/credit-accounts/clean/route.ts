@@ -17,7 +17,9 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await supabase.rpc('clean_credit_portfolio');
-
+      console.log('RPC DATA:', data);
+      console.log('RPC ERROR:', error);
+    
     if (error) {
       throw error;
     }
@@ -38,7 +40,14 @@ export async function POST(request: Request) {
       { headers: { 'x-request-id': context.requestId } }
     );
   } catch (error) {
-    logServerError({ area: 'admin.creditAccounts', action: 'clean', requestId: context.requestId, error });
+    console.error('CLEAN ROUTE ERROR:', error);
+
+    logServerError({
+    area: 'admin.creditAccounts',
+    action: 'clean',
+    requestId: context.requestId,
+    error,
+    });
     return errorResponse(error, context.requestId, 500);
   }
 }
