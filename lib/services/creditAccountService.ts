@@ -4,7 +4,7 @@ import {
   getCustomerForCredit,
   insertCreditAccount,
   generateInstallmentsForAccount,
-  insertCreditPayment,
+  registerCreditPaymentRpc,
   insertCollectionNote,
   getCreditDashboardFromRpc,
   getCollectionRouteFromRpc,
@@ -271,7 +271,7 @@ export async function registerCreditPayment(
     throw new Error('PAYMENT_INVALID_AMOUNT');
   }
 
-  await insertCreditPayment(supabase, {
+  await registerCreditPaymentRpc(supabase, {
     credit_account_id: accountId,
     amount: input.amount,
     payment_date: input.paymentDate ?? new Date().toISOString(),

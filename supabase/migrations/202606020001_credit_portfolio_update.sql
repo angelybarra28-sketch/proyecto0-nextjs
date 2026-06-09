@@ -35,10 +35,10 @@ with account_totals as (
     ca.customer_id,
     ca.operation_number,
     ca.installment_amount * ca.installment_count as financed,
-    coalesce(sum(cp.amount), 0) as collected,
-    ca.installment_amount * ca.installment_count - coalesce(sum(cp.amount), 0) as pending
+    coalesce(sum(ci.original_amount - ci.remaining_amount), 0) as collected,
+    coalesce(sum(ci.remaining_amount), 0) as pending
   from credit_accounts ca
-  left join credit_payments cp on cp.credit_account_id = ca.id
+  left join credit_installments ci on ci.credit_account_id = ca.id
   where ca.is_active = true
   group by ca.id, ca.customer_id, ca.operation_number, ca.installment_amount, ca.installment_count
 ),
@@ -74,17 +74,30 @@ monthly as (
   ) rows
 )
 select
-  coalesce(sum(account_totals.financed), 0)::numeric as total_financed,
-  coalesce(sum(account_totals.collected), 0)::numeric as total_collected,
-  coalesce(sum(greatest(account_totals.pending, 0)), 0)::numeric as total_pending,
-  count(distinct account_totals.customer_id)::bigint as customer_count,
-  count(distinct case when account_totals.pending > 0 then account_totals.customer_id end)::bigint as customers_with_debt,
-  count(*) filter (where account_totals.pending > 0)::bigint as active_accounts,
-  count(*) filter (where account_totals.pending <= 0)::bigint as finished_accounts,
+  agg.total_financed,
+  agg.total_collected,
+  agg.total_pending,
+  agg.customer_count,
+  agg.customers_with_debt,
+  agg.active_accounts,
+  agg.finished_accounts,
   current_month.collected,
   previous_month.collected,
   monthly.metrics
-from account_totals, current_month, previous_month, monthly;
+from (
+  select
+    coalesce(sum(account_totals.financed), 0)::numeric as total_financed,
+    coalesce(sum(account_totals.collected), 0)::numeric as total_collected,
+    coalesce(sum(account_totals.pending), 0)::numeric as total_pending,
+    count(distinct account_totals.customer_id)::bigint as customer_count,
+    count(distinct case when account_totals.pending > 0 then account_totals.customer_id end)::bigint as customers_with_debt,
+    count(*) filter (where account_totals.pending > 0)::bigint as active_accounts,
+    count(*) filter (where account_totals.pending = 0)::bigint as finished_accounts
+  from account_totals
+) agg,
+current_month,
+previous_month,
+monthly;
 $$;
 
 -- 4. Update get_credit_collection_route to include operation_number

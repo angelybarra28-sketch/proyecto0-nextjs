@@ -258,13 +258,28 @@ LANGUAGE SQL
 SECURITY DEFINER
 SET search_path = public
 AS $$
+  WITH account_payments AS (
+    SELECT
+      cp.credit_account_id,
+      COALESCE(SUM(cp.amount), 0)::numeric AS total_paid,
+      MAX(cp.payment_date)::date AS last_payment_date
+    FROM credit_payments cp
+    GROUP BY cp.credit_account_id
+  ),
+  account_installments AS (
+    SELECT
+      ci.credit_account_id,
+      COALESCE(SUM(ci.remaining_amount), 0)::numeric AS total_remaining
+    FROM credit_installments ci
+    GROUP BY ci.credit_account_id
+  )
   SELECT
     c.full_name AS customer_name,
     ca.operation_number,
     ca.product_name,
     ca.installment_amount,
     CASE
-      WHEN (ca.installment_amount * ca.installment_count) <= COALESCE(SUM(cp.amount), 0) THEN 'Finalizada'
+      WHEN COALESCE(ai.total_remaining, 0) = 0 THEN 'Finalizada'
       WHEN ca.origin_month IS NOT NULL
            AND ca.origin_year IS NOT NULL
            AND ca.origin_month = EXTRACT(MONTH FROM NOW())::integer
@@ -272,19 +287,121 @@ AS $$
       ELSE 'En curso'
     END AS status,
     ca.sale_date::date,
-    MAX(cp.payment_date)::date AS last_payment_date,
-    (ca.installment_amount * ca.installment_count - COALESCE(SUM(cp.amount), 0))::numeric AS remaining_amount,
+    ap.last_payment_date,
+    COALESCE(ai.total_remaining, 0) AS remaining_amount,
     ca.origin_month,
     ca.origin_year
   FROM credit_accounts ca
   LEFT JOIN customers c ON c.id = ca.customer_id
-  LEFT JOIN credit_payments cp ON cp.credit_account_id = ca.id
+  LEFT JOIN account_payments ap ON ap.credit_account_id = ca.id
+  LEFT JOIN account_installments ai ON ai.credit_account_id = ca.id
   WHERE ca.is_active = true
-  GROUP BY ca.id, c.full_name, ca.operation_number, ca.product_name, ca.installment_amount, ca.installment_count, ca.sale_date, ca.origin_month, ca.origin_year
   ORDER BY ca.sale_date DESC;
 $$;
 
--- 5. Revoke public execution on updated RPCs
+-- 5. Transaccional payment registration: register_credit_payment()
+-- Eliminates risk of orphaned payments (payment without allocations).
+-- Replaces the two-step TypeScript flow: insert + apply_credit_payment RPC.
+CREATE OR REPLACE FUNCTION register_credit_payment(
+  p_credit_account_id uuid,
+  p_amount numeric,
+  p_payment_date date,
+  p_payment_method text DEFAULT 'EFECTIVO',
+  p_notes text DEFAULT NULL
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_payment_id uuid;
+  v_installment record;
+  v_remaining_to_allocate numeric(12, 2);
+  v_allocation_amount numeric(12, 2);
+  v_account_remaining numeric(12, 2);
+BEGIN
+  -- 1. Validate positive amount
+  IF p_amount <= 0 THEN
+    RAISE EXCEPTION 'PAYMENT_INVALID_AMOUNT';
+  END IF;
+
+  -- 2. Validate payment does not exceed total debt
+  SELECT COALESCE(SUM(remaining_amount), 0) INTO v_account_remaining
+  FROM credit_installments
+  WHERE credit_account_id = p_credit_account_id;
+
+  IF p_amount > v_account_remaining THEN
+    RAISE EXCEPTION 'PAYMENT_EXCEEDS_DEBT';
+  END IF;
+
+  -- 3. Insert payment
+  INSERT INTO credit_payments (
+    credit_account_id,
+    amount,
+    payment_date,
+    payment_method,
+    notes
+  ) VALUES (
+    p_credit_account_id,
+    p_amount,
+    p_payment_date,
+    COALESCE(NULLIF(TRIM(p_payment_method), ''), 'EFECTIVO'),
+    NULLIF(TRIM(p_notes), '')
+  )
+  RETURNING id INTO v_payment_id;
+
+  -- 4. Apply payment FIFO to installments
+  v_remaining_to_allocate := p_amount;
+
+  FOR v_installment IN
+    SELECT *
+    FROM credit_installments
+    WHERE credit_account_id = p_credit_account_id
+      AND remaining_amount > 0
+    ORDER BY installment_number ASC
+    FOR UPDATE
+  LOOP
+    EXIT WHEN v_remaining_to_allocate <= 0;
+
+    v_allocation_amount := LEAST(v_remaining_to_allocate, v_installment.remaining_amount);
+
+    INSERT INTO credit_payment_allocations (
+      credit_payment_id,
+      credit_installment_id,
+      amount
+    ) VALUES (
+      v_payment_id,
+      v_installment.id,
+      v_allocation_amount
+    );
+
+    UPDATE credit_installments
+    SET
+      paid_amount = paid_amount + v_allocation_amount,
+      remaining_amount = remaining_amount - v_allocation_amount,
+      status = CASE
+        WHEN remaining_amount - v_allocation_amount = 0 THEN 'PAID'
+        ELSE 'PARTIAL'
+      END,
+      updated_at = NOW()
+    WHERE id = v_installment.id;
+
+    v_remaining_to_allocate := v_remaining_to_allocate - v_allocation_amount;
+  END LOOP;
+
+  -- 5. Validate full allocation
+  IF v_remaining_to_allocate <> 0 THEN
+    RAISE EXCEPTION 'PAYMENT_NOT_FULLY_ALLOCATED';
+  END IF;
+
+  -- 6. Return payment id
+  RETURN v_payment_id;
+END;
+$$;
+
+-- 6. Revoke public execution on updated RPCs
 REVOKE EXECUTE ON FUNCTION import_credit_portfolio_row(jsonb) FROM anon, authenticated;
 REVOKE EXECUTE ON FUNCTION get_credit_commercial_metrics() FROM anon, authenticated;
 REVOKE EXECUTE ON FUNCTION get_credit_monthly_control() FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION register_credit_payment(uuid, numeric, date, text, text) FROM anon, authenticated;

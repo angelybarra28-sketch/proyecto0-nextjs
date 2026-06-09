@@ -218,7 +218,7 @@ export async function generateInstallmentsForAccount(
   }
 }
 
-export async function insertCreditPayment(
+export async function registerCreditPaymentRpc(
   supabase: SupabaseClient,
   input: {
     credit_account_id: string;
@@ -227,39 +227,24 @@ export async function insertCreditPayment(
     payment_method?: string;
     notes: string | null;
   }
-): Promise<DbCreditPayment> {
-  const { data, error } = await supabase
-    .from('credit_payments')
-    .insert({
-      credit_account_id: input.credit_account_id,
-      amount: input.amount,
-      payment_date: input.payment_date,
-      payment_method: input.payment_method ?? 'EFECTIVO',
-      notes: input.notes,
-    })
-    .select()
-    .single();
+): Promise<{ payment_id: string }> {
+  const { data, error } = await supabase.rpc('register_credit_payment', {
+    p_credit_account_id: input.credit_account_id,
+    p_amount: input.amount,
+    p_payment_date: input.payment_date,
+    p_payment_method: input.payment_method ?? 'EFECTIVO',
+    p_notes: input.notes ?? null,
+  });
 
   if (error) {
     throw error;
   }
 
   if (!data) {
-    throw new Error('CREDIT_PAYMENT_INSERT_NO_ROWS');
+    throw new Error('CREDIT_PAYMENT_INSERT_NO_RESULT');
   }
 
-  // Apply payment to installments via FIFO RPC
-  const { error: applyError } = await supabase.rpc('apply_credit_payment', {
-    p_credit_payment_id: data.id,
-    p_credit_account_id: input.credit_account_id,
-    p_amount: input.amount,
-  });
-
-  if (applyError) {
-    throw applyError;
-  }
-
-  return data;
+  return { payment_id: data as string };
 }
 
 export async function insertCollectionNote(
