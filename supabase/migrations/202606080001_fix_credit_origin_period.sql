@@ -231,26 +231,11 @@ SELECT
 
   -- 5. Proyección Próxima Cobranza
   (
-    COALESCE((
-      SELECT SUM(cp.amount)::numeric
-      FROM credit_payments cp
-      CROSS JOIN month_bounds mb
-      WHERE cp.payment_date >= mb.month_start
-        AND cp.payment_date < mb.month_end
-    ), 0)
-    + COALESCE(SUM(
-        CASE WHEN aa.origin_month IS NOT NULL
-              AND aa.origin_year IS NOT NULL
-              AND aa.origin_month = EXTRACT(MONTH FROM mb.month_start)::integer
-              AND aa.origin_year = EXTRACT(YEAR FROM mb.month_start)::integer
-             THEN aa.installment_amount ELSE 0 END
-      ), 0)
-    - COALESCE(SUM(
-        CASE WHEN aa.total_remaining = 0
-              AND aa.last_payment_date >= mb.month_start
-              AND aa.last_payment_date < mb.month_end
-             THEN aa.installment_amount ELSE 0 END
-      ), 0)
+    SELECT COALESCE(SUM(ca.installment_amount), 0)
+    FROM credit_accounts ca
+    JOIN installment_aggregates ia
+        ON ia.credit_account_id = ca.id
+    WHERE ia.total_remaining > 0
   )::numeric AS projected_next_month
 FROM account_aggregates aa, month_bounds mb;
 $$;
