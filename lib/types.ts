@@ -179,12 +179,22 @@ export interface CreditPayment {
   createdAt: string;
 }
 
+export interface CreditAccountItem {
+  id: string;
+  creditAccountId: string;
+  productName: string;
+  quantity: number;
+  unitPrice?: number | null;
+  createdAt: string;
+}
+
 export interface CreditAccountSummary extends CreditAccount {
   total: number;
   paid: number;
   remaining: number;
   paymentCount: number;
   customerName?: string;
+  items?: CreditAccountItem[];
 }
 
 export interface MonthlyCreditMetric {
@@ -208,8 +218,13 @@ export interface CreditDashboard {
 export interface CreateCreditAccountInput {
   customerId: string;
   operationNumber?: string;
-  productName: string;
+  productName?: string;
   quantity?: number;
+  items?: Array<{
+    productName: string;
+    quantity: number;
+    unitPrice?: number;
+  }>;
   installmentCount?: number;
   installmentAmount: number;
   saleDate?: string;
@@ -269,6 +284,7 @@ export interface CreditAccountDetail extends CreditAccountSummary {
   installments: CreditInstallment[];
   payments: CreditPayment[];
   collectionNotes: CreditCollectionNote[];
+  items: CreditAccountItem[];
 }
 
 export interface CollectionRouteItem {

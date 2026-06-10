@@ -193,9 +193,18 @@ export function AdminCreditAccountsPage() {
 
             <CreditAccountsTable accounts={accounts} onSelectAccount={setSelectedAccountId} />
 
-            <div style={{ marginTop: 16, textAlign: 'right' }}>
-              <Link href="/admin/importacion-cartera" style={{ fontSize: 14, color: '#667eea', textDecoration: 'none' }}>
+            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center' }}>
+              <Link
+                href="/admin/importacion-cartera"
+                style={{ fontSize: 14, color: '#667eea', textDecoration: 'none' }}
+              >
                 + Importar nueva cartera desde Excel
+              </Link>
+              <Link
+                href="/admin/ventas/nueva"
+                className="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition shadow-sm"
+              >
+                + Cargar Venta Manual
               </Link>
             </div>
           </section>
