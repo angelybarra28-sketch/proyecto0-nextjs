@@ -3,6 +3,9 @@ import {
   getCreditAccountById,
   getCustomerForCredit,
   insertCreditAccount,
+  insertCreditAccountItems,
+  getCreditAccountItems,
+  getCreditAccountItemsForAccounts,
   generateInstallmentsForAccount,
   registerCreditPaymentRpc,
   insertCollectionNote,
@@ -140,7 +143,7 @@ export async function listCreditAccountSummaries(options?: {
     throw new Error('Supabase no está configurado');
   }
 
-  const { accounts, installments } = await getCreditAccounts(supabase);
+  const { accounts, installments, items } = await getCreditAccounts(supabase);
 
   const installmentsByAccount = new Map<string, { original_amount: number; paid_amount: number; status: string }[]>();
   for (const inst of installments) {
@@ -149,9 +152,28 @@ export async function listCreditAccountSummaries(options?: {
     installmentsByAccount.set(inst.credit_account_id, list);
   }
 
-  let summaries = accounts.map((account) =>
-    calculateSummary(account, installmentsByAccount.get(account.id) ?? [])
-  );
+  const itemsByAccount = new Map<string, import('@/lib/repositories/creditAccountRepository').DbCreditAccountItem[]>();
+  for (const item of items) {
+    const list = itemsByAccount.get(item.credit_account_id) ?? [];
+    list.push(item);
+    itemsByAccount.set(item.credit_account_id, list);
+  }
+
+  let summaries = accounts.map((account) => {
+    const summary = calculateSummary(account, installmentsByAccount.get(account.id) ?? []);
+    const accountItems = itemsByAccount.get(account.id) ?? [];
+    if (accountItems.length > 0) {
+      summary.items = accountItems.map((item) => ({
+        id: item.id,
+        creditAccountId: item.credit_account_id,
+        productName: item.product_name,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        createdAt: item.created_at,
+      }));
+    }
+    return summary;
+  });
 
   const statusFilter = options?.statusFilter ?? 'active';
   if (statusFilter === 'active') {
@@ -197,7 +219,7 @@ export async function getCreditAccountDetail(accountId: string): Promise<CreditA
     throw new Error('Supabase no está configurado');
   }
 
-  const { account, installments, payments, collectionNotes } = await getCreditAccountById(supabase, accountId);
+  const { account, installments, payments, collectionNotes, items } = await getCreditAccountById(supabase, accountId);
   const customer = await getCustomerForCredit(supabase, account.customer_id);
 
   const summary = calculateSummary(
@@ -221,6 +243,14 @@ export async function getCreditAccountDetail(accountId: string): Promise<CreditA
     installments: installments.map(mapInstallment),
     payments: payments.map(mapPayment),
     collectionNotes: collectionNotes.map(mapCollectionNote),
+    items: items.map((item) => ({
+      id: item.id,
+      creditAccountId: item.credit_account_id,
+      productName: item.product_name,
+      quantity: item.quantity,
+      unitPrice: item.unit_price,
+      createdAt: item.created_at,
+    })),
   };
 }
 
@@ -232,16 +262,44 @@ export async function createCreditAccount(
     throw new Error('Supabase no está configurado');
   }
 
+  const hasItems = input.items && input.items.length > 0;
+
+  // Build product name for backward compatibility (legacy field in credit_accounts)
+  let productName: string;
+  let quantity: number;
+  if (hasItems) {
+    productName = input.items!
+      .map((item) => `${item.productName} (x${item.quantity ?? 1})`)
+      .join(' + ');
+    quantity = input.items!.reduce((sum, item) => sum + (item.quantity ?? 1), 0);
+  } else {
+    productName = input.productName ?? 'Artículo no especificado';
+    quantity = input.quantity ?? 1;
+  }
+
   const account = await insertCreditAccount(supabase, {
     customer_id: input.customerId,
     operation_number: input.operationNumber ?? null,
-    product_name: input.productName,
-    quantity: input.quantity ?? 1,
+    product_name: productName,
+    quantity,
     installment_count: input.installmentCount ?? 8,
     installment_amount: input.installmentAmount,
     sale_date: input.saleDate ?? new Date().toISOString(),
     notes: input.notes ?? null,
   });
+
+  // Insert items if multi-product
+  if (hasItems) {
+    await insertCreditAccountItems(
+      supabase,
+      account.id,
+      input.items!.map((item) => ({
+        product_name: item.productName,
+        quantity: item.quantity ?? 1,
+        unit_price: item.unitPrice ?? null,
+      }))
+    );
+  }
 
   // Generate installments automatically
   const installmentCount = input.installmentCount ?? 8;
@@ -249,7 +307,21 @@ export async function createCreditAccount(
   const installmentAmount = total / installmentCount;
   await generateInstallmentsForAccount(supabase, account.id, installmentCount, installmentAmount, input.saleDate ?? new Date().toISOString());
 
-  return calculateSummary(account, []);
+  const summary = calculateSummary(account, []);
+
+  if (hasItems) {
+    const items = await getCreditAccountItems(supabase, account.id);
+    summary.items = items.map((item) => ({
+      id: item.id,
+      creditAccountId: item.credit_account_id,
+      productName: item.product_name,
+      quantity: item.quantity,
+      unitPrice: item.unit_price,
+      createdAt: item.created_at,
+    }));
+  }
+
+  return summary;
 }
 
 export async function registerCreditPayment(

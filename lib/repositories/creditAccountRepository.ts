@@ -58,9 +58,18 @@ export interface DbCreditCollectionNote {
   created_at: string;
 }
 
+export interface DbCreditAccountItem {
+  id: string;
+  credit_account_id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number | null;
+  created_at: string;
+}
+
 export async function getCreditAccounts(
   supabase: SupabaseClient
-): Promise<{ accounts: DbCreditAccount[]; installments: DbCreditInstallment[]; payments: DbCreditPayment[] }> {
+): Promise<{ accounts: DbCreditAccount[]; installments: DbCreditInstallment[]; payments: DbCreditPayment[]; items: DbCreditAccountItem[] }> {
   const { data: accounts, error: accError } = await supabase
     .from('credit_accounts')
     .select('*')
@@ -93,13 +102,23 @@ export async function getCreditAccounts(
     throw payError;
   }
 
-  return { accounts: accounts ?? [], installments: installments ?? [], payments: payments ?? [] };
+  const { data: items, error: itemsError } = await supabase
+    .from('credit_account_items')
+    .select('*')
+    .in('credit_account_id', accountIds)
+    .order('created_at', { ascending: true });
+
+  if (itemsError) {
+    throw itemsError;
+  }
+
+  return { accounts: accounts ?? [], installments: installments ?? [], payments: payments ?? [], items: items ?? [] };
 }
 
 export async function getCreditAccountById(
   supabase: SupabaseClient,
   accountId: string
-): Promise<{ account: DbCreditAccount; installments: DbCreditInstallment[]; payments: DbCreditPayment[]; collectionNotes: DbCreditCollectionNote[] }> {
+): Promise<{ account: DbCreditAccount; installments: DbCreditInstallment[]; payments: DbCreditPayment[]; collectionNotes: DbCreditCollectionNote[]; items: DbCreditAccountItem[] }> {
   const { data: account, error: accError } = await supabase
     .from('credit_accounts')
     .select('*')
@@ -140,7 +159,17 @@ export async function getCreditAccountById(
     throw noteError;
   }
 
-  return { account, installments: installments ?? [], payments: payments ?? [], collectionNotes: collectionNotes ?? [] };
+  const { data: items, error: itemsError } = await supabase
+    .from('credit_account_items')
+    .select('*')
+    .eq('credit_account_id', accountId)
+    .order('created_at', { ascending: true });
+
+  if (itemsError) {
+    throw itemsError;
+  }
+
+  return { account, installments: installments ?? [], payments: payments ?? [], collectionNotes: collectionNotes ?? [], items: items ?? [] };
 }
 
 export async function getCustomerForCredit(
@@ -197,6 +226,53 @@ export async function insertCreditAccount(
   }
 
   return data;
+}
+
+export async function insertCreditAccountItems(
+  supabase: SupabaseClient,
+  accountId: string,
+  items: Array<{ product_name: string; quantity: number; unit_price?: number | null }>
+): Promise<void> {
+  const { error } = await supabase
+    .from('credit_account_items')
+    .insert(
+      items.map((item) => ({
+        credit_account_id: accountId,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price ?? null,
+      }))
+    );
+
+  if (error) throw error;
+}
+
+export async function getCreditAccountItems(
+  supabase: SupabaseClient,
+  accountId: string
+): Promise<DbCreditAccountItem[]> {
+  const { data, error } = await supabase
+    .from('credit_account_items')
+    .select('*')
+    .eq('credit_account_id', accountId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getCreditAccountItemsForAccounts(
+  supabase: SupabaseClient,
+  accountIds: string[]
+): Promise<DbCreditAccountItem[]> {
+  const { data, error } = await supabase
+    .from('credit_account_items')
+    .select('*')
+    .in('credit_account_id', accountIds)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function generateInstallmentsForAccount(

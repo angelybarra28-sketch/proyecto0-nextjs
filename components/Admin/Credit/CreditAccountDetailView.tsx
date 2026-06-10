@@ -74,7 +74,17 @@ export function CreditAccountDetailView({ account, onPayment, onAddNote }: Credi
       <section className={styles.section}>
         <div style={{ marginBottom: 16 }}>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>{account.customer.fullName}</h2>
-          <p style={{ margin: '6px 0 0', fontSize: 14, color: '#6b7280' }}>{account.productName}</p>
+          {account.items && account.items.length > 0 ? (
+            <div style={{ margin: '6px 0 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {account.items.map((item, idx) => (
+                <p key={idx} style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>
+                  {item.productName} (x{item.quantity})
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p style={{ margin: '6px 0 0', fontSize: 14, color: '#6b7280' }}>{account.productName}</p>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 16 }}>
@@ -160,8 +170,18 @@ export function CreditAccountDetailView({ account, onPayment, onAddNote }: Credi
             <p style={{ fontWeight: 600, margin: '4px 0 0', fontSize: 16 }}>{account.operationNumber ?? '-'}</p>
           </div>
           <div>
-            <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Producto</p>
-            <p style={{ fontWeight: 600, margin: '4px 0 0', fontSize: 16 }}>{account.productName}</p>
+            <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Producto(s)</p>
+            {account.items && account.items.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {account.items.map((item, idx) => (
+                  <p key={idx} style={{ fontWeight: 600, margin: '4px 0 0', fontSize: 16 }}>
+                    {item.productName} (x{item.quantity})
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontWeight: 600, margin: '4px 0 0', fontSize: 16 }}>{account.productName}</p>
+            )}
           </div>
           <div>
             <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Fecha de Venta</p>

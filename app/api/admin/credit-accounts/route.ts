@@ -52,6 +52,7 @@ export async function POST(request: Request) {
       operationNumber?: string;
       productName?: string;
       quantity?: number;
+      items?: Array<{ productName: string; quantity: number; unitPrice?: number }>;
       installmentCount?: number;
       installmentAmount?: number;
       saleDate?: string;
@@ -61,9 +62,13 @@ export async function POST(request: Request) {
     if (!body.customerId || typeof body.customerId !== 'string') {
       return errorResponse(new Error('customerId es requerido'), context.requestId, 400);
     }
-    if (!body.productName || typeof body.productName !== 'string') {
-      return errorResponse(new Error('productName es requerido'), context.requestId, 400);
+
+    const hasItems = body.items && Array.isArray(body.items) && body.items.length > 0;
+    const hasProductName = body.productName && typeof body.productName === 'string';
+    if (!hasItems && !hasProductName) {
+      return errorResponse(new Error('Debe proporcionar al menos un producto (items o productName)'), context.requestId, 400);
     }
+
     if (typeof body.installmentAmount !== 'number' || body.installmentAmount <= 0) {
       return errorResponse(new Error('installmentAmount debe ser un número positivo'), context.requestId, 400);
     }
@@ -73,6 +78,7 @@ export async function POST(request: Request) {
       operationNumber: body.operationNumber,
       productName: body.productName,
       quantity: body.quantity,
+      items: body.items,
       installmentCount: body.installmentCount,
       installmentAmount: body.installmentAmount,
       saleDate: body.saleDate,

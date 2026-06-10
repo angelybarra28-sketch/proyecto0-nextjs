@@ -16,13 +16,17 @@ interface Customer {
   address: string | null;
 }
 
+interface FormItem {
+  productName: string;
+  quantity: number;
+}
+
 interface FormData {
   customerId: string;
   customerName: string;
   customerPhone: string;
   customerAddress: string;
-  productName: string;
-  quantity: number;
+  items: FormItem[];
   saleDate: string;
   notes: string;
   installmentAmount: number;
@@ -47,8 +51,7 @@ export default function NuevaVentaPage() {
     customerName: '',
     customerPhone: '',
     customerAddress: '',
-    productName: '',
-    quantity: 1,
+    items: [{ productName: '', quantity: 1 }],
     saleDate: new Date().toISOString().split('T')[0],
     notes: '',
     installmentAmount: 0,
@@ -145,10 +148,6 @@ export default function NuevaVentaPage() {
   // Create Customer (if not found)
   // ---------------------------------------------------------------------------
   const createCustomer = useCallback(async (): Promise<string> => {
-    if (!supabase) {
-      throw new Error('Supabase no está disponible');
-    }
-
     if (form.customerId) {
       return form.customerId;
     }
@@ -157,44 +156,34 @@ export default function NuevaVentaPage() {
       throw new Error('El nombre del cliente es requerido');
     }
 
-    if (form.customerPhone.trim()) {
-      const { data: existing } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('phone', form.customerPhone.trim())
-        .maybeSingle();
+    const response = await fetch('/api/admin/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullName: form.customerName.trim(),
+        phone: form.customerPhone.trim() || undefined,
+        address: form.customerAddress.trim() || undefined,
+      }),
+    });
 
-      if (existing?.id) {
-        return existing.id;
-      }
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      console.error('[createCustomer] API error:', payload);
+      throw new Error(payload.message || 'No se pudo crear el cliente');
     }
 
-    const { data: existingName } = await supabase
-      .from('customers')
-      .select('id')
-      .eq('full_name', form.customerName.trim())
-      .maybeSingle();
+    const payload = (await response.json()) as {
+      success: boolean;
+      customerId: string;
+      existing?: boolean;
+    };
 
-    if (existingName?.id) {
-      return existingName.id;
+    if (!payload.success) {
+      throw new Error('La respuesta del servidor indica error al crear el cliente');
     }
 
-    const { data: newCustomer, error } = await supabase
-      .from('customers')
-      .insert({
-        full_name: form.customerName.trim(),
-        phone: form.customerPhone.trim() || null,
-        address: form.customerAddress.trim() || null,
-      })
-      .select('id')
-      .single();
-
-    if (error || !newCustomer) {
-      throw new Error('No se pudo crear el cliente');
-    }
-
-    return newCustomer.id;
-  }, [supabase, form.customerId, form.customerName, form.customerPhone, form.customerAddress]);
+    return payload.customerId;
+  }, [form.customerId, form.customerName, form.customerPhone, form.customerAddress]);
 
   // ---------------------------------------------------------------------------
   // Submit: Create Credit Account
@@ -207,8 +196,9 @@ export default function NuevaVentaPage() {
       setIsSubmitting(true);
 
       try {
-        if (!form.productName.trim()) {
-          throw new Error('El nombre del producto es requerido');
+        const validItems = form.items.filter((item) => item.productName.trim());
+        if (validItems.length === 0) {
+          throw new Error('Debe ingresar al menos un producto');
         }
         if (form.installmentAmount <= 0) {
           throw new Error('El monto de la cuota debe ser mayor a 0');
@@ -216,8 +206,10 @@ export default function NuevaVentaPage() {
         if (form.installmentCount <= 0) {
           throw new Error('La cantidad de cuotas debe ser mayor a 0');
         }
-        if (form.quantity <= 0) {
-          throw new Error('La cantidad debe ser mayor a 0');
+        for (const item of validItems) {
+          if (item.quantity <= 0) {
+            throw new Error('La cantidad de cada producto debe ser mayor a 0');
+          }
         }
 
         const customerId = await createCustomer();
@@ -228,8 +220,10 @@ export default function NuevaVentaPage() {
           body: JSON.stringify({
             customerId,
             operationNumber: form.operationNumber.trim() || undefined,
-            productName: form.productName.trim(),
-            quantity: form.quantity,
+            items: validItems.map((item) => ({
+              productName: item.productName.trim(),
+              quantity: item.quantity,
+            })),
             installmentCount: form.installmentCount,
             installmentAmount: form.installmentAmount,
             saleDate: form.saleDate,
@@ -249,16 +243,16 @@ export default function NuevaVentaPage() {
         }
 
         setSubmitSuccess(true);
+        setIsSubmitting(false);
 
         setTimeout(() => {
-          router.push('/admin/cuentas-corrientes');
+          router.push('/admin/cuenta-corriente');
         }, 1500);
       } catch (err) {
         console.error('Error creating credit account:', err);
         setSubmitError(
           err instanceof Error ? err.message : 'Error inesperado al crear la venta'
         );
-      } finally {
         setIsSubmitting(false);
       }
     },
@@ -461,10 +455,12 @@ export default function NuevaVentaPage() {
                   type="text"
                   value={form.customerName}
                   onChange={(e) => handleCustomerSearchChange(e.target.value)}
-                  onFocus={() => {
+                  onFocus={(e) => {
                     if (form.customerName.trim().length >= 2) {
                       searchCustomers(form.customerName);
                     }
+                    e.currentTarget.style.borderColor = '#e8e4df';
+                    e.currentTarget.style.boxShadow = '0 0 8px rgba(232, 228, 223, 0.2)';
                   }}
                   placeholder="Buscar cliente existente o ingresar nuevo..."
                   autoComplete="off"
@@ -478,10 +474,6 @@ export default function NuevaVentaPage() {
                     fontSize: '0.95rem',
                     outline: 'none',
                     transition: 'all 0.3s ease',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#e8e4df';
-                    e.currentTarget.style.boxShadow = '0 0 8px rgba(232, 228, 223, 0.2)';
                   }}
                   onBlur={(e) => {
                     e.currentTarget.style.borderColor = '#5a5248';
@@ -707,7 +699,7 @@ export default function NuevaVentaPage() {
             </h2>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              {/* Product Name */}
+              {/* Product Items (Multi-product) */}
               <div style={{ gridColumn: '1 / -1' }}>
                 <label
                   style={{
@@ -718,74 +710,131 @@ export default function NuevaVentaPage() {
                     marginBottom: '6px',
                   }}
                 >
-                  Producto <span style={{ color: '#d4543b' }}>*</span>
+                  Productos <span style={{ color: '#d4543b' }}>*</span>
                 </label>
-                <input
-                  type="text"
-                  value={form.productName}
-                  onChange={(e) => handleChange('productName', e.target.value)}
-                  placeholder="Ej: Juego de Sabanas Queen Size"
-                  required
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {form.items.map((item, index) => (
+                    <div key={index} style={{ display: 'flex', gap: '12px', alignItems: 'end' }}>
+                      <div style={{ flex: 1 }}>
+                        <input
+                          type="text"
+                          value={item.productName}
+                          onChange={(e) => {
+                            const newItems = [...form.items];
+                            newItems[index] = { ...newItems[index], productName: e.target.value };
+                            setForm((prev) => ({ ...prev, items: newItems }));
+                          }}
+                          placeholder={`Producto ${index + 1}`}
+                          style={{
+                            width: '100%',
+                            padding: '12px 14px',
+                            backgroundColor: '#1e1d1b',
+                            border: '1px solid #5a5248',
+                            borderRadius: '4px',
+                            color: '#f5f2ec',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            transition: 'all 0.3s ease',
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#e8e4df';
+                            e.currentTarget.style.boxShadow = '0 0 8px rgba(232, 228, 223, 0.2)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = '#5a5248';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                        />
+                      </div>
+                      <div style={{ width: '100px' }}>
+                        <input
+                          type="number"
+                          min={1}
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const newItems = [...form.items];
+                            newItems[index] = { ...newItems[index], quantity: parseInt(e.target.value, 10) || 1 };
+                            setForm((prev) => ({ ...prev, items: newItems }));
+                          }}
+                          placeholder="Cant."
+                          style={{
+                            width: '100%',
+                            padding: '12px 14px',
+                            backgroundColor: '#1e1d1b',
+                            border: '1px solid #5a5248',
+                            borderRadius: '4px',
+                            color: '#f5f2ec',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            transition: 'all 0.3s ease',
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#e8e4df';
+                            e.currentTarget.style.boxShadow = '0 0 8px rgba(232, 228, 223, 0.2)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = '#5a5248';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                        />
+                      </div>
+                      {form.items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newItems = form.items.filter((_, i) => i !== index);
+                            setForm((prev) => ({ ...prev, items: newItems }));
+                          }}
+                          style={{
+                            padding: '10px 14px',
+                            backgroundColor: '#3a2f2b',
+                            color: '#d4543b',
+                            border: '1px solid #5a3a33',
+                            borderRadius: '4px',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#4a3a35';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#3a2f2b';
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, items: [...prev.items, { productName: '', quantity: 1 }] }))}
                   style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    backgroundColor: '#1e1d1b',
-                    border: '1px solid #5a5248',
+                    marginTop: '10px',
+                    padding: '8px 14px',
+                    backgroundColor: 'transparent',
+                    color: '#b8a89c',
+                    border: '1px dashed #5a5248',
                     borderRadius: '4px',
-                    color: '#f5f2ec',
-                    fontSize: '0.95rem',
-                    outline: 'none',
+                    fontSize: '0.85rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
                     transition: 'all 0.3s ease',
                   }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#e8e4df';
-                    e.currentTarget.style.boxShadow = '0 0 8px rgba(232, 228, 223, 0.2)';
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#b8a89c';
+                    e.currentTarget.style.color = '#e8e4df';
                   }}
-                  onBlur={(e) => {
+                  onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = '#5a5248';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                />
-              </div>
-
-              {/* Quantity */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    color: '#d3cdc4',
-                    marginBottom: '6px',
+                    e.currentTarget.style.color = '#b8a89c';
                   }}
                 >
-                  Cantidad
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  value={form.quantity}
-                  onChange={(e) => handleChange('quantity', parseInt(e.target.value, 10) || 1)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    backgroundColor: '#1e1d1b',
-                    border: '1px solid #5a5248',
-                    borderRadius: '4px',
-                    color: '#f5f2ec',
-                    fontSize: '0.95rem',
-                    outline: 'none',
-                    transition: 'all 0.3s ease',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#e8e4df';
-                    e.currentTarget.style.boxShadow = '0 0 8px rgba(232, 228, 223, 0.2)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#5a5248';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                />
+                  + Agregar otro producto
+                </button>
               </div>
 
               {/* Sale Date */}
@@ -1158,7 +1207,6 @@ export default function NuevaVentaPage() {
                   borderRadius: '4px',
                   fontSize: '0.85rem',
                   fontWeight: 600,
-                  cursor: 'pointer',
                   transition: 'all 0.4s ease',
                   opacity: isSubmitting || submitSuccess ? 0.55 : 1,
                   cursor: isSubmitting || submitSuccess ? 'not-allowed' : 'pointer',
