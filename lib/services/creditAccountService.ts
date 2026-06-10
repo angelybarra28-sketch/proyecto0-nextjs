@@ -41,7 +41,7 @@ function calculateSummary(
   },
   installments: { original_amount: number; paid_amount: number; status: string }[]
 ): CreditAccountSummary {
-  const total = Number(account.installment_amount) * account.installment_count;
+  const total = installments.reduce((sum, inst) => sum + Number(inst.original_amount), 0);
   const paid = installments.reduce((sum, inst) => sum + Number(inst.paid_amount), 0);
   return {
     id: account.id,
