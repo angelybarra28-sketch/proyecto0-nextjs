@@ -27,11 +27,11 @@ export function CreditAccountsTable({ accounts, onSelectAccount }: CreditAccount
         <thead>
           <tr>
             <th>Cliente</th>
-            <th>N° Tarjeta</th>
-            <th>Artículo</th>
-            <th>Fecha Venta</th>
-            <th>Mes Origen</th>
-            <th>Año Origen</th>
+            <th>Tarjeta</th>
+            <th>Productos</th>
+            <th>Fecha</th>
+            <th>Mes</th>
+            <th>Año</th>
             <th>Cuota</th>
             <th>Total</th>
             <th>Pagado</th>
@@ -48,7 +48,7 @@ export function CreditAccountsTable({ accounts, onSelectAccount }: CreditAccount
               <td>{acc.operationNumber ?? '-'}</td>
               <td>{acc.productName}</td>
               <td>{formatDate(acc.saleDate)}</td>
-              <td>{acc.originMonth ? MONTH_NAMES[acc.originMonth - 1] : '-'}</td>
+              <td>{acc.originMonth ?? '-'}</td>
               <td>{acc.originYear ?? '-'}</td>
               <td>
                 {formatCurrency(acc.installmentAmount)} x {acc.installmentCount}

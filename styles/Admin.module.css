@@ -82,16 +82,18 @@
 .table th {
   background: #4a433a;
   color: #f5f2ec;
-  padding: 12px;
+  padding: 8px 6px;
   text-align: left;
   font-weight: 600;
+  font-size: 12px;
   border-bottom: 2px solid #5a5248;
 }
 
 .table td {
-  padding: 12px;
+  padding: 8px 6px;
   border-bottom: 1px solid #363330;
   color: #f5f2ec;
+  font-size: 13px;
 }
 
 .table tr:hover {
