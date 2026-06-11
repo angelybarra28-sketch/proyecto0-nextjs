@@ -277,6 +277,19 @@ export async function createCreditAccount(
     quantity = input.quantity ?? 1;
   }
 
+  const saleDateString = input.saleDate ?? new Date().toISOString();
+  const saleDate = new Date(saleDateString);
+  const monthName = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(saleDate);
+  const monthNameLower = monthName.toLowerCase();
+
+  const monthMap: Record<string, number> = {
+    enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+    julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12,
+  };
+
+  const originMonth = monthMap[monthNameLower] ?? (saleDate.getMonth() + 1);
+  const originYear = saleDate.getFullYear();
+
   const account = await insertCreditAccount(supabase, {
     customer_id: input.customerId,
     operation_number: input.operationNumber ?? null,
@@ -284,8 +297,10 @@ export async function createCreditAccount(
     quantity,
     installment_count: input.installmentCount ?? 8,
     installment_amount: input.installmentAmount,
-    sale_date: input.saleDate ?? new Date().toISOString(),
+    sale_date: saleDateString,
     notes: input.notes ?? null,
+    origin_month: originMonth,
+    origin_year: originYear,
   });
 
   // Insert items if multi-product

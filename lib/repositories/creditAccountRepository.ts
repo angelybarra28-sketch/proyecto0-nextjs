@@ -200,6 +200,8 @@ export async function insertCreditAccount(
     installment_amount: number;
     sale_date: string;
     notes: string | null;
+    origin_month?: number | null;
+    origin_year?: number | null;
   }
 ): Promise<DbCreditAccount> {
   const { data, error } = await supabase
@@ -213,6 +215,8 @@ export async function insertCreditAccount(
       installment_amount: input.installment_amount,
       sale_date: input.sale_date,
       notes: input.notes,
+      origin_month: input.origin_month ?? null,
+      origin_year: input.origin_year ?? null,
     })
     .select()
     .single();
