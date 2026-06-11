@@ -42,10 +42,14 @@ function calculateSummary(
     origin_month?: number | null;
     origin_year?: number | null;
   },
-  installments: { original_amount: number; paid_amount: number; status: string }[]
+  installments: { original_amount: number; paid_amount: number; status: string }[],
+  payments?: { payment_date: string }[]
 ): CreditAccountSummary {
   const total = installments.reduce((sum, inst) => sum + Number(inst.original_amount), 0);
   const paid = installments.reduce((sum, inst) => sum + Number(inst.paid_amount), 0);
+  const lastPaymentDate = payments && payments.length > 0
+    ? payments.sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())[0].payment_date
+    : null;
   return {
     id: account.id,
     customerId: account.customer_id,
@@ -65,6 +69,7 @@ function calculateSummary(
     paid,
     remaining: Math.max(0, total - paid),
     paymentCount: installments.filter((inst) => inst.status === 'PAID' || inst.status === 'PARTIAL').length,
+    lastPaymentDate,
   };
 }
 
@@ -143,13 +148,20 @@ export async function listCreditAccountSummaries(options?: {
     throw new Error('Supabase no está configurado');
   }
 
-  const { accounts, installments, items } = await getCreditAccounts(supabase);
+  const { accounts, installments, payments, items } = await getCreditAccounts(supabase);
 
   const installmentsByAccount = new Map<string, { original_amount: number; paid_amount: number; status: string }[]>();
   for (const inst of installments) {
     const list = installmentsByAccount.get(inst.credit_account_id) ?? [];
     list.push(inst);
     installmentsByAccount.set(inst.credit_account_id, list);
+  }
+
+  const paymentsByAccount = new Map<string, { payment_date: string }[]>();
+  for (const payment of payments) {
+    const list = paymentsByAccount.get(payment.credit_account_id) ?? [];
+    list.push({ payment_date: payment.payment_date });
+    paymentsByAccount.set(payment.credit_account_id, list);
   }
 
   const itemsByAccount = new Map<string, import('@/lib/repositories/creditAccountRepository').DbCreditAccountItem[]>();
@@ -160,7 +172,11 @@ export async function listCreditAccountSummaries(options?: {
   }
 
   let summaries = accounts.map((account) => {
-    const summary = calculateSummary(account, installmentsByAccount.get(account.id) ?? []);
+    const summary = calculateSummary(
+      account,
+      installmentsByAccount.get(account.id) ?? [],
+      paymentsByAccount.get(account.id) ?? []
+    );
     const accountItems = itemsByAccount.get(account.id) ?? [];
     if (accountItems.length > 0) {
       summary.items = accountItems.map((item) => ({

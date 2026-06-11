@@ -420,9 +420,11 @@ export async function cleanCreditPortfolio(): Promise<{
 export async function fetchCommercialMetrics(signal?: AbortSignal): Promise<{
   currentMonthlyCollection: number;
   monthlyReplacement: number;
+  replacementCount: number;
   finishedCards: number;
   finishedInstallmentsAmount: number;
   projectedNextMonth: number;
+  finishedAccountsList: import('@/lib/types').CreditAccountSummary[];
 }> {
   const response = await fetch('/api/admin/credit-accounts/commercial-metrics', { signal });
 
@@ -433,9 +435,11 @@ export async function fetchCommercialMetrics(signal?: AbortSignal): Promise<{
   return await response.json() as {
     currentMonthlyCollection: number;
     monthlyReplacement: number;
+    replacementCount: number;
     finishedCards: number;
     finishedInstallmentsAmount: number;
     projectedNextMonth: number;
+    finishedAccountsList: import('@/lib/types').CreditAccountSummary[];
   };
 }
 

@@ -195,6 +195,7 @@ export interface CreditAccountSummary extends CreditAccount {
   paymentCount: number;
   customerName?: string;
   items?: CreditAccountItem[];
+  lastPaymentDate?: string | null;
 }
 
 export interface MonthlyCreditMetric {

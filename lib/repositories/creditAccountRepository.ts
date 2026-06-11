@@ -68,13 +68,19 @@ export interface DbCreditAccountItem {
 }
 
 export async function getCreditAccounts(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  includeInactive = false
 ): Promise<{ accounts: DbCreditAccount[]; installments: DbCreditInstallment[]; payments: DbCreditPayment[]; items: DbCreditAccountItem[] }> {
-  const { data: accounts, error: accError } = await supabase
+  let query = supabase
     .from('credit_accounts')
     .select('*')
-    .eq('is_active', true)
     .order('sale_date', { ascending: false });
+
+  if (!includeInactive) {
+    query = query.eq('is_active', true);
+  }
+
+  const { data: accounts, error: accError } = await query;
 
   if (accError) {
     throw accError;
