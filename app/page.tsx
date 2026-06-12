@@ -31,11 +31,13 @@ export default async function Home() {
         title={productData.section1.title} 
         products={productData.section1.products}
         id="electrodomesticos"
+        includeLocal
       />
       <ProductsSection 
         title={productData.section2.title} 
         products={productData.section2.products}
         id="blanqueria"
+        includeLocal
       />
       <About />
       <Newsletter />

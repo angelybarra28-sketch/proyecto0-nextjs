@@ -1,10 +1,10 @@
-import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
 import FloatingElements from '@/components/FloatingElements';
 import ProductCarousel from '@/components/Product/ProductCarousel';
 import ProductInfo from '@/components/Product/ProductInfo';
+import ProductDetailClient from '@/components/Product/ProductDetailClient';
 import { getAllProductSlugs, getProductBySlug } from '@/lib/services/catalogService';
 import styles from '@/styles/ProductDetail.module.css';
 
@@ -16,18 +16,13 @@ interface Props {
 
 export default async function ProductDetailBySlugPage({ params }: Props) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
-
-  if (!product) {
-    notFound();
-  }
+  const serverProduct = await getProductBySlug(slug);
 
   return (
     <>
       <Header />
 
       <main style={{ minHeight: '100vh', backgroundColor: '#1e1d1b' }}>
-        {/* Breadcrumb */}
         <div style={{ 
           maxWidth: '1200px', 
           margin: '0 auto', 
@@ -43,34 +38,34 @@ export default async function ProductDetailBySlugPage({ params }: Props) {
           </Link>
         </div>
 
-        {/* Product Detail */}
-        <div className={styles.detailContainer}>
-          <div className={styles.detailGrid}>
-            {/* Left: Carousel */}
-            <ProductCarousel 
-              images={product.carouselImages || [product.imageUrl ?? '']} 
-              productName={product.name}
-            />
-
-            {/* Right: Info */}
-            <ProductInfo
-              productId={product.id}
-              name={product.name}
-              price={product.price}
-              imageUrl={product.imageUrl ?? ''}
-              discount={product.discount}
-              description={product.description ?? ''}
-              specifications={product.specifications ?? {
-                size: 'N/A',
-                material: 'N/A',
-                firmness: 'N/A',
-                withPillow: 'No',
-                color: 'N/A',
-              }}
-              features={product.features ?? []}
-            />
+        {serverProduct ? (
+          <div className={styles.detailContainer}>
+            <div className={styles.detailGrid}>
+              <ProductCarousel 
+                images={serverProduct.carouselImages || [serverProduct.imageUrl ?? '']} 
+                productName={serverProduct.name}
+              />
+              <ProductInfo
+                productId={serverProduct.id}
+                name={serverProduct.name}
+                price={serverProduct.price}
+                imageUrl={serverProduct.imageUrl ?? ''}
+                discount={serverProduct.discount}
+                description={serverProduct.description ?? ''}
+                specifications={serverProduct.specifications ?? {
+                  size: 'N/A',
+                  material: 'N/A',
+                  firmness: 'N/A',
+                  withPillow: 'No',
+                  color: 'N/A',
+                }}
+                features={serverProduct.features ?? []}
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          <ProductDetailClient slug={slug} serverProduct={null} />
+        )}
       </main>
 
       <Footer />

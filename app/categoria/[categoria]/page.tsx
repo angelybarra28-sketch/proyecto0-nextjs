@@ -41,26 +41,12 @@ export default async function CategoryPage({ params }: Props) {
           </Link>
         </div>
 
-        {products.length > 0 ? (
-          <ProductsSection 
-            title={`Categoría: ${decodedCategory}`}
-            products={products}
-            id={categoria}
-          />
-        ) : (
-          <div style={{
-            maxWidth: '1200px',
-            margin: '2rem auto',
-            padding: '2rem',
-            textAlign: 'center',
-            color: '#b8a89c'
-          }}>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
-              Categoría no encontrada
-            </h2>
-            <p>No hay productos disponibles en la categoría &quot;{decodedCategory}&quot;</p>
-          </div>
-        )}
+        <ProductsSection 
+          title={`Categoría: ${decodedCategory}`}
+          products={products}
+          id={categoria}
+          includeLocal
+        />
       </main>
 
       <Footer />
