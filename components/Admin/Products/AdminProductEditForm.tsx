@@ -25,6 +25,15 @@ function fromImagesText(value: string): string[] {
     .filter(Boolean);
 }
 
+const CUOTA_OPTIONS = [4, 8, 10, 12];
+
+function calculateValorCuota(precio: number, cuotas: number): string {
+  if (cuotas > 0 && precio > 0) {
+    return (precio / cuotas).toString();
+  }
+  return '';
+}
+
 export function AdminProductEditForm({
   product,
   categories,
@@ -34,7 +43,13 @@ export function AdminProductEditForm({
 }: AdminProductEditFormProps) {
   const [name, setName] = useState(product.name);
   const [slug, setSlug] = useState(product.slug);
+  const cuotaInicial = product.installmentCount?.toString() ?? '8';
+  const [installmentCount, setInstallmentCount] = useState(cuotaInicial);
+  const [installmentAmount, setInstallmentAmount] = useState(
+    product.installmentAmount?.toString() ?? calculateValorCuota(product.price, parseInt(cuotaInicial, 10))
+  );
   const [price, setPrice] = useState(product.price.toString());
+  const [referencePrice, setReferencePrice] = useState(product.referencePrice?.toString() ?? '');
   const [stock, setStock] = useState(product.stock.toString());
   const [categoryId, setCategoryId] = useState(product.categoryId ?? '');
   const [featured, setFeatured] = useState(product.featured);
@@ -44,6 +59,22 @@ export function AdminProductEditForm({
   const [carouselImages, setCarouselImages] = useState(toImagesText(product.carouselImages));
   const [isUploading, setIsUploading] = useState(false);
   const [imageError, setImageError] = useState('');
+
+  const recalculateValorCuota = (precio: string, cuotas: string) => {
+    const p = parseFloat(precio);
+    const c = parseInt(cuotas, 10);
+    setInstallmentAmount(calculateValorCuota(p, c));
+  };
+
+  const handlePriceChange = (value: string) => {
+    setPrice(value);
+    recalculateValorCuota(value, installmentCount);
+  };
+
+  const handleInstallmentCountChange = (value: string) => {
+    setInstallmentCount(value);
+    recalculateValorCuota(price, value);
+  };
 
   const currentCarouselImages = fromImagesText(carouselImages);
   const controlsDisabled = isSaving || isUploading;
@@ -118,6 +149,9 @@ export function AdminProductEditForm({
             price: Number(price),
             compareAtPrice: product.compareAtPrice,
             discountLabel: product.discountLabel,
+            referencePrice: referencePrice ? Number(referencePrice) : null,
+            installmentCount: installmentCount ? parseInt(installmentCount, 10) : null,
+            installmentAmount: installmentAmount ? parseFloat(installmentAmount) : null,
             stock: Number(stock),
             status,
             featured,
@@ -138,8 +172,34 @@ export function AdminProductEditForm({
                 <td><input value={slug} disabled={controlsDisabled} onChange={(event) => setSlug(event.target.value)} required /></td>
               </tr>
               <tr>
-                <td>Precio</td>
-                <td><input type="number" min="0" step="0.01" value={price} disabled={controlsDisabled} onChange={(event) => setPrice(event.target.value)} required /></td>
+                <td>Precio de referencia</td>
+                <td>
+                  <input type="number" min="0" step="0.01" value={referencePrice} disabled={controlsDisabled} onChange={(event) => setReferencePrice(event.target.value)} />
+                  <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>
+                    Precio original del proveedor. Solo visible en el admin.
+                  </small>
+                </td>
+              </tr>
+              <tr>
+                <td>Precio de venta</td>
+                <td>
+                  <input type="number" min="0" step="0.01" value={price} disabled={controlsDisabled} onChange={(event) => handlePriceChange(event.target.value)} required />
+                </td>
+              </tr>
+              <tr>
+                <td>Cuotas</td>
+                <td>
+                  <select value={installmentCount} disabled={controlsDisabled} onChange={(event) => handleInstallmentCountChange(event.target.value)} required style={{ width: '80px', marginRight: '0.5rem' }}>
+                    {CUOTA_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                  <span style={{ color: '#888' }}>cuotas de $</span>
+                  <input type="number" min="0" step="0.01" value={installmentAmount} readOnly style={{ width: '120px', marginLeft: '0.5rem', backgroundColor: '#f5f5f5', color: '#333', cursor: 'default' }} tabIndex={-1} />
+                  <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>
+                    Valor por cuota = precio de venta ÷ cantidad de cuotas
+                  </small>
+                </td>
               </tr>
               <tr>
                 <td>Stock</td>

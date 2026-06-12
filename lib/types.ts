@@ -12,6 +12,7 @@ export interface Product {
   stock: number;
   destacado: boolean;
   category?: string;
+  referencePrice?: number;
   specifications?: {
     size: string;
     material: string;

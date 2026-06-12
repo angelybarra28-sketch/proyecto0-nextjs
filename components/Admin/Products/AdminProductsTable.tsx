@@ -125,6 +125,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                   <th>Nombre</th>
                   <th>Categoría</th>
                   <th>Precio</th>
+                  <th>Cuotas</th>
                   <th>Stock</th>
                   <th>Featured</th>
                   <th>Status</th>
@@ -141,6 +142,11 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                     </td>
                     <td>{product.categoryName}</td>
                     <td>{formatCurrency(product.price)}</td>
+                    <td>
+                      {product.installmentCount && product.installmentAmount
+                        ? `${product.installmentCount}x ${formatCurrency(product.installmentAmount)}`
+                        : '-'}
+                    </td>
                     <td>
                       {product.stock}{' '}
                       {product.stock === 0 && <span className={styles.adminReadonlyBadge}>Sin stock</span>}

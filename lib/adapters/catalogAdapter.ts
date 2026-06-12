@@ -20,6 +20,7 @@ export type CatalogProductRow = {
   price: number | string;
   compare_at_price: number | string | null;
   discount_label: string | null;
+  reference_price: number | null;
   stock: number;
   status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'ARCHIVED';
   featured: boolean;
@@ -42,6 +43,9 @@ export type AdminCatalogProduct = {
   price: number;
   compareAtPrice: number | null;
   discountLabel: string;
+  referencePrice: number | null;
+  installmentCount: number | null;
+  installmentAmount: number | null;
   stock: number;
   status: CatalogProductRow['status'];
   featured: boolean;
@@ -106,6 +110,7 @@ export function adaptCatalogProduct(row: CatalogProductRow): Product {
     stock: row.stock,
     destacado: row.featured,
     category: categoryName,
+    referencePrice: row.reference_price ?? undefined,
     specifications: toSpecifications(row.specifications),
     features: toStringArray(row.features),
   };
@@ -125,6 +130,9 @@ export function adaptAdminCatalogProduct(row: CatalogProductRow): AdminCatalogPr
     price: toNumber(row.price),
     compareAtPrice: row.compare_at_price === null ? null : toNumber(row.compare_at_price),
     discountLabel: row.discount_label ?? '',
+    referencePrice: row.reference_price ?? null,
+    installmentCount: null,
+    installmentAmount: null,
     stock: row.stock,
     status: row.status,
     featured: row.featured,

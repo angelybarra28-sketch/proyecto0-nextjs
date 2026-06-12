@@ -12,6 +12,9 @@ export type ProductCreateInput = {
   price: number;
   compareAtPrice: number | null;
   discountLabel: string | null;
+  referencePrice: number | null;
+  installmentCount: number | null;
+  installmentAmount: number | null;
   stock: number;
   status: ProductStatus;
   featured: boolean;
@@ -56,6 +59,7 @@ const productColumns = `
   price,
   compare_at_price,
   discount_label,
+  reference_price,
   stock,
   status,
   featured,
@@ -178,6 +182,7 @@ export async function createProduct(
       price: input.price,
       compare_at_price: input.compareAtPrice,
       discount_label: input.discountLabel,
+      reference_price: input.referencePrice,
       stock: input.stock,
       status: input.status,
       featured: input.featured,
@@ -210,6 +215,7 @@ export async function updateProduct(
   if (input.price !== undefined) payload.price = input.price;
   if (input.compareAtPrice !== undefined) payload.compare_at_price = input.compareAtPrice;
   if (input.discountLabel !== undefined) payload.discount_label = input.discountLabel;
+  if (input.referencePrice !== undefined) payload.reference_price = input.referencePrice;
   if (input.stock !== undefined) payload.stock = input.stock;
   if (input.status !== undefined) payload.status = input.status;
   if (input.featured !== undefined) payload.featured = input.featured;

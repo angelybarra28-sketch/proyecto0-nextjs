@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AdminProductEditForm } from '@/components/Admin/Products/AdminProductEditForm';
+import { AdminProductCreateForm } from '@/components/Admin/Products/AdminProductCreateForm';
 import { AdminProductsTable } from '@/components/Admin/Products/AdminProductsTable';
 import type { AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
 import type { AdminCatalogCategory, AdminProductPayload } from '@/lib/services/adminCatalogService';
-import { fetchAdminProducts, updateAdminProduct } from '@/lib/services/admin/client';
+import { fetchAdminProducts, updateAdminProduct, createAdminProduct } from '@/lib/services/admin/client';
 import type { AdminPagination } from '@/lib/services/admin/types';
 import { useAdminProductTable } from '@/hooks/useAdminProductTable';
 import styles from '@/styles/Admin.module.css';
@@ -24,6 +25,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
   const [pagination, setPagination] = useState<AdminPagination | null>(null);
   const [source, setSource] = useState<'supabase' | 'local-fallback'>('supabase');
   const [selectedProduct, setSelectedProduct] = useState<AdminCatalogProduct | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
@@ -36,7 +38,16 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
 
     try {
       const catalog = await fetchAdminProducts(table.query, signal);
-      setProducts(catalog.products);
+      
+      // Si estamos en modo local, mezclar con productos guardados en localStorage
+      if (catalog.source === 'local-fallback') {
+        const localProducts = JSON.parse(localStorage.getItem('localProducts') || '[]');
+        const allProducts = [...localProducts, ...catalog.products];
+        setProducts(allProducts);
+      } else {
+        setProducts(catalog.products);
+      }
+      
       setCategories(catalog.categories);
       setPagination(catalog.pagination);
       setSource(catalog.source);
@@ -99,13 +110,84 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     }
   };
 
+  const handleCreateProduct = async (payload: AdminProductPayload) => {
+    setIsSaving(true);
+    setError('');
+    setNotice('');
+
+    try {
+      if (isReadOnly) {
+        // Modo local: guardar en localStorage
+        const localProducts = JSON.parse(localStorage.getItem('localProducts') || '[]');
+        const newProduct = {
+          id: `local-${Date.now()}`,
+          legacyProductId: null,
+          categoryId: payload.categoryId,
+          categoryName: categories.find(c => c.id === payload.categoryId)?.name || 'Sin categoría',
+          name: payload.name,
+          slug: payload.slug,
+          description: payload.description,
+          price: payload.price,
+          compareAtPrice: payload.compareAtPrice,
+          discountLabel: payload.discountLabel,
+          referencePrice: payload.referencePrice,
+          installmentCount: payload.installmentCount,
+          installmentAmount: payload.installmentAmount,
+          stock: payload.stock,
+          status: payload.status,
+          featured: payload.featured,
+          imageUrl: payload.imageUrl || '',
+          carouselImages: payload.carouselImages,
+          createdAt: new Date().toISOString(),
+        };
+        localProducts.push(newProduct);
+        localStorage.setItem('localProducts', JSON.stringify(localProducts));
+        setShowCreateForm(false);
+        await loadProducts();
+        setNotice('Producto creado correctamente (modo local)');
+      } else {
+        await createAdminProduct(payload);
+        setShowCreateForm(false);
+        await loadProducts();
+        setNotice('Producto creado correctamente');
+      }
+    } catch (createError) {
+      console.error('Error creating product:', createError);
+      setError(createError instanceof Error ? createError.message : 'No se pudo crear el producto');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const isReadOnly = source === 'local-fallback';
 
   return (
     <>
       {error && <p className={styles.adminAlertError}>{error}</p>}
       {notice && <p className={styles.adminAlertSuccess}>{notice}</p>}
-      {selectedProduct && !isReadOnly && (
+      
+      {!showCreateForm && (
+        <div style={{ marginBottom: '1rem' }}>
+          <button
+            className={styles.deleteBtn}
+            onClick={() => setShowCreateForm(true)}
+            disabled={isSaving}
+          >
+            + Crear producto nuevo
+          </button>
+        </div>
+      )}
+
+      {showCreateForm && (
+        <AdminProductCreateForm
+          categories={categories}
+          isSaving={isSaving}
+          onSubmit={handleCreateProduct}
+          onCancel={() => setShowCreateForm(false)}
+        />
+      )}
+
+      {selectedProduct && (
         <AdminProductEditForm
           key={selectedProduct.id}
           product={selectedProduct}

@@ -130,6 +130,26 @@ export async function fetchAdminProducts(input: AdminProductListInput = {}, sign
   return await response.json() as AdminCatalogPayload;
 }
 
+export async function createAdminProduct(
+  input: AdminProductPayload
+): Promise<AdminCatalogProduct> {
+  const response = await fetch('/api/admin/products', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo crear el producto');
+  }
+
+  const payload = await response.json() as { product: AdminCatalogProduct };
+  return payload.product;
+}
+
 export async function updateAdminProduct(
   productId: string,
   input: Partial<AdminProductPayload>
