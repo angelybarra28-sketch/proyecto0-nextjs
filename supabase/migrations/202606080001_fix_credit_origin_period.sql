@@ -114,10 +114,10 @@ BEGIN
     v_remaining_to_allocate := (v_payment->>'amount')::numeric;
 
     for v_installment in
-      select * from credit_installments
-      where credit_account_id = v_credit_account_id
-        and remaining_amount > 0
-      order by installment_number asc
+      select * from credit_installments ci
+      where ci.credit_account_id = v_credit_account_id
+        and ci.remaining_amount > 0
+      order by ci.installment_number asc
       for update
     loop
       exit when v_remaining_to_allocate <= 0;
@@ -140,6 +140,11 @@ BEGIN
 
       v_remaining_to_allocate := v_remaining_to_allocate - v_allocation_amount;
     end loop;
+
+    if v_remaining_to_allocate <> 0 then
+      raise exception 'IMPORT_PAYMENT_NOT_FULLY_ALLOCATED: payment % has unallocated amount %',
+        (v_payment->>'amount')::numeric, v_remaining_to_allocate;
+    end if;
 
     v_payments_count := v_payments_count + 1;
   end loop;
@@ -193,15 +198,18 @@ account_aggregates AS (
   FROM credit_accounts ca
   LEFT JOIN payment_aggregates pa ON pa.credit_account_id = ca.id
   LEFT JOIN installment_aggregates ia ON ia.credit_account_id = ca.id
+  WHERE ca.is_active = true
 )
 SELECT
-  -- 1. Cobranza Actual
+  -- 1. Cobranza Actual (solo cuentas activas)
   COALESCE((
     SELECT SUM(cp.amount)::numeric
     FROM credit_payments cp
+    JOIN credit_accounts ca ON ca.id = cp.credit_account_id
     CROSS JOIN month_bounds mb
     WHERE cp.payment_date >= mb.month_start
       AND cp.payment_date < mb.month_end
+      AND ca.is_active = true
   ), 0)::numeric AS current_monthly_collection,
 
   -- 2. Reposición del Mes: exclusively origin_month / origin_year
@@ -229,13 +237,14 @@ SELECT
          THEN aa.installment_amount ELSE 0 END
   ), 0)::numeric AS finished_installments_amount,
 
-  -- 5. Proyección Próxima Cobranza
+  -- 5. Proyección Próxima Cobranza (solo cuentas activas)
   (
     SELECT COALESCE(SUM(ca.installment_amount), 0)
     FROM credit_accounts ca
     JOIN installment_aggregates ia
         ON ia.credit_account_id = ca.id
     WHERE ia.total_remaining > 0
+      AND ca.is_active = true
   )::numeric AS projected_next_month
 FROM account_aggregates aa, month_bounds mb;
 $$;

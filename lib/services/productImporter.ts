@@ -105,72 +105,158 @@ async function parseMitiendaNube(url: string): Promise<ImportedProductData> {
   };
 }
 
-function extractMercadoLibreId(url: string): string | null {
-  // Extraer ID de URLs tipo /p/MLA123456789
-  const match = url.match(/\/(?:p|products)\/(MLA\d+)/i);
-  if (match) return match[1];
-  
-  // Extraer ID de URLs de item
-  const itemMatch = url.match(/\/items\/(MLA\d+)/i);
-  if (itemMatch) return itemMatch[1];
+function extractJsonLd(html: string): Record<string, unknown> | null {
+  const match = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
+  if (!match) return null;
+  try {
+    const parsed = JSON.parse(match[1]);
+    return Array.isArray(parsed) ? parsed[0] : parsed;
+  } catch {
+    return null;
+  }
+}
+
+function extractMercadoLibreName(html: string): string {
+  const og = extractMetaTag(html, 'og:title');
+  if (og) return og;
+
+  const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+  if (titleMatch) return titleMatch[1].replace(/ \| MercadoLibre.*$/, '').trim();
+
+  return '';
+}
+
+function extractMercadoLibreDescription(html: string): string {
+  const og = extractMetaTag(html, 'og:description');
+  if (og) return og;
+
+  const metaDesc = extractMetaTag(html, 'description');
+  if (metaDesc) return metaDesc;
+
+  const jsonLd = extractJsonLd(html);
+  if (jsonLd?.description && typeof jsonLd.description === 'string') return jsonLd.description;
+
+  return '';
+}
+
+function extractMercadoLibrePrice(html: string): number | null {
+  const jsonLd = extractJsonLd(html);
+  const offers = jsonLd?.offers as { price?: number } | undefined;
+  if (offers?.price) return Number(offers.price);
+
+  const priceMatch = html.match(/"price":\s*(\d+\.?\d*)/i);
+  if (priceMatch) return Number(priceMatch[1]);
 
   return null;
 }
 
-async function parseMercadoLibre(url: string): Promise<ImportedProductData> {
+function extractMercadoLibreImages(html: string): string[] {
+  const images = new Set<string>();
+
+  // JSON-LD images
+  const jsonLd = extractJsonLd(html);
+  if (jsonLd?.image) {
+    const imgList = Array.isArray(jsonLd.image) ? jsonLd.image : [jsonLd.image];
+    for (const img of imgList) {
+      if (typeof img === 'string' && img.startsWith('http')) images.add(img);
+    }
+  }
+
+  // Buscar imágenes en estado inicial de la app
+  const stateMatch = html.match(/window\.__PRELOADED_STATE__\s*=\s*({[\s\S]*?});/);
+  if (stateMatch) {
+    try {
+      const state = JSON.parse(stateMatch[1]);
+      const pics = state?.initialState?.productDetail?.pictures || state?.product?.pictures || [];
+      for (const pic of pics) {
+        const url = pic.url || pic.secure_url || pic.original || pic.max || pic['640w'] || pic['1200w'];
+        if (url && typeof url === 'string' && !url.includes('video')) images.add(url);
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Fallback: src grandes
+  const srcRegex = /src=['"](https?:\/\/[^'"]+\.(?:png|jpg|jpeg|webp))['"]/gi;
+  let match;
+  while ((match = srcRegex.exec(html)) !== null) {
+    const url = match[1];
+    if (!url.includes('-50-') && !url.includes('-100-')) images.add(url);
+  }
+
+  return Array.from(images);
+}
+
+function extractMercadoLibreId(url: string): string | null {
+  const m = url.match(/MLA-?(\d{7,})/i);
+  return m ? `MLA${m[1]}` : null;
+}
+
+function readMercadoLibreToken(): string | undefined {
+  return process.env.MERCADO_LIBRE_ACCESS_TOKEN?.trim() || undefined;
+}
+
+async function parseMercadoLibreViaApi(url: string): Promise<ImportedProductData | null> {
   const itemId = extractMercadoLibreId(url);
-  
-  if (!itemId) {
-    throw new Error('No se pudo extraer el ID del producto de MercadoLibre. URL debe contener /p/MLA... o /items/MLA...');
-  }
+  if (!itemId) return null;
 
-  // Fetch item data
-  const itemResponse = await fetch(`https://api.mercadolibre.com/items/${itemId}`, {
-    headers: {
-      'Accept': 'application/json',
-    },
-  });
+  const token = readMercadoLibreToken();
+  if (!token) return null;
 
-  if (!itemResponse.ok) {
-    throw new Error(`Error al obtener datos de MercadoLibre: ${itemResponse.status}`);
-  }
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
 
-  const itemData = await itemResponse.json();
+  const itemResp = await fetch(`https://api.mercadolibre.com/items/${itemId}`, { headers });
+  if (!itemResp.ok) return null;
 
-  // Fetch description
-  const descResponse = await fetch(`https://api.mercadolibre.com/items/${itemId}/description`, {
-    headers: {
-      'Accept': 'application/json',
-    },
-  });
+  const itemData = await itemResp.json();
 
   let description = '';
-  if (descResponse.ok) {
-    const descData = await descResponse.json();
+  const descResp = await fetch(`https://api.mercadolibre.com/items/${itemId}/description`, { headers });
+  if (descResp.ok) {
+    const descData = await descResp.json();
     description = descData.plain_text || descData.text || '';
   }
 
-  // Extraer imágenes (excluir videos)
   const images: string[] = [];
   if (itemData.pictures && Array.isArray(itemData.pictures)) {
     itemData.pictures.forEach((pic: { url: string }) => {
-      if (pic.url && !pic.url.includes('video')) {
-        images.push(pic.url);
-      }
+      if (pic.url && !pic.url.includes('video')) images.push(pic.url);
     });
   }
-
-  // Precio de referencia
-  const referencePrice = itemData.price || null;
 
   return {
     name: itemData.title || '',
     description,
     images,
-    referencePrice,
+    referencePrice: itemData.price || null,
     source: 'mercadolibre',
-    rawData: itemData,
   };
+}
+
+async function parseMercadoLibre(url: string): Promise<ImportedProductData> {
+  // Intentar via API con token (funciona para productos propios)
+  const viaApi = await parseMercadoLibreViaApi(url);
+  if (viaApi) return viaApi;
+
+  const itemId = extractMercadoLibreId(url);
+  const tokenAvailable = !!readMercadoLibreToken();
+
+  if (tokenAvailable) {
+    throw new Error(
+      'No se pudo importar el producto de MercadoLibre. ' +
+      'La API solo permite importar tus propias publicaciones. ' +
+      (itemId ? `El producto ${itemId} pertenece a otro vendedor. ` : '') +
+      'Copiá los datos manualmente o usá un producto propio.'
+    );
+  }
+
+  throw new Error(
+    'No se pudo importar el producto de MercadoLibre. ' +
+    'Configurá MERCADO_LIBRE_ACCESS_TOKEN en .env.local para importar tus propias publicaciones. ' +
+    'Obtené tu token en: https://developers.mercadolibre.com.ar/'
+  );
 }
 
 export async function importProductFromUrl(url: string): Promise<ImportedProductData> {

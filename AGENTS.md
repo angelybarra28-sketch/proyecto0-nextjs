@@ -50,6 +50,13 @@
 ## Encoding/Tooling Quirk
 - `components/Layout/Header.tsx` may be misdetected as “binary” by some file readers due to non-ASCII characters/control bytes; if a tool can’t read it, fall back to an editor or PowerShell `Get-Content -Raw`.
 
+## Credit Module — `credit_accounts.is_active`
+- `is_active` is a **manual visibility flag**, not a financial state. It controls whether an account appears in lists, dashboards, collection routes, and monthly control.
+- Financial status (paid/pending/overdue) is derived from `credit_installments.remaining_amount`, not from `is_active`.
+- All credit queries filter `is_active = true` **except** `get_credit_commercial_metrics` (which was aligned in Fase 4 Semana 3).
+- No UI or API currently toggles `is_active`. Accounts are always inserted with `default true`.
+- Changing `is_active` from `true` to `false` hides the account from all operational views but does not delete or alter financial data.
+
 ## High-Value Docs
 - Slugs/routing docs index: `INDICE_DOCUMENTACION.md` (starts at `RESUMEN_MIGRACION.md`).
 - Filters docs start: `README_FILTROS.md` then `CHEATSHEET_FILTROS.md`.
