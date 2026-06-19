@@ -67,6 +67,65 @@ export interface DbCreditAccountItem {
   created_at: string;
 }
 
+const BATCH_SIZE = 200;
+
+export async function batchedInQuery<T>(
+  supabase: SupabaseClient,
+  table: string,
+  column: string,
+  ids: string[],
+  order: { column: string; ascending: boolean }
+): Promise<T[]> {
+  if (ids.length === 0) return [];
+  if (ids.length <= BATCH_SIZE) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .in(column, ids)
+      .order(order.column, { ascending: order.ascending });
+    if (error) throw error;
+    return (data ?? []) as T[];
+  }
+  const results: T[] = [];
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const batch = ids.slice(i, i + BATCH_SIZE);
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .in(column, batch)
+      .order(order.column, { ascending: order.ascending });
+    if (error) throw error;
+    results.push(...(data ?? []) as T[]);
+  }
+  return results;
+}
+
+export async function batchedCustomerQuery(
+  supabase: SupabaseClient,
+  customerIds: string[]
+): Promise<{ id: string; full_name: string; phone: string | null }[]> {
+  if (customerIds.length === 0) return [];
+  if (customerIds.length <= BATCH_SIZE) {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('id, full_name, phone')
+      .in('id', customerIds);
+    if (error) throw error;
+    return (data ?? []) as { id: string; full_name: string; phone: string | null }[];
+  }
+  const results: { id: string; full_name: string; phone: string | null }[] = [];
+  for (let i = 0; i < customerIds.length; i += BATCH_SIZE) {
+    const batch = customerIds.slice(i, i + BATCH_SIZE);
+    const { data, error } = await supabase
+      .from('customers')
+      .select('id, full_name, phone')
+      .in('id', batch);
+    if (error) throw error;
+    results.push(...(data ?? []) as { id: string; full_name: string; phone: string | null }[]);
+  }
+  return results;
+}
+
 export async function getCreditAccounts(
   supabase: SupabaseClient,
   includeInactive = false
@@ -88,37 +147,11 @@ export async function getCreditAccounts(
 
   const accountIds = (accounts ?? []).map((a) => a.id);
 
-  const { data: installments, error: instError } = await supabase
-    .from('credit_installments')
-    .select('*')
-    .in('credit_account_id', accountIds)
-    .order('installment_number', { ascending: true });
+  const installments = await batchedInQuery<DbCreditInstallment>(supabase, 'credit_installments', 'credit_account_id', accountIds, { column: 'installment_number', ascending: true });
+  const payments = await batchedInQuery<DbCreditPayment>(supabase, 'credit_payments', 'credit_account_id', accountIds, { column: 'payment_date', ascending: false });
+  const items = await batchedInQuery<DbCreditAccountItem>(supabase, 'credit_account_items', 'credit_account_id', accountIds, { column: 'created_at', ascending: true });
 
-  if (instError) {
-    throw instError;
-  }
-
-  const { data: payments, error: payError } = await supabase
-    .from('credit_payments')
-    .select('*')
-    .in('credit_account_id', accountIds)
-    .order('payment_date', { ascending: false });
-
-  if (payError) {
-    throw payError;
-  }
-
-  const { data: items, error: itemsError } = await supabase
-    .from('credit_account_items')
-    .select('*')
-    .in('credit_account_id', accountIds)
-    .order('created_at', { ascending: true });
-
-  if (itemsError) {
-    throw itemsError;
-  }
-
-  return { accounts: accounts ?? [], installments: installments ?? [], payments: payments ?? [], items: items ?? [] };
+  return { accounts: accounts ?? [], installments, payments, items };
 }
 
 export async function getCreditAccountById(
@@ -275,14 +308,7 @@ export async function getCreditAccountItemsForAccounts(
   supabase: SupabaseClient,
   accountIds: string[]
 ): Promise<DbCreditAccountItem[]> {
-  const { data, error } = await supabase
-    .from('credit_account_items')
-    .select('*')
-    .in('credit_account_id', accountIds)
-    .order('created_at', { ascending: true });
-
-  if (error) throw error;
-  return data ?? [];
+  return batchedInQuery<DbCreditAccountItem>(supabase, 'credit_account_items', 'credit_account_id', accountIds, { column: 'created_at', ascending: true });
 }
 
 export async function generateInstallmentsForAccount(
@@ -517,4 +543,120 @@ export async function getCollectionRouteFromRpc(
     paid_installments: number;
     overdue_installments: number;
   }[];
+}
+
+export async function fixAccountInstallments(
+  supabase: SupabaseClient,
+  accountId: string
+): Promise<{ regenerated: boolean; installmentCount: number }> {
+  const { data: account, error: accError } = await supabase
+    .from('credit_accounts')
+    .select('id, installment_count, installment_amount, sale_date')
+    .eq('id', accountId)
+    .single();
+
+  if (accError || !account) {
+    throw accError ?? new Error('Cuenta no encontrada');
+  }
+
+  const { data: payments, error: payError } = await supabase
+    .from('credit_payments')
+    .select('id, amount, payment_date, payment_method, notes')
+    .eq('credit_account_id', accountId)
+    .order('payment_date', { ascending: true });
+
+  if (payError) {
+    throw payError;
+  }
+
+  const installmentCount = account.installment_count as number;
+  const installmentAmount = account.installment_amount as number;
+  const startDate = account.sale_date as string;
+
+  if (payments && payments.length > 0) {
+    const paymentIds = payments.map((p: { id: string }) => p.id);
+    const { error: allocDelError } = await supabase
+      .from('credit_payment_allocations')
+      .delete()
+      .in('credit_payment_id', paymentIds);
+
+    if (allocDelError) {
+      throw allocDelError;
+    }
+  }
+
+  const { error: instDelError } = await supabase
+    .from('credit_installments')
+    .delete()
+    .eq('credit_account_id', accountId);
+
+  if (instDelError) {
+    throw instDelError;
+  }
+
+  const { error: genError } = await supabase.rpc('generate_credit_installments', {
+    p_credit_account_id: accountId,
+    p_installment_count: installmentCount,
+    p_installment_amount: installmentAmount,
+    p_start_date: startDate,
+  });
+
+  if (genError) {
+    throw genError;
+  }
+
+  if (payments && payments.length > 0) {
+    const { data: newInstallments, error: instFetchError } = await supabase
+      .from('credit_installments')
+      .select('id, paid_amount, remaining_amount, installment_number')
+      .eq('credit_account_id', accountId)
+      .order('installment_number', { ascending: true });
+
+    if (instFetchError || !newInstallments) {
+      throw instFetchError ?? new Error('No se pudieron cargar las cuotas regeneradas');
+    }
+
+    for (const payment of payments) {
+      const paymentAmount = Number((payment as { amount: number }).amount);
+      let remaining = paymentAmount;
+
+      for (const inst of newInstallments) {
+        if (remaining <= 0) break;
+        const instPaid = Number(inst.paid_amount);
+        const instRemaining = Number(inst.remaining_amount);
+        if (instRemaining <= 0) continue;
+
+        const allocationAmount = Math.min(remaining, instRemaining);
+
+        await supabase
+          .from('credit_payment_allocations')
+          .insert({
+            credit_payment_id: (payment as { id: string }).id,
+            credit_installment_id: inst.id,
+            amount: allocationAmount,
+          });
+
+        const newPaidAmount = instPaid + allocationAmount;
+        const newRemainingAmount = instRemaining - allocationAmount;
+        const newStatus = newRemainingAmount <= 0 ? 'PAID' : 'PARTIAL';
+
+        await supabase
+          .from('credit_installments')
+          .update({
+            paid_amount: newPaidAmount,
+            remaining_amount: newRemainingAmount,
+            status: newStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', inst.id);
+
+        inst.paid_amount = newPaidAmount;
+        inst.remaining_amount = newRemainingAmount;
+
+        remaining -= allocationAmount;
+      }
+    }
+  }
+
+  return { regenerated: true, installmentCount };
 }

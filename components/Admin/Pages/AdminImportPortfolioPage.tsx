@@ -117,6 +117,10 @@ export function AdminImportPortfolioPage() {
                 <p style={{ fontWeight: 700, fontSize: 18, margin: '4px 0 0' }}>{preview.totalPayments}</p>
               </div>
               <div style={{ background: '#f9fafb', borderRadius: 8, padding: 12, color: '#333' }}>
+                <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Pagos mensuales</p>
+                <p style={{ fontWeight: 700, fontSize: 18, margin: '4px 0 0' }}>{preview.stats.paymentsDetectedCount}</p>
+              </div>
+              <div style={{ background: '#f9fafb', borderRadius: 8, padding: 12, color: '#333' }}>
                 <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Total Financiado</p>
                 <p style={{ fontWeight: 700, fontSize: 18, margin: '4px 0 0' }}>{formatCurrency(preview.totalFinanced)}</p>
               </div>
@@ -163,28 +167,101 @@ export function AdminImportPortfolioPage() {
                 <div>Sin dirección: <strong>{preview.stats.missingAddressCount}</strong></div>
                 <div>Sin tarjeta: <strong>{preview.stats.missingOperationNumberCount}</strong></div>
                 <div>Sin nombre: <strong>{preview.stats.missingNameCount}</strong></div>
+                {preview.stats.skippedEmptyRowCount > 0 && (
+                  <div>Filas ignoradas (sin datos): <strong>{preview.stats.skippedEmptyRowCount}</strong></div>
+                )}
               </div>
             </div>
+
+            {/* Debug: columnas de meses detectadas */}
+            <div style={{ background: preview.detectedMonthColumns && preview.detectedMonthColumns.length > 0 ? '#f0fdf4' : '#fef2f2', borderRadius: 8, padding: 16, marginBottom: 16, border: `1px solid ${preview.detectedMonthColumns && preview.detectedMonthColumns.length > 0 ? '#bbf7d0' : '#fecaca'}` }}>
+              <p style={{ fontWeight: 700, color: '#374151', marginBottom: 8, fontSize: 14 }}>
+                Columnas de meses detectadas: {preview.detectedMonthColumns ? preview.detectedMonthColumns.length : 0}
+              </p>
+              {preview.detectedMonthColumns && preview.detectedMonthColumns.length > 0 ? (
+                <p style={{ fontSize: 13, color: '#166534', margin: 0, wordBreak: 'break-all' }}>
+                  {preview.detectedMonthColumns.join(', ')}
+                </p>
+              ) : (
+                <p style={{ fontSize: 13, color: '#991b1b', margin: 0 }}>
+                  No se detectaron columnas de meses. Los pagos mensuales NO se van a importar.
+                  Las columnas deben tener encabezados como: 1, 2, ... 12 o ENERO, FEBRERO, etc.
+                </p>
+              )}
+              {preview.rawHeadersSample && preview.rawHeadersSample.length > 0 && (
+                <details style={{ marginTop: 8 }}>
+                  <summary style={{ fontSize: 12, color: '#6b7280', cursor: 'pointer' }}>
+                    Ver todas las columnas del archivo ({preview.rawHeadersSample.length})
+                  </summary>
+                  <p style={{ fontSize: 11, color: '#9ca3af', margin: '4px 0 0', wordBreak: 'break-all' }}>
+                    {preview.rawHeadersSample.join(' | ')}
+                  </p>
+                </details>
+              )}
+            </div>
+
+            {/* Debug: primeras filas con pagos */}
+            {preview.rows.filter((r) => r.payments.length > 0).length > 0 && (
+              <details style={{ marginBottom: 16 }}>
+                <summary style={{ fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
+                  Primeras filas con pagos mensuales ({preview.rows.filter((r) => r.payments.length > 0).length} filas con pagos)
+                </summary>
+                <div style={{ maxHeight: 200, overflowY: 'auto', fontSize: 12, color: '#333', marginTop: 8 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: '#e5e7eb' }}>
+                        <th style={{ padding: 4, textAlign: 'left' }}>Tarjeta</th>
+                        <th style={{ padding: 4, textAlign: 'left' }}>Nombre</th>
+                        <th style={{ padding: 4, textAlign: 'left' }}>Cuota</th>
+                        <th style={{ padding: 4, textAlign: 'left' }}>Total</th>
+                        <th style={{ padding: 4, textAlign: 'left' }}>Pagado</th>
+                        <th style={{ padding: 4, textAlign: 'left' }}>Fecha venta</th>
+                        <th style={{ padding: 4, textAlign: 'left' }}>Pagos mes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.rows.filter((r) => r.payments.length > 0).slice(0, 10).map((r, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                          <td style={{ padding: 4 }}>{r.operationNumber ?? '-'}</td>
+                          <td style={{ padding: 4 }}>{r.customerFullName}</td>
+                          <td style={{ padding: 4 }}>{r.installmentAmount} x {r.installmentCount}</td>
+                          <td style={{ padding: 4 }}>{r.totalAmount}</td>
+                          <td style={{ padding: 4 }}>{r.accumulatedPayment}</td>
+                          <td style={{ padding: 4 }}>{r.saleDate}</td>
+                          <td style={{ padding: 4 }}>{r.payments.map((p) => `$${p.amount}@${p.paymentDate}`).join(', ')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            )}
 
             {preview.errors.length > 0 && (
               <div style={{ background: '#fee2e2', borderRadius: 8, padding: 16, marginBottom: 16 }}>
                 <p style={{ fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>Errores bloqueantes ({preview.errors.length})</p>
-                <ul style={{ margin: 0, paddingLeft: 20, color: '#991b1b' }}>
-                  {preview.errors.map((e, i) => (
+                <ul style={{ margin: 0, paddingLeft: 20, color: '#991b1b', maxHeight: 200, overflowY: 'auto' }}>
+                  {preview.errors.slice(0, 50).map((e, i) => (
                     <li key={i}>Fila {e.rowIndex + 1}: {e.message}</li>
                   ))}
                 </ul>
+                {preview.errors.length > 50 && (
+                  <p style={{ color: '#991b1b', fontSize: 13, marginTop: 4 }}>...y {preview.errors.length - 50} errores más</p>
+                )}
               </div>
             )}
 
             {preview.warnings.length > 0 && (
               <div style={{ background: '#fef3c7', borderRadius: 8, padding: 16, marginBottom: 16 }}>
                 <p style={{ fontWeight: 700, color: '#92400e', marginBottom: 8 }}>Advertencias ({preview.warnings.length})</p>
-                <ul style={{ margin: 0, paddingLeft: 20, color: '#92400e' }}>
-                  {preview.warnings.map((w, i) => (
+                <ul style={{ margin: 0, paddingLeft: 20, color: '#92400e', maxHeight: 200, overflowY: 'auto' }}>
+                  {preview.warnings.slice(0, 50).map((w, i) => (
                     <li key={i}>Fila {w.rowIndex + 1}: {w.message}</li>
                   ))}
                 </ul>
+                {preview.warnings.length > 50 && (
+                  <p style={{ color: '#92400e', fontSize: 13, marginTop: 4 }}>...y {preview.warnings.length - 50} advertencias más</p>
+                )}
               </div>
             )}
 
@@ -202,8 +279,8 @@ export function AdminImportPortfolioPage() {
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <button
                 className={styles.adminActionButton}
-                disabled={!confirmed || isImporting || preview.errors.length > 0}
-                onClick={() => confirmImport(preview.rows)}
+                disabled={!confirmed || isImporting || preview.stats.importableCount === 0}
+                onClick={() => confirmImport(preview.importableRows)}
               >
                 {isImporting ? 'Importando...' : 'Importar Cartera'}
               </button>

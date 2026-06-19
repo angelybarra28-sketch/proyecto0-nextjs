@@ -32,20 +32,17 @@ export function useCreditAccounts(
   const [error, setError] = useState('');
 
 const load = useCallback(async (signal?: AbortSignal) => {
-  setIsLoading(true);
-  setError('');
+    setIsLoading(true);
+    setError('');
 
-  try {
-    const data = await fetchCreditAccounts(signal, {
-      search,
-      statusFilter,
-    });
+    try {
+      const data = await fetchCreditAccounts(signal, {
+        search,
+        statusFilter,
+      });
 
-    console.log('ACCOUNTS RESPONSE:', data);
-    console.log('DASHBOARD:', data.dashboard);
-
-    setAccounts(data.accounts);
-    setDashboard(data.dashboard);
+      setAccounts(data.accounts);
+      setDashboard(data.dashboard);
     } catch (err) {
       if (isAbortError(err) || signal?.aborted) return;
       console.error('Error loading credit accounts:', err);
@@ -62,6 +59,24 @@ const load = useCallback(async (signal?: AbortSignal) => {
     return () => controller.abort();
   }, [enabled, load]);
 
+  const reload = useCallback(async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const data = await fetchCreditAccounts(undefined, {
+        search,
+        statusFilter,
+      });
+      setAccounts(data.accounts);
+      setDashboard(data.dashboard);
+    } catch (err) {
+      console.error('Error reloading credit accounts:', err);
+      setError('No se pudieron cargar las cuentas corrientes');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [search, statusFilter]);
+
   const createAccount = useCallback(async (input: CreateCreditAccountInput) => {
     try {
       const account = await createCreditAccount(input);
@@ -74,7 +89,21 @@ const load = useCallback(async (signal?: AbortSignal) => {
     }
   }, [load]);
 
-  return { accounts, dashboard, isLoading, error, reload: load, createAccount };
+  const addPaymentInline = useCallback(async (accountId: string, amount: number, paymentMethod: string, paymentDate: string) => {
+    await registerCreditPayment(accountId, { amount, paymentMethod, paymentDate });
+    await load();
+  }, [load]);
+
+  const fixInstallments = useCallback(async (accountId: string) => {
+    const res = await fetch(`/api/admin/credit-accounts/${accountId}/fix-installments`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: 'Error al corregir cuotas' }));
+      throw new Error(err.message ?? 'Error al corregir cuotas');
+    }
+    await load();
+  }, [load]);
+
+  return { accounts, dashboard, isLoading, error, reload, createAccount, addPaymentInline, fixInstallments };
 }
 
 export function useCreditAccountDetail(accountId: string | null) {

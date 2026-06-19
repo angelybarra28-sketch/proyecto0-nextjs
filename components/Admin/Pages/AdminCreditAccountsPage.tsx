@@ -15,7 +15,7 @@ export function AdminCreditAccountsPage() {
   const { isAdmin } = useAdminAccess();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'active' | 'finished' | 'all'>('active');
-  const { accounts, dashboard, isLoading, error, reload } = useCreditAccounts(isAdmin, search, statusFilter);
+  const { accounts, dashboard, isLoading, error, reload, addPaymentInline, fixInstallments } = useCreditAccounts(isAdmin, search, statusFilter);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
   const [showCleanModal, setShowCleanModal] = useState(false);
@@ -144,7 +144,7 @@ export function AdminCreditAccountsPage() {
           </div>
           {detailLoading && <p className={styles.empty}>Cargando detalle...</p>}
           {detail && (
-            <CreditAccountDetailView account={detail} onPayment={handlePayment} onAddNote={handleAddNote} />
+            <CreditAccountDetailView account={detail} onPayment={handlePayment} onAddNote={handleAddNote} onFixInstallments={fixInstallments} />
           )}
         </div>
       ) : (
@@ -199,7 +199,7 @@ export function AdminCreditAccountsPage() {
               </label>
             </div>
 
-            <CreditAccountsTable accounts={accounts} onSelectAccount={setSelectedAccountId} />
+            <CreditAccountsTable accounts={accounts} onSelectAccount={setSelectedAccountId} onPayment={addPaymentInline} onFixInstallments={fixInstallments} />
 
             <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center' }}>
               <Link

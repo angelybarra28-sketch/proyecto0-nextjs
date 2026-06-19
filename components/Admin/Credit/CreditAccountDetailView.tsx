@@ -54,16 +54,30 @@ type CreditAccountDetailViewProps = {
   account: CreditAccountDetail;
   onPayment: (amount: number, paymentMethod: string, notes: string) => Promise<void>;
   onAddNote: (input: { contactType: 'CALL' | 'WHATSAPP' | 'VISIT' | 'OTHER'; result: 'NOTE' | 'PROMISE' | 'NO_CONTACT' | 'PARTIAL_PAYMENT' | 'PAID' | 'OTHER'; notes: string; createdBy: string }) => Promise<void>;
+  onFixInstallments?: (accountId: string) => Promise<void>;
 };
 
-export function CreditAccountDetailView({ account, onPayment, onAddNote }: CreditAccountDetailViewProps) {
+export function CreditAccountDetailView({ account, onPayment, onAddNote, onFixInstallments }: CreditAccountDetailViewProps) {
   const [noteForm, setNoteForm] = useState({ contactType: 'CALL' as const, result: 'NOTE' as const, notes: '' });
+  const [fixing, setFixing] = useState(false);
 
   const handleNoteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!noteForm.notes.trim()) return;
     await onAddNote({ ...noteForm, createdBy: 'Admin' });
     setNoteForm({ contactType: 'CALL', result: 'NOTE', notes: '' });
+  };
+
+  const handleFixInstallments = async () => {
+    if (!onFixInstallments || fixing) return;
+    setFixing(true);
+    try {
+      await onFixInstallments(account.id);
+    } catch (err) {
+      console.error('Error fixing installments:', err);
+    } finally {
+      setFixing(false);
+    }
   };
 
   const accountStatus = getAccountStatusLabel(account);
@@ -140,7 +154,19 @@ export function CreditAccountDetailView({ account, onPayment, onAddNote }: Credi
           </div>
           <div>
             <p style={{ fontSize: 12, color: '#b8a89c', margin: 0 }}>Cuotas</p>
-            <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 18 }}>{account.installmentCount}</p>
+            <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 18 }}>
+              {account.installmentCount}
+              {account.installmentCount !== account.installments.length && (
+                <button
+                  onClick={handleFixInstallments}
+                  disabled={fixing || !onFixInstallments}
+                  style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 4, background: '#b45309', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                  title="Regenerar cuotas faltantes y recalcular pagos"
+                >
+                  {fixing ? 'Corrigiendo...' : 'Corregir cuotas'}
+                </button>
+              )}
+            </p>
           </div>
           <div>
             <p style={{ fontSize: 12, color: '#b8a89c', margin: 0 }}>Total</p>

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireStrictAdminUser } from '@/lib/auth/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
-import { getCreditAccounts } from '@/lib/repositories/creditAccountRepository';
+import { getCreditAccounts, batchedCustomerQuery } from '@/lib/repositories/creditAccountRepository';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 
@@ -127,13 +127,10 @@ export async function GET(request: Request) {
 
     // Load customer names for finished accounts
     const customerIds = [...new Set(finishedAccountsList.map((a) => a.customerId))];
-    const { data: customers } = await supabase
-      .from('customers')
-      .select('id, full_name')
-      .in('id', customerIds);
+    const customers = await batchedCustomerQuery(supabase, customerIds);
 
-    const customerMap = new Map(
-      (customers ?? []).map((c: { id: string; full_name: string }) => [c.id, c.full_name])
+    const customerMap = new Map<string, string>(
+      customers.map((c: { id: string; full_name: string }) => [c.id, c.full_name] as const)
     );
 
     const finishedAccountsListWithNames = finishedAccountsList.map((acc) => ({

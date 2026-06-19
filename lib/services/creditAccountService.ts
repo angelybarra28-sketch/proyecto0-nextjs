@@ -11,6 +11,8 @@ import {
   insertCollectionNote,
   getCreditDashboardFromRpc,
   getCollectionRouteFromRpc,
+  batchedCustomerQuery,
+  fixAccountInstallments,
 } from '@/lib/repositories/creditAccountRepository';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import type {
@@ -42,11 +44,18 @@ function calculateSummary(
     origin_month?: number | null;
     origin_year?: number | null;
   },
-  installments: { original_amount: number; paid_amount: number; status: string }[],
+  installments: { original_amount: number; paid_amount: number; remaining_amount: number; status: string }[],
   payments?: { payment_date: string }[]
 ): CreditAccountSummary {
-  const total = installments.reduce((sum, inst) => sum + Number(inst.original_amount), 0);
+  const installmentTotal = installments.reduce((sum, inst) => sum + Number(inst.original_amount), 0);
   const paid = installments.reduce((sum, inst) => sum + Number(inst.paid_amount), 0);
+  const remainingFromInstallments = installments.reduce((sum, inst) => sum + Number(inst.remaining_amount), 0);
+  const expectedTotal = account.installment_count * Number(account.installment_amount);
+  const installmentsMissing = installments.length < account.installment_count;
+  const total = Math.max(installmentTotal, expectedTotal);
+  const remaining = installmentsMissing
+    ? Math.max(0, total - paid)
+    : Math.max(remainingFromInstallments, 0);
   const lastPaymentDate = payments && payments.length > 0
     ? payments.sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())[0].payment_date
     : null;
@@ -67,9 +76,10 @@ function calculateSummary(
     originYear: account.origin_year ?? null,
     total,
     paid,
-    remaining: Math.max(0, total - paid),
+    remaining,
     paymentCount: installments.filter((inst) => inst.status === 'PAID' || inst.status === 'PARTIAL').length,
     lastPaymentDate,
+    installmentsMissing,
   };
 }
 
@@ -150,7 +160,7 @@ export async function listCreditAccountSummaries(options?: {
 
   const { accounts, installments, payments, items } = await getCreditAccounts(supabase);
 
-  const installmentsByAccount = new Map<string, { original_amount: number; paid_amount: number; status: string }[]>();
+  const installmentsByAccount = new Map<string, { original_amount: number; paid_amount: number; remaining_amount: number; status: string }[]>();
   for (const inst of installments) {
     const list = installmentsByAccount.get(inst.credit_account_id) ?? [];
     list.push(inst);
@@ -200,13 +210,10 @@ export async function listCreditAccountSummaries(options?: {
 
   // Cargar nombres de clientes para mostrar en tabla y permitir búsqueda
   const customerIds = [...new Set(summaries.map((s) => s.customerId))];
-  const { data: customers } = await supabase
-    .from('customers')
-    .select('id, full_name, phone')
-    .in('id', customerIds);
+  const customers = await batchedCustomerQuery(supabase, customerIds);
 
-  const customerMap = new Map(
-    (customers ?? []).map((c: { id: string; full_name: string; phone: string | null }) => [c.id, c])
+  const customerMap = new Map<string, { id: string; full_name: string; phone: string | null }>(
+    customers.map((c) => [c.id, c])
   );
 
   summaries = summaries.map((s) => ({
@@ -243,6 +250,7 @@ export async function getCreditAccountDetail(accountId: string): Promise<CreditA
     installments.map((inst) => ({
       original_amount: inst.original_amount,
       paid_amount: inst.paid_amount,
+      remaining_amount: inst.remaining_amount,
       status: inst.status,
     }))
   );
@@ -471,4 +479,12 @@ export async function getCollectionRoute(): Promise<CollectionRouteItem[]> {
     paidInstallments: row.paid_installments,
     overdueInstallments: row.overdue_installments,
   }));
+}
+
+export async function fixCreditAccountInstallments(accountId: string): Promise<{ regenerated: boolean; installmentCount: number }> {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    throw new Error('Supabase no está configurado');
+  }
+  return fixAccountInstallments(supabase, accountId);
 }

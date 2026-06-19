@@ -197,6 +197,7 @@ export interface CreditAccountSummary extends CreditAccount {
   customerName?: string;
   items?: CreditAccountItem[];
   lastPaymentDate?: string | null;
+  installmentsMissing?: boolean;
 }
 
 export interface MonthlyCreditMetric {
@@ -357,10 +358,13 @@ export interface ImportPortfolioStats {
   existingInDbCount: number;
   invalidCount: number;
   importableCount: number;
+  skippedEmptyRowCount: number;
+  paymentsDetectedCount: number;
 }
 
 export interface ImportPortfolioPreview {
   rows: ImportPortfolioRow[];
+  importableRows: ImportPortfolioRow[];
   rowCount: number;
   uniqueCustomers: number;
   accountCount: number;
@@ -371,6 +375,8 @@ export interface ImportPortfolioPreview {
   errors: ImportValidationError[];
   warnings: ImportValidationWarning[];
   missingColumns: string[];
+  detectedMonthColumns: string[];
+  rawHeadersSample: string[];
 }
 
 export interface ImportPortfolioResult {
