@@ -1,6 +1,6 @@
 .container {
   min-height: 100vh;
-  padding: 40px 20px;
+  padding: 20px 10px;
   background: #1e1d1b;
   color: #f5f2ec;
 }
@@ -20,14 +20,14 @@
 }
 
 .sections {
-  max-width: 1200px;
+  max-width: 1800px;
   margin: 0 auto;
 }
 
 .section {
   background: #262422;
   border-radius: 12px;
-  padding: 30px;
+  padding: 20px;
   margin-bottom: 30px;
   border: 1px solid #363330;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -50,7 +50,7 @@
 
 .adminAlertError,
 .adminAlertSuccess {
-  max-width: 1200px;
+  max-width: 1800px;
   margin: 0 auto 16px;
   padding: 12px 14px;
   border-radius: 8px;
@@ -82,7 +82,7 @@
 .table th {
   background: #4a433a;
   color: #f5f2ec;
-  padding: 8px 6px;
+  padding: 8px 10px;
   text-align: left;
   font-weight: 600;
   font-size: 12px;
@@ -100,7 +100,7 @@
 }
 
 .table td {
-  padding: 8px 6px;
+  padding: 8px 10px;
   border-bottom: 1px solid #363330;
   color: #f5f2ec;
   font-size: 13px;
@@ -323,6 +323,30 @@
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 24px;
+}
+
+@media (max-width: 1400px) {
+  .sections {
+    max-width: 1200px;
+  }
+
+  .adminAlertError,
+  .adminAlertSuccess {
+    max-width: 1200px;
+  }
+
+  .container {
+    padding: 40px 20px;
+  }
+
+  .section {
+    padding: 30px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 6px;
+  }
 }
 
 @media (max-width: 900px) {

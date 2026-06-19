@@ -8,10 +8,6 @@ function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
 }
 
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString('es-AR');
-}
-
 type SortDirection = 'asc' | 'desc' | null;
 
 function smartSortKey(value: string | null | undefined): [number, number, string] {
@@ -35,7 +31,6 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
   const [tarjetaSort, setTarjetaSort] = useState<SortDirection>(null);
   const [paymentInputs, setPaymentInputs] = useState<Record<string, { amount: string; month: number; year: number }>>({});
   const [submittingId, setSubmittingId] = useState<string | null>(null);
-  const [fixingId, setFixingId] = useState<string | null>(null);
 
   const now = new Date();
   const defaultMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
@@ -124,22 +119,19 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
         <thead>
           <tr>
             <th>Cliente</th>
-            <th className={styles.sortableTh} onClick={handleSortClick} title="Ordenar por Tarjeta (números primero, luego letras)">
+            <th className={styles.sortableTh} onClick={handleSortClick} title="Ordenar por Tarjeta">
               Tarjeta{sortIcon}
             </th>
-            <th>Productos</th>
-            <th>Fecha</th>
-            <th>Mes</th>
-            <th>Año</th>
             <th>Cuota</th>
-            <th>Total</th>
+            {onPayment && <th>Cobrar $</th>}
+            {onPayment && <th>✓</th>}
+            {onPayment && <th>Mes cobro</th>}
+            {onPayment && <th>Año</th>}
             <th>Pagado</th>
             <th>Restante</th>
-            <th>Pagos</th>
-            <th>Estado</th>
-            {onPayment && <th>Cobrar $</th>}
-            {onPayment && <th>Mes de Cobro</th>}
-            <th>Acciones</th>
+            <th>Total</th>
+            <th>Cuotas pagas</th>
+            <th>Ver</th>
           </tr>
         </thead>
         <tbody>
@@ -147,33 +139,16 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
             const payState = getPaymentState(acc.id);
             const isSubmitting = submittingId === acc.id;
             const canPay = acc.remaining > 0 && onPayment;
+            const paidInstallments = acc.installmentAmount > 0
+              ? Math.floor(acc.paid / acc.installmentAmount)
+              : 0;
 
             return (
               <tr key={acc.id}>
                 <td>{acc.customerName ?? '—'}</td>
                 <td>{acc.operationNumber ?? '-'}</td>
-                <td>{acc.productName}</td>
-                <td>{formatDate(acc.saleDate)}</td>
-                <td>{acc.originMonth ?? '-'}</td>
-                <td>{acc.originYear ?? '-'}</td>
                 <td>
                   {formatCurrency(acc.installmentAmount)} x {acc.installmentCount}
-                </td>
-                <td>{formatCurrency(acc.total)}</td>
-                <td>{formatCurrency(acc.paid)}</td>
-                <td>{formatCurrency(acc.remaining)}</td>
-                <td>{acc.paymentCount}</td>
-                <td>
-                  <span
-                    className={`${styles.status} ${
-                      acc.remaining <= 0 ? styles.completed : acc.remaining < acc.total ? styles.pending : styles.overdue
-                    }`}
-                  >
-                    {acc.remaining <= 0 ? 'Pagado' : acc.remaining < acc.total ? 'En curso' : 'Pendiente'}
-                  </span>
-                  {acc.installmentsMissing && (
-                    <span title="Faltan cuotas en la base de datos. Hacé clic en Corregir para regenerar." style={{ marginLeft: 4, color: '#f59e0b', fontWeight: 700, fontSize: 13 }}>!</span>
-                  )}
                 </td>
                 {onPayment && (
                   <td style={{ minWidth: 90 }}>
@@ -195,74 +170,69 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
                   </td>
                 )}
                 {onPayment && (
-                  <td style={{ minWidth: 180 }}>
+                  <td>
                     {canPay ? (
-                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                        <select
-                          value={payState.month}
-                          onChange={(e) => updatePaymentState(acc.id, { month: Number(e.target.value) })}
-                          style={{ ...selectStyle, width: '45%' }}
-                          disabled={isSubmitting}
-                        >
-                          {MONTH_NAMES.map((name, idx) => (
-                            <option key={idx + 1} value={idx}>{name.slice(0, 3)}</option>
-                          ))}
-                        </select>
-                        <select
-                          value={payState.year}
-                          onChange={(e) => updatePaymentState(acc.id, { year: Number(e.target.value) })}
-                          style={{ ...selectStyle, width: '30%' }}
-                          disabled={isSubmitting}
-                        >
-                          {yearOptions.map((y) => (
-                            <option key={y} value={y}>{y}</option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => handleSubmitPayment(acc.id)}
-                          disabled={isSubmitting || !payState.amount || Number(payState.amount) <= 0 || Number(payState.amount) > acc.remaining}
-                          className={styles.adminActionButton}
-                          style={{ padding: '4px 8px', fontSize: 11, minWidth: 0, whiteSpace: 'nowrap' }}
-                          title="Cargar pago"
-                        >
-                          {isSubmitting ? '...' : '✓'}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleSubmitPayment(acc.id)}
+                        disabled={isSubmitting || !payState.amount || Number(payState.amount) <= 0 || Number(payState.amount) > acc.remaining}
+                        className={styles.adminActionButton}
+                        style={{ padding: '4px 10px', fontSize: 14, minWidth: 0, fontWeight: 700 }}
+                        title="Cargar pago"
+                      >
+                        {isSubmitting ? '...' : '✓'}
+                      </button>
                     ) : (
                       <span style={{ fontSize: 11, color: '#6b7280' }}>—</span>
                     )}
                   </td>
                 )}
-                <td>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button
-                      onClick={() => onSelectAccount?.(acc.id)}
-                      className={styles.adminActionButton}
-                    >
-                      Ver
-                    </button>
-                    {acc.installmentsMissing && onFixInstallments && (
-                      <button
-                        onClick={async () => {
-                          if (fixingId) return;
-                          setFixingId(acc.id);
-                          try {
-                            await onFixInstallments(acc.id);
-                          } catch (err) {
-                            console.error('Error fixing installments:', err);
-                          } finally {
-                            setFixingId(null);
-                          }
-                        }}
-                        disabled={fixingId === acc.id}
-                        className={styles.adminActionButton}
-                        style={{ background: '#b45309', fontWeight: 700, fontSize: 11, padding: '4px 8px' }}
-                        title="Regenerar cuotas faltantes y recalcular pagos"
+                {onPayment && (
+                  <td>
+                    {canPay ? (
+                      <select
+                        value={payState.month}
+                        onChange={(e) => updatePaymentState(acc.id, { month: Number(e.target.value) })}
+                        style={selectStyle}
+                        disabled={isSubmitting}
                       >
-                        {fixingId === acc.id ? '...' : 'Corregir'}
-                      </button>
+                        {MONTH_NAMES.map((name, idx) => (
+                          <option key={idx + 1} value={idx}>{name.slice(0, 3)}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span style={{ fontSize: 11, color: '#6b7280' }}>—</span>
                     )}
-                  </div>
+                  </td>
+                )}
+                {onPayment && (
+                  <td>
+                    {canPay ? (
+                      <select
+                        value={payState.year}
+                        onChange={(e) => updatePaymentState(acc.id, { year: Number(e.target.value) })}
+                        style={selectStyle}
+                        disabled={isSubmitting}
+                      >
+                        {yearOptions.map((y) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span style={{ fontSize: 11, color: '#6b7280' }}>—</span>
+                    )}
+                  </td>
+                )}
+                <td>{formatCurrency(acc.paid)}</td>
+                <td>{formatCurrency(acc.remaining)}</td>
+                <td>{formatCurrency(acc.total)}</td>
+                <td>{paidInstallments}/{acc.installmentCount}</td>
+                <td>
+                  <button
+                    onClick={() => onSelectAccount?.(acc.id)}
+                    className={styles.adminActionButton}
+                  >
+                    Ver
+                  </button>
                 </td>
               </tr>
             );
