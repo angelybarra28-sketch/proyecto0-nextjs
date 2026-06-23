@@ -1,7 +1,6 @@
 import Header from '@/components/Layout/Header';
 import ProductsSection from '@/components/Sections/ProductsSection';
 import Footer from '@/components/Layout/Footer';
-import FloatingElements from '@/components/FloatingElements';
 import { getCatalogCategories, getProductsByCategory } from '@/lib/services/catalogService';
 import Link from 'next/link';
 
@@ -50,7 +49,6 @@ export default async function CategoryPage({ params }: Props) {
       </main>
 
       <Footer />
-      <FloatingElements />
     </>
   );
 }

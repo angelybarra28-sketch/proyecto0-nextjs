@@ -4,7 +4,6 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
-import FloatingElements from '@/components/FloatingElements';
 import { useCart } from '@/lib/cartContext';
 import { createCheckoutSaleInput } from '@/lib/adapters/cartSaleAdapter';
 import { persistCheckoutSaleFromClient } from '@/lib/services/checkoutSaleClient';
@@ -248,7 +247,6 @@ export default function CheckoutPage() {
       </main>
 
       <Footer />
-      <FloatingElements />
     </>
   );
 }

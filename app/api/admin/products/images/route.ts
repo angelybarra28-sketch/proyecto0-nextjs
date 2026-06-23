@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
-import { logAdminAction } from '@/lib/services/admin/audit';
+import { requireStrictAdminUser } from '@/lib/auth/server';
 import { deleteAdminProductImage, uploadAdminProductImage } from '@/lib/services/admin/productImages';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
@@ -26,18 +25,6 @@ export async function POST(request: Request) {
     }
 
     const image = await measureAsync('admin.products.images', 'upload', () => uploadAdminProductImage(productId, file), context.requestId);
-    const adminUser = await getAdminUserContext((role) => role === 'ADMIN');
-    await logAdminAction({
-      adminUserId: adminUser?.userId ?? null,
-      action: 'product_image_uploaded',
-      entity: 'product',
-      entityId: productId,
-      metadata: {
-        path: image.path,
-        contentType: file.type,
-        size: file.size,
-      },
-    });
 
     return NextResponse.json({ image }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
@@ -61,17 +48,6 @@ export async function DELETE(request: Request) {
 
     const productId = typeof payload.productId === 'string' ? payload.productId : undefined;
     const deleted = await measureAsync('admin.products.images', 'delete', () => deleteAdminProductImage(payload.url as string, productId), context.requestId);
-    const adminUser = await getAdminUserContext((role) => role === 'ADMIN');
-    await logAdminAction({
-      adminUserId: adminUser?.userId ?? null,
-      action: 'product_image_deleted',
-      entity: 'product',
-      entityId: productId ?? null,
-      metadata: {
-        url: payload.url,
-        deleted,
-      },
-    });
 
     return NextResponse.json({ deleted }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {

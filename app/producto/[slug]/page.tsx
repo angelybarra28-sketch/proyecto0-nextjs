@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
-import FloatingElements from '@/components/FloatingElements';
 import ProductCarousel from '@/components/Product/ProductCarousel';
 import ProductInfo from '@/components/Product/ProductInfo';
 import ProductDetailClient from '@/components/Product/ProductDetailClient';
@@ -69,7 +68,6 @@ export default async function ProductDetailBySlugPage({ params }: Props) {
       </main>
 
       <Footer />
-      <FloatingElements />
     </>
   );
 }

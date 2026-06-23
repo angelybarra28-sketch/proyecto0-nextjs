@@ -6,14 +6,13 @@ export default function About() {
   return (
     <section className={styles.aboutSection}>
       <div className={styles.aboutContainer}>
-        <h2>Sobre Nuestro Emprendimiento</h2>
+        <h2>sobre nuestro emprendimiento</h2>
         <p>
-          Somos un emprendimiento dedicado a ofrecer los mejores productos de sábanas y artículos de cama
-          con la más alta calidad y los mejores precios. Nos apasiona que disfrutes de la comodidad en tu hogar.
+          Somos una pyme familiar, dedicada hace mas de 50 años a la venta de blanqueria y electrodomesticos. 
+          Cada producto es cuidadosamente seleccionado y probado para garantizar que recibas exactamente lo que buscas: calidad, confort y estilo a tu alcance.
         </p>
         <p>
-          Cada producto es cuidadosamente seleccionado y probado para garantizar que recibas exactamente
-          lo que buscas: calidad, confort y estilo a tu alcance.
+          Trabajamos en cuotas fijas en pesos sin interes. No dudes en consultarnos, estaremos ahi para asesorarte de la mejor manera.
         </p>
         <button className={styles.ctaButton}>Contáctanos por WhatsApp</button>
       </div>

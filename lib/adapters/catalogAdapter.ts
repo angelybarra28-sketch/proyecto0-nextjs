@@ -75,6 +75,15 @@ function toStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
 
+function stableNumericId(uuid: string): number {
+  let hash = 0;
+  for (let i = 0; i < uuid.length; i++) {
+    hash = ((hash << 5) - hash) + uuid.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
 function toSpecifications(value: unknown): Product['specifications'] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return defaultSpecifications;
@@ -97,7 +106,7 @@ export function adaptCatalogProduct(row: CatalogProductRow): Product {
   const categoryName = category?.name ?? 'Sin categoría';
 
   return {
-    id: row.legacy_product_id ?? 0,
+    id: row.legacy_product_id ?? stableNumericId(row.id),
     name: row.name,
     price: formatPrice(priceNumber),
     priceNumber,

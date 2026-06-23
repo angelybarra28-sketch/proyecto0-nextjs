@@ -1,5 +1,4 @@
 import { createCheckoutSaleTransaction } from '@/lib/repositories/saleRepository';
-import { assertRuntimeContract } from '@/lib/services/runtimeContractService';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { getProducts } from '@/lib/services/catalogService';
 import type { Product } from '@/lib/types';
@@ -46,8 +45,6 @@ export async function persistCheckoutSale(input: CheckoutSaleInput): Promise<Che
     return { persisted: false };
   }
 
-  await assertRuntimeContract('checkout');
-
   const productsByLegacyId = new Map(
     (await getProducts())
       .filter((product) => product.id > 0)
@@ -62,7 +59,6 @@ export async function persistCheckoutSale(input: CheckoutSaleInput): Promise<Che
       throw new Error(`Product ${item.legacyProductId} no longer exists in the catalog.`);
     }
 
-    // Hybrid mode still persists legacy ids, but financial amounts are always server-priced.
     const unitPrice = catalogProduct.priceNumber;
     const unitSubtotal = unitPrice;
     const lineSubtotal = unitSubtotal * item.quantity;

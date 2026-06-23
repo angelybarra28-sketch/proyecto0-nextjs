@@ -5,8 +5,6 @@ export type ApiErrorCode =
   | 'FORBIDDEN'
   | 'VALIDATION_ERROR'
   | 'RUNTIME_CONTRACT_FAILED'
-  | 'RUNTIME_CONTRACT_INVALID'
-  | 'PAYMENT_IDEMPOTENCY_CONFLICT'
   | 'STOCK_INSUFFICIENT'
   | 'PRODUCT_NOT_FOUND'
   | 'MAINTENANCE_MODE_ACTIVE'
@@ -18,8 +16,6 @@ export function classifyError(error: unknown): ApiErrorCode {
 
   if (message.includes('MAINTENANCE_MODE_ACTIVE')) return 'MAINTENANCE_MODE_ACTIVE';
   if (message.includes('STORAGE_INCONSISTENT')) return 'STORAGE_INCONSISTENT';
-  if (message.includes('RUNTIME_CONTRACT_INVALID')) return 'RUNTIME_CONTRACT_INVALID';
-  if (message.includes('payment_request_id is already associated')) return 'PAYMENT_IDEMPOTENCY_CONFLICT';
   if (message.includes('insufficient stock')) return 'STOCK_INSUFFICIENT';
   if (message.includes('not found') || message.includes('no longer exists')) return 'PRODUCT_NOT_FOUND';
   if (message.includes('Contrato de base de datos') || message.includes('runtime contract')) return 'RUNTIME_CONTRACT_FAILED';

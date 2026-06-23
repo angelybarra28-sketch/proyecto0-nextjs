@@ -8,9 +8,7 @@ import Hero from '@/components/Sections/Hero';
 import SearchBar from '@/components/SearchBar';
 import ProductsSection from '@/components/Sections/ProductsSection';
 import About from '@/components/Sections/About';
-import Newsletter from '@/components/Sections/Newsletter';
 import Footer from '@/components/Layout/Footer';
-import FloatingElements from '@/components/FloatingElements';
 import { getProductSections, getProducts } from '@/lib/services/catalogService';
 
 export default async function Home() {
@@ -40,9 +38,7 @@ export default async function Home() {
         includeLocal
       />
       <About />
-      <Newsletter />
       <Footer />
-      <FloatingElements />
     </>
   );
 }

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import type { AdminCatalogCategory } from '@/lib/services/adminCatalogService';
 import type { AdminProductPayload } from '@/lib/services/adminCatalogService';
-import { ProductUrlImporter, type ImportedProductData } from '@/components/Admin/Products/ProductUrlImporter';
 import styles from '@/styles/Admin.module.css';
 
 type AdminProductCreateFormProps = {
@@ -52,8 +51,6 @@ export function AdminProductCreateForm({
   const [imageUrl, setImageUrl] = useState('');
   const [carouselImages, setCarouselImages] = useState('');
   const [referencePrice, setReferencePrice] = useState('');
-  const [showImporter, setShowImporter] = useState(true);
-
   const recalculateValorCuota = (precio: string, cuotas: string) => {
     const p = parseFloat(precio);
     const c = parseInt(cuotas, 10);
@@ -80,24 +77,6 @@ export function AdminProductCreateForm({
     }
   };
 
-  const handleImport = (data: ImportedProductData) => {
-    setName(data.name);
-    setSlug(data.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').substring(0, 100));
-    setDescription(data.description);
-    setImageUrl(data.images[0] || '');
-    setCarouselImages(toImagesText(data.images));
-    if (data.referencePrice) {
-      const ref = data.referencePrice;
-      const nuevoPrecio = ref * 3;
-      setReferencePrice(ref.toString());
-      setPrice(nuevoPrecio.toString());
-      const cuotas = '8';
-      setInstallmentCount(cuotas);
-      setInstallmentAmount(calculateValorCuota(nuevoPrecio, parseInt(cuotas, 10)));
-    }
-    setShowImporter(false);
-  };
-
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     void onSubmit({
@@ -122,21 +101,6 @@ export function AdminProductCreateForm({
   return (
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>Crear Producto Nuevo</h2>
-
-      {showImporter && (
-        <ProductUrlImporter onImport={handleImport} />
-      )}
-
-      {!showImporter && (
-        <button
-          type="button"
-          onClick={() => setShowImporter(true)}
-          className={styles.deleteBtn}
-          style={{ marginBottom: '1rem' }}
-        >
-          ↓ Importar desde URL
-        </button>
-      )}
 
       <form onSubmit={handleSubmit}>
         <div className={styles.tableContainer}>
