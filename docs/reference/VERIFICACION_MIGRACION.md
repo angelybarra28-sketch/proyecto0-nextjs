@@ -455,4 +455,4 @@ Si todas las verificaciones pasan: ✅ **LISTO PARA PRODUCCIÓN**
 ✅ Preparado para base de datos futura
 ```
 
-**Siguiente:** Lee `GUIA_PRACTICA_SLUGS.md` para ejemplos avanzados
+**Siguiente:** Lee `../guides/GUIA_PRACTICA_SLUGS.md` para ejemplos avanzados

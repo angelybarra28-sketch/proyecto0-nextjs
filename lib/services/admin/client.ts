@@ -171,6 +171,17 @@ export async function updateAdminProduct(
   return payload.product;
 }
 
+export async function deleteAdminProduct(productId: string): Promise<void> {
+  const response = await fetch(`/api/admin/products/${productId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { message?: string };
+    throw new Error(payload.message ?? 'No se pudo eliminar el producto');
+  }
+}
+
 export async function uploadAdminProductImage(
   productId: string,
   file: File

@@ -18,7 +18,7 @@
 | `supabase/migrations/202606050002_credit_origin_period.sql` | 59 | `import_credit_portfolio_row()` (v2) inserta sin `is_active` → `default true`. |
 | `supabase/migrations/202606080001_fix_credit_origin_period.sql` | 70 | `import_credit_portfolio_row()` (v3) inserta sin `is_active` → `default true`. |
 | `tests/helpers/seedFinancialFixtures.mjs` | 7 | Seed de fixtures: `is_active: true`. |
-| `audit_credit_schema.sql` | 80 | Índice `idx_credit_accounts_is_active` auditado. |
+| `../database/audit_credit_schema.sql` | 80 | Índice `idx_credit_accounts_is_active` auditado. |
 
 ### `calculateSummary()`
 | Ubicación | Línea(s) | Uso |

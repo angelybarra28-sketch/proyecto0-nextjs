@@ -6,7 +6,7 @@ import { AdminProductCreateForm } from '@/components/Admin/Products/AdminProduct
 import { AdminProductsTable } from '@/components/Admin/Products/AdminProductsTable';
 import type { AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
 import type { AdminCatalogCategory, AdminProductPayload } from '@/lib/services/adminCatalogService';
-import { fetchAdminProducts, updateAdminProduct, createAdminProduct } from '@/lib/services/admin/client';
+import { deleteAdminProduct as apiDeleteProduct, fetchAdminProducts, updateAdminProduct, createAdminProduct } from '@/lib/services/admin/client';
 import type { AdminPagination } from '@/lib/services/admin/types';
 import { useAdminProductTable } from '@/hooks/useAdminProductTable';
 import styles from '@/styles/Admin.module.css';
@@ -86,10 +86,41 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     }
   };
 
+  const handleDelete = async (product: AdminCatalogProduct) => {
+    setIsSaving(true);
+    setError('');
+    setNotice('');
+
+    try {
+      if (isReadOnly) {
+        // Modo local: eliminar de localStorage
+        const localProducts = JSON.parse(localStorage.getItem('localProducts') || '[]');
+        const filtered = localProducts.filter((p: { id: string }) => p.id !== product.id);
+        localStorage.setItem('localProducts', JSON.stringify(filtered));
+      } else {
+        await apiDeleteProduct(product.id);
+        // También limpiar localStorage por si hay datos stale de sesiones anteriores
+        try {
+          localStorage.removeItem('localProducts');
+        } catch { /* ignore */ }
+      }
+      await loadProducts();
+      setNotice('Producto eliminado correctamente');
+    } catch (deleteError) {
+      console.error('Error deleting product:', deleteError);
+      setError(deleteError instanceof Error ? deleteError.message : 'No se pudo eliminar el producto');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleEdit = (product: AdminCatalogProduct) => {
     setError('');
     setNotice('');
     setSelectedProduct(product);
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
   };
 
   const handleSaveProduct = async (productId: string, payload: AdminProductPayload) => {
@@ -205,6 +236,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
         isReadOnly={isReadOnly || isSaving}
         onEdit={handleEdit}
         onToggleStatus={handleToggleStatus}
+        onDelete={handleDelete}
       />
     </>
   );

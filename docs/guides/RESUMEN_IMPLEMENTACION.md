@@ -148,7 +148,7 @@ console.log('Con descuento:', stats.discountedCount);
 
 ### 4 archivos de documentación profesional
 
-1. **`FILTROS_ARQUITECTURA.md`** 📄
+1. **`../architecture/filter-system.md`** 📄
    - Explicación completa de tipos y funciones
    - Ejemplos de uso
    - Cómo escala a futuro

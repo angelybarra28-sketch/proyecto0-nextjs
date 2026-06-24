@@ -51,14 +51,6 @@ export default async function ProductDetailBySlugPage({ params }: Props) {
                 imageUrl={serverProduct.imageUrl ?? ''}
                 discount={serverProduct.discount}
                 description={serverProduct.description ?? ''}
-                specifications={serverProduct.specifications ?? {
-                  size: 'N/A',
-                  material: 'N/A',
-                  firmness: 'N/A',
-                  withPillow: 'No',
-                  color: 'N/A',
-                }}
-                features={serverProduct.features ?? []}
               />
             </div>
           </div>

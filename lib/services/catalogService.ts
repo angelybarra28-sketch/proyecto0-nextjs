@@ -100,7 +100,7 @@ export async function getProductsByCategory(categoria: string): Promise<Product[
 
   return await hasSupabaseCatalogRows()
     ? []
-    : allProducts.filter((product) => product.categoria.toLowerCase() === categoria.toLowerCase());
+    : allProducts.filter((product) => stripAccents(product.categoria) === stripAccents(categoria));
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
@@ -116,6 +116,13 @@ export async function getFeaturedProducts(): Promise<Product[]> {
     : allProducts.filter((product) => product.destacado);
 }
 
+function stripAccents(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 export async function getCatalogCategories(): Promise<string[]> {
   const supabase = getSupabaseAdminClient();
 
@@ -123,14 +130,16 @@ export async function getCatalogCategories(): Promise<string[]> {
     try {
       const categories = await listActiveCategories(supabase);
       if (categories.length > 0) {
-        return categories.map((category) => category.name);
+        return categories.map((category) => category.slug);
       }
     } catch (error) {
       console.error('Error loading categories from Supabase:', error);
     }
   }
 
-  return Array.from(new Set(allProducts.map((product) => product.categoria)));
+  return Array.from(
+    new Set(allProducts.map((product) => stripAccents(product.categoria)))
+  );
 }
 
 export async function getProductSections(): Promise<{ section1: ProductSection; section2: ProductSection }> {

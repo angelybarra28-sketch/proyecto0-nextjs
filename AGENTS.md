@@ -34,7 +34,7 @@
 
 ## Search & Filters
 - Search UI: `components/SearchBar.tsx` + hook `hooks/useProductSearch.ts`.
-- Filter engine is implemented in `lib/product-utils.ts` (`filterProducts`, `getFilterOptions`, `searchProducts`, etc.) and documented in `README_FILTROS.md` + `CHEATSHEET_FILTROS.md`.
+- Filter engine is implemented in `lib/product-utils.ts` (`filterProducts`, `getFilterOptions`, `searchProducts`, etc.) and documented in `docs/guides/README_FILTROS.md` + `docs/guides/CHEATSHEET_FILTROS.md`.
 
 ## Path Alias
 - TS path alias `@/*` maps to repo root (see `tsconfig.json`), so imports like `@/lib/...` resolve to `/lib/...`.
@@ -58,5 +58,5 @@
 - Changing `is_active` from `true` to `false` hides the account from all operational views but does not delete or alter financial data.
 
 ## High-Value Docs
-- Slugs/routing docs index: `INDICE_DOCUMENTACION.md` (starts at `RESUMEN_MIGRACION.md`).
-- Filters docs start: `README_FILTROS.md` then `CHEATSHEET_FILTROS.md`.
+- Slugs/routing docs index: `docs/reference/indice-documentacion.md` (starts at `docs/guides/RESUMEN_MIGRACION.md`).
+- Filters docs start: `docs/guides/README_FILTROS.md` then `docs/guides/CHEATSHEET_FILTROS.md`.

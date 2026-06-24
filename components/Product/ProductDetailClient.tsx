@@ -16,14 +16,6 @@ interface ServerProduct {
   slug: string;
   description?: string;
   carouselImages?: string[];
-  specifications?: {
-    size: string;
-    material: string;
-    firmness: string;
-    withPillow: string;
-    color: string;
-  };
-  features?: string[];
 }
 
 interface LocalProduct {
@@ -104,14 +96,6 @@ export default function ProductDetailClient({ slug, serverProduct }: ProductDeta
           imageUrl={product.imageUrl ?? ''}
           discount={product.discount}
           description={product.description ?? ''}
-          specifications={product.specifications ?? {
-            size: 'N/A',
-            material: 'N/A',
-            firmness: 'N/A',
-            withPillow: 'No',
-            color: 'N/A',
-          }}
-          features={product.features ?? []}
         />
       </div>
     </div>

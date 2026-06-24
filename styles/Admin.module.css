@@ -106,6 +106,31 @@
   font-size: 13px;
 }
 
+.table td input,
+.table td select,
+.table td textarea {
+  background: #1e1d1b;
+  color: #f5f2ec;
+  border: 1px solid #363330;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.table td select option {
+  background: #1e1d1b;
+  color: #f5f2ec;
+}
+
+.table td input:focus,
+.table td select:focus,
+.table td textarea:focus {
+  outline: none;
+  border-color: #f7c59f;
+}
+
 .table tr:hover {
   background: #2a2724;
 }

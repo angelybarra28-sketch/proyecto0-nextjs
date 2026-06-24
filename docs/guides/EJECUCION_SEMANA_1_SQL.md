@@ -279,7 +279,7 @@ ON credit_collection_notes(credit_account_id, created_at DESC);
   ```
 
 ### Paso 4 — Re-ejecutar auditoría Q1-Q19
-- [ ] Ejecutar nuevamente `audit_credit_schema.sql` (el script completo de auditoría estructural).
+- [ ] Ejecutar nuevamente `../database/audit_credit_schema.sql` (el script completo de auditoría estructural).
 - [ ] Ejecutar nuevamente las queries de integridad Q1-Q19 (si existen como scripts separados).
 - [ ] Confirmar que todos los objetos siguen en `OK` y que los nuevos índices aparecen.
 - [ ] Confirmar que no hay `MISSING` inesperados.

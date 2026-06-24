@@ -534,7 +534,7 @@ proyecto0-nextjs/
 │   ├── types.ts ✏️ (EXTENDIDO)
 │   ├── product-utils.ts ✏️ (EXTENDIDO)
 │   └── products.ts ✅ (SIN CAMBIOS)
-├── FILTROS_ARQUITECTURA.md 📄 (TÚ ESTÁS AQUÍ)
+├── ../architecture/filter-system.md 📄 (TÚ ESTÁS AQUÍ)
 ├── EJEMPLOS_FILTROS.md 📄 (EJEMPLOS PRÁCTICOS)
 └── [tus componentes] ✅ (SIN CAMBIOS)
 ```

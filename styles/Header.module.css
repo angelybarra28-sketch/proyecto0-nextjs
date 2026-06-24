@@ -7,6 +7,7 @@
   z-index: 1000;
   border-bottom: 1px solid #363330;
   transition: all 0.3s ease;
+  overflow-anchor: none;
 }
 
 .header.scrolled {

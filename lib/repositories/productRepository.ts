@@ -281,16 +281,25 @@ export async function getProductByLegacyId(
   return data as unknown as CatalogProductRow | null;
 }
 
+function normalizeStr(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 export async function listProductsByCategory(
   supabase: SupabaseClient,
   categoryName: string
 ): Promise<CatalogProductRow[]> {
   const products = await listProducts(supabase);
+  const normalizedInput = normalizeStr(categoryName);
 
   return products.filter(
     (product) => {
       const category = Array.isArray(product.categories) ? product.categories[0] : product.categories;
-      return category?.name.toLowerCase() === categoryName.toLowerCase();
+      const name = category?.name ?? '';
+      return normalizeStr(name) === normalizedInput;
     }
   );
 }
@@ -303,4 +312,18 @@ export async function listFeaturedProducts(supabase: SupabaseClient): Promise<Ca
   }
 
   return (data ?? []) as unknown as CatalogProductRow[];
+}
+
+export async function deleteProduct(
+  supabase: SupabaseClient,
+  productId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', productId);
+
+  if (error) {
+    throw error;
+  }
 }

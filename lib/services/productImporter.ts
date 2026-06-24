@@ -88,12 +88,63 @@ function extractPriceFromHtml(html: string): number | null {
   return null;
 }
 
+function extractMitiendaNubeImages(html: string): string[] {
+  const images: string[] = [];
+
+  // 1. Buscar slides con data-image-position (solo la galería principal del producto)
+  const slideRegex = /data-image-position="(\d+)"[^>]*>[\s\S]*?href="([^"]+)"/gi;
+  const slides: Array<{ pos: number; url: string }> = [];
+  let match;
+  while ((match = slideRegex.exec(html)) !== null) {
+    let url = match[2];
+    if (url.startsWith('//')) url = 'https:' + url;
+    if (url.startsWith('http') && url.includes('/products/')) {
+      slides.push({ pos: parseInt(match[1], 10), url });
+    }
+  }
+
+  if (slides.length > 0) {
+    slides.sort((a, b) => a.pos - b.pos);
+    return slides.map(s => s.url);
+  }
+
+  // 2. Fallback: buscar data-fancybox="product-gallery" dentro del contenedor
+  //    js-swiper-product (solo la galería principal)
+  const gallerySection = html.match(
+    /<div[^>]*class="[^"]*js-swiper-product[^"]*"[^>]*data-product-images-amount="(\d+)"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i
+  );
+  if (gallerySection) {
+    const galleryHtml = gallerySection[2];
+    const hrefRegex = /href="([^"]+)"/gi;
+    let hrefMatch;
+    while ((hrefMatch = hrefRegex.exec(galleryHtml)) !== null) {
+      let url = hrefMatch[1];
+      if (url.startsWith('//')) url = 'https:' + url;
+      if (url.startsWith('http') && url.includes('/products/')) images.push(url);
+    }
+    if (images.length > 0) return [...new Set(images)];
+  }
+
+  // 3. Fallback: todas las imágenes de data-fancybox filtradas por /products/
+  const fbRegex = /data-fancybox="product-gallery"[^>]+href="([^"]+)"/gi;
+  let fbMatch;
+  while ((fbMatch = fbRegex.exec(html)) !== null) {
+    let url = fbMatch[1];
+    if (url.startsWith('//')) url = 'https:' + url;
+    if (url.startsWith('http') && url.includes('/products/')) images.push(url);
+  }
+  if (images.length > 0) return [...new Set(images)];
+
+  // 4. Fallback final: extractAllImages genérico
+  return extractAllImages(html, '');
+}
+
 async function parseMitiendaNube(url: string): Promise<ImportedProductData> {
   const html = await fetchHtml(url);
 
   const name = extractMetaTag(html, 'og:title') || '';
   const description = extractMetaTag(html, 'og:description') || '';
-  const images = extractAllImages(html, url);
+  const images = extractMitiendaNubeImages(html);
   const referencePrice = extractPriceFromHtml(html);
 
   return {

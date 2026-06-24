@@ -53,22 +53,14 @@ export default async function ProductDetailPage({ params }: Props) {
             />
 
             {/* Right: Info */}
-            <ProductInfo
-              productId={product.id}
-              name={product.name}
-              price={product.price}
-              imageUrl={product.imageUrl ?? ''}
-              discount={product.discount}
-              description={product.description ?? ''}
-              specifications={product.specifications ?? {
-                size: 'N/A',
-                material: 'N/A',
-                firmness: 'N/A',
-                withPillow: 'No',
-                color: 'N/A',
-              }}
-              features={product.features ?? []}
-            />
+              <ProductInfo
+                productId={product.id}
+                name={product.name}
+                price={product.price}
+                imageUrl={product.imageUrl ?? ''}
+                discount={product.discount}
+                description={product.description ?? ''}
+              />
           </div>
         </div>
       </main>

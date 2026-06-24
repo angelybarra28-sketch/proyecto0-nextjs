@@ -123,7 +123,7 @@ export async function getProductBySlug(slug: string) {
 
 ## 📚 Archivo de Documentación
 
-Ver `MIGRACION_SLUGS.md` para:
+Ver `../architecture/MIGRACION_SLUGS.md` para:
 - Explicación detallada de cada cambio
 - Justificación arquitectónica
 - Ejemplos de código

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
 import type { AdminCatalogCategory } from '@/lib/services/adminCatalogService';
 import { formatCurrency, getStatusClass } from '@/components/Admin/shared/formatters';
@@ -20,9 +21,80 @@ type AdminProductsTableProps = {
   isReadOnly: boolean;
   onEdit: (product: AdminCatalogProduct) => void;
   onToggleStatus: (product: AdminCatalogProduct) => Promise<void>;
+  onDelete?: (product: AdminCatalogProduct) => void;
 };
 
-export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus }: AdminProductsTableProps) {
+function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalogProduct; isReadOnly: boolean; onDelete?: (product: AdminCatalogProduct) => void }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  if (!onDelete) return null;
+
+  return (
+    <>
+      <button
+        className={styles.deleteBtn}
+        disabled={isReadOnly}
+        onClick={() => setShowConfirm(true)}
+        style={{ marginLeft: 4 }}
+      >
+        Eliminar
+      </button>
+      {showConfirm && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+          onClick={() => setShowConfirm(false)}
+        >
+          <div
+            style={{
+              background: '#1a1a2e',
+              border: '1px solid #e74c3c',
+              borderRadius: 8,
+              padding: '1.5rem',
+              maxWidth: 400,
+              width: '90%',
+              textAlign: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ color: '#e74c3c', fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.75rem' }}>
+              ¿Estás seguro que deseas eliminar este producto?
+            </p>
+            <p style={{ color: '#b8a89c', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              {product.name}
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button
+                className={styles.deleteBtn}
+                onClick={() => {
+                  setShowConfirm(false);
+                  onDelete(product);
+                }}
+              >
+                Sí, eliminar
+              </button>
+              <button
+                className={styles.adminActionButton}
+                onClick={() => setShowConfirm(false)}
+              >
+                No, cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete }: AdminProductsTableProps) {
   return (
     <section className={styles.section}>
       <div className={styles.adminTableHeader}>
@@ -170,6 +242,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                         >
                           {product.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
                         </button>
+                        <DeleteButton product={product} isReadOnly={isReadOnly} onDelete={onDelete} />
                       </div>
                     </td>
                   </tr>

@@ -1,5 +1,6 @@
 export {
   createAdminProduct,
+  deleteAdminProduct,
   getAdminCatalog,
   updateAdminProduct,
   type AdminCatalogCategory,

@@ -100,8 +100,8 @@ export default function CategoryPage({ params }: any) {
 ```
 CHEATSHEET_FILTROS.md       ← Lee primero (5 min) - Referencia rápida
 EJEMPLOS_FILTROS.md         ← Luego (15 min) - Código copy-paste
-ARQUITECTURA_VISUAL.md      ← Si quieres entender (10 min)
-FILTROS_ARQUITECTURA.md     ← Documentación completa (20 min)
+filter-system.md (../architecture/filter-system.md)      ← Si quieres entender (10 min)
+filter-system.md (../architecture/filter-system.md)     ← Documentación completa (20 min)
 INTEGRACION_FILTROS.md      ← Guía de integración paso a paso
 RESUMEN_IMPLEMENTACION.md   ← Lo que se hizo
 ```

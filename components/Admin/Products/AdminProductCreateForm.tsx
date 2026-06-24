@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { AdminCatalogCategory } from '@/lib/services/adminCatalogService';
 import type { AdminProductPayload } from '@/lib/services/adminCatalogService';
+import { ProductUrlImporter, type ImportedProductData } from '@/components/Admin/Products/ProductUrlImporter';
 import styles from '@/styles/Admin.module.css';
 
 type AdminProductCreateFormProps = {
@@ -77,6 +78,28 @@ export function AdminProductCreateForm({
     }
   };
 
+  const handleImport = (data: ImportedProductData) => {
+    setName(data.name);
+    setSlug(data.name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .substring(0, 100)
+    );
+    setDescription(data.description);
+    setImageUrl(data.images[0] || '');
+    setCarouselImages(data.images.join('\n'));
+    if (data.referencePrice) {
+      setReferencePrice(data.referencePrice.toString());
+      const nuevoPrecio = (data.referencePrice * 3).toString();
+      setPrice(nuevoPrecio);
+      recalculateValorCuota(nuevoPrecio, installmentCount);
+    }
+  };
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     void onSubmit({
@@ -101,6 +124,8 @@ export function AdminProductCreateForm({
   return (
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>Crear Producto Nuevo</h2>
+
+      <ProductUrlImporter onImport={handleImport} />
 
       <form onSubmit={handleSubmit}>
         <div className={styles.tableContainer}>

@@ -3,6 +3,7 @@ import { allProducts } from '@/lib/products';
 import { listActiveCategories } from '@/lib/repositories/categoryRepository';
 import {
   createProduct,
+  deleteProduct,
   listProductsPaginated,
   listAllProducts,
   updateProduct,
@@ -383,4 +384,14 @@ export async function updateAdminProduct(
   const product = await updateProduct(supabase, productId, input);
 
   return adaptAdminCatalogProduct(product);
+}
+
+export async function deleteAdminProduct(productId: string): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+
+  if (!supabase) {
+    throw new Error('Supabase no está configurado');
+  }
+
+  await deleteProduct(supabase, productId);
 }

@@ -218,8 +218,8 @@ Migrar el sistema de rutas de productos desde IDs (`/producto/12`) a slugs SEO-f
 ✅ MIGRACION_SLUGS.md             (Technical details)
 ✅ ARQUITECTURA_SLUGS.md          (Diagrams & flows)
 ✅ GUIA_PRACTICA_SLUGS.md         (How-to guide)
-✅ INDICE_DOCUMENTACION.md        (Navigation index)
-✅ CHANGELOG.md                   (This file)
+✅ indice-documentacion.md        (Navigation index)
+✅ CHANGELOG_MIGRACION.md                   (This file)
 ```
 
 ---
@@ -313,7 +313,7 @@ Todos los requisitos del proyecto:
 
 ```
 Para comprender completamente el cambio:
-1. INDICE_DOCUMENTACION.md    (rutas recomendadas)
+1. indice-documentacion.md    (rutas recomendadas)
 2. ARQUITECTURA_SLUGS.md      (visual understanding)
 3. GUIA_PRACTICA_SLUGS.md     (hands-on examples)
 ```
@@ -383,7 +383,7 @@ Backup: Los 5 docs .md están en git
 **Si encuentras problema:**
 
 1. Revisar: `VERIFICACION_MIGRACION.md` → "Problemas Comunes"
-2. Debug: `GUIA_PRACTICA_SLUGS.md` → "Debugging"
+2. Debug: `../guides/GUIA_PRACTICA_SLUGS.md` → "Debugging"
 3. Contactar: Equipo de desarrollo
 
 ---
@@ -414,6 +414,6 @@ Migración completada exitosamente con:
 
 ---
 
-**Documento:** CHANGELOG.md  
+**Documento:** CHANGELOG_MIGRACION.md  
 **Última actualización:** 18 de mayo de 2026  
 **Estado:** FINALIZADO Y VERIFICADO ✅

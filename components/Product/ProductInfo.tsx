@@ -13,14 +13,6 @@ interface ProductInfoProps {
   originalPrice?: string;
   discount?: string;
   description: string;
-  specifications: {
-    size: string;
-    material: string;
-    firmness: string;
-    withPillow: string;
-    color: string;
-  };
-  features: string[];
 }
 
 export default function ProductInfo({
@@ -31,8 +23,6 @@ export default function ProductInfo({
   originalPrice,
   discount,
   description,
-  specifications,
-  features
 }: ProductInfoProps) {
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
@@ -100,46 +90,6 @@ export default function ProductInfo({
           {discount && <span className={styles.discount}>{discount}</span>}
         </div>
         <p className={styles.shippingInfo}>Llega gratis el lunes</p>
-      </div>
-
-      {/* Especificaciones */}
-      <div className={styles.specifications}>
-        <h3>Lo que tenés que saber de este producto</h3>
-        <div className={styles.specsList}>
-          <div className={styles.specItem}>
-            <span className={styles.specLabel}>Tamaño:</span>
-            <span className={styles.specValue}>{specifications.size}</span>
-          </div>
-          <div className={styles.specItem}>
-            <span className={styles.specLabel}>Material:</span>
-            <span className={styles.specValue}>{specifications.material}</span>
-          </div>
-          <div className={styles.specItem}>
-            <span className={styles.specLabel}>Firmeza:</span>
-            <span className={styles.specValue}>{specifications.firmness}</span>
-          </div>
-          <div className={styles.specItem}>
-            <span className={styles.specLabel}>Con almohada:</span>
-            <span className={styles.specValue}>{specifications.withPillow}</span>
-          </div>
-          <div className={styles.specItem}>
-            <span className={styles.specLabel}>Color:</span>
-            <span className={styles.specValue}>{specifications.color}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Características */}
-      <div className={styles.characteristics}>
-        <h3>Características del producto</h3>
-        <div className={styles.featuresList}>
-          {features.map((feature, index) => (
-            <div key={index} className={styles.featureItem}>
-              <span className={styles.featureBullet}>•</span>
-              <span>{feature}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Cantidad y Botones */}

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdminUser } from '@/lib/auth/server';
-import { updateAdminProduct, type AdminProductPayload } from '@/lib/services/adminCatalogService';
+import { deleteAdminProduct, updateAdminProduct, type AdminProductPayload } from '@/lib/services/adminCatalogService';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 import { measureAsync } from '@/lib/server/runtimeMetrics';
@@ -23,6 +23,23 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch (error) {
     const { id } = await context.params;
     logServerError({ area: 'admin.products', action: 'update', entity: 'product', entityId: id, requestId: requestContext.requestId, error });
+    return errorResponse(error, requestContext.requestId, 400);
+  }
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  const requestContext = createRequestContext(request);
+
+  try {
+    const authorizationError = await requireAdminUser();
+    if (authorizationError) return authorizationError;
+
+    const { id } = await context.params;
+    await measureAsync('admin.products', 'delete', () => deleteAdminProduct(id), requestContext.requestId);
+    return NextResponse.json({ success: true }, { headers: { 'x-request-id': requestContext.requestId } });
+  } catch (error) {
+    const { id } = await context.params;
+    logServerError({ area: 'admin.products', action: 'delete', entity: 'product', entityId: id, requestId: requestContext.requestId, error });
     return errorResponse(error, requestContext.requestId, 400);
   }
 }

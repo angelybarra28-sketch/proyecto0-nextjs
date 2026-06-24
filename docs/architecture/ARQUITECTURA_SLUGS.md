@@ -171,7 +171,7 @@ proyecto0-nextjs/
 ├── styles/                               (Sin cambios - CSS)
 │
 ├── MIGRACION_SLUGS.md                    (📚 Documentación)
-├── RESUMEN_MIGRACION.md                  (📋 Este resumen)
+├── ../guides/RESUMEN_MIGRACION.md                  (📋 Este resumen)
 └── README.md
 ```
 
