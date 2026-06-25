@@ -51,6 +51,8 @@ export default async function ProductDetailBySlugPage({ params }: Props) {
                 imageUrl={serverProduct.imageUrl ?? ''}
                 discount={serverProduct.discount}
                 description={serverProduct.description ?? ''}
+                installmentCount={serverProduct.installmentCount}
+                installmentAmount={serverProduct.installmentAmount}
               />
             </div>
           </div>

@@ -16,6 +16,8 @@ interface ServerProduct {
   slug: string;
   description?: string;
   carouselImages?: string[];
+  installmentCount?: number;
+  installmentAmount?: number;
 }
 
 interface LocalProduct {
@@ -27,6 +29,8 @@ interface LocalProduct {
   description?: string;
   carouselImages?: string[];
   discountLabel?: string;
+  installmentCount?: number;
+  installmentAmount?: number;
 }
 
 interface ProductDetailClientProps {
@@ -50,6 +54,8 @@ function findLocalProduct(slug: string): ServerProduct | null {
       slug: found.slug,
       description: found.description,
       carouselImages: found.carouselImages,
+      installmentCount: found.installmentCount,
+      installmentAmount: found.installmentAmount,
     };
   } catch {
     return null;
@@ -96,6 +102,8 @@ export default function ProductDetailClient({ slug, serverProduct }: ProductDeta
           imageUrl={product.imageUrl ?? ''}
           discount={product.discount}
           description={product.description ?? ''}
+          installmentCount={product.installmentCount}
+          installmentAmount={product.installmentAmount}
         />
       </div>
     </div>

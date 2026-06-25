@@ -13,6 +13,8 @@ interface ProductInfoProps {
   originalPrice?: string;
   discount?: string;
   description: string;
+  installmentCount?: number;
+  installmentAmount?: number;
 }
 
 export default function ProductInfo({
@@ -23,6 +25,8 @@ export default function ProductInfo({
   originalPrice,
   discount,
   description,
+  installmentCount,
+  installmentAmount,
 }: ProductInfoProps) {
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
@@ -84,12 +88,20 @@ export default function ProductInfo({
 
       {/* Precios */}
       <div className={styles.pricing}>
-        {originalPrice && <span className={styles.originalPrice}>{originalPrice}</span>}
-        <div className={styles.priceRow}>
-          <span className={styles.currentPrice}>{price}</span>
-          {discount && <span className={styles.discount}>{discount}</span>}
-        </div>
-        <p className={styles.shippingInfo}>Llega gratis el lunes</p>
+        {installmentCount && installmentAmount ? (
+          <>
+            <div className={styles.installmentMain}>
+              {installmentCount} cuotas de ${installmentAmount.toLocaleString('es-AR')}
+            </div>
+            <div className={styles.totalPriceSmall}>{price}</div>
+          </>
+        ) : (
+          <div className={styles.priceRow}>
+            <span className={styles.currentPrice}>{price}</span>
+          </div>
+        )}
+        {discount && <span className={styles.discount}>{discount}</span>}
+        <p className={styles.shippingInfo}>Envio gratuito</p>
       </div>
 
       {/* Cantidad y Botones */}

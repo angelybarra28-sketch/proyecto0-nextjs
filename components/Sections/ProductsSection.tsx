@@ -10,6 +10,8 @@ interface Product {
   discount?: string;
   imageUrl?: string;
   slug: string;
+  installmentCount?: number;
+  installmentAmount?: number;
 }
 
 interface ProductsSectionProps {
@@ -36,6 +38,8 @@ export default function ProductsSection({ title, products, id }: ProductsSection
               imageUrl={product.imageUrl}
               productIndex={index}
               slug={product.slug}
+              installmentCount={product.installmentCount}
+              installmentAmount={product.installmentAmount}
             />
           ))}
         </div>

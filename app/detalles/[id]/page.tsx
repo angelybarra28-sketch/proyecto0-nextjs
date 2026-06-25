@@ -60,6 +60,8 @@ export default async function ProductDetailPage({ params }: Props) {
                 imageUrl={product.imageUrl ?? ''}
                 discount={product.discount}
                 description={product.description ?? ''}
+                installmentCount={product.installmentCount}
+                installmentAmount={product.installmentAmount}
               />
           </div>
         </div>

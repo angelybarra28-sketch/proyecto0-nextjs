@@ -22,6 +22,8 @@ type AdminProductsTableProps = {
   onEdit: (product: AdminCatalogProduct) => void;
   onToggleStatus: (product: AdminCatalogProduct) => Promise<void>;
   onDelete?: (product: AdminCatalogProduct) => void;
+  onUpdateCategory?: (productId: string, categoryId: string) => Promise<void>;
+  onMigrateImages?: (productId: string) => Promise<void>;
 };
 
 function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalogProduct; isReadOnly: boolean; onDelete?: (product: AdminCatalogProduct) => void }) {
@@ -94,7 +96,14 @@ function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalog
   );
 }
 
-export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete }: AdminProductsTableProps) {
+function isExternalImageUrl(url: string): boolean {
+  return url.length > 0 && !url.includes('/storage/v1/object/public/');
+}
+
+export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onMigrateImages }: AdminProductsTableProps) {
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [pendingCategoryId, setPendingCategoryId] = useState<string>('');
+  const [savingCategory, setSavingCategory] = useState(false);
   return (
     <section className={styles.section}>
       <div className={styles.adminTableHeader}>
@@ -212,7 +221,65 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                     <td>
                       <strong>{product.name}</strong>
                     </td>
-                    <td>{product.categoryName}</td>
+                    <td>
+                      {editingCategory === product.id ? (
+                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                          <select
+                            value={pendingCategoryId}
+                            disabled={savingCategory}
+                            onChange={(e) => setPendingCategoryId(e.target.value)}
+                            style={{ width: '100%' }}
+                          >
+                            <option value="">Sin categoría</option>
+                            {categories.map((cat) => (
+                              <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                          </select>
+                          <button
+                            className={styles.adminActionButton}
+                            disabled={savingCategory}
+                            onClick={async () => {
+                              if (!onUpdateCategory) return;
+                              setSavingCategory(true);
+                              try {
+                                await onUpdateCategory(product.id, pendingCategoryId);
+                                setEditingCategory(null);
+                              } finally {
+                                setSavingCategory(false);
+                              }
+                            }}
+                            style={{ fontSize: '0.75rem', padding: '2px 6px', whiteSpace: 'nowrap' }}
+                          >
+                            {savingCategory ? '...' : '✓'}
+                          </button>
+                          <button
+                            className={styles.deleteBtn}
+                            disabled={savingCategory}
+                            onClick={() => setEditingCategory(null)}
+                            style={{ fontSize: '0.75rem', padding: '2px 6px', whiteSpace: 'nowrap' }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                          <span>{product.categoryName}</span>
+                          {!isReadOnly && onUpdateCategory && (
+                            <button
+                              className={styles.adminActionButton}
+                              onClick={() => {
+                                setEditingCategory(product.id);
+                                setPendingCategoryId(product.categoryId ?? '');
+                              }}
+                              style={{ fontSize: '0.75rem', padding: '1px 5px' }}
+                              title="Cambiar categoría"
+                            >
+                              ✎
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td>{formatCurrency(product.price)}</td>
                     <td>
                       {product.installmentCount && product.installmentAmount
@@ -242,6 +309,15 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                         >
                           {product.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
                         </button>
+                        {onMigrateImages && (isExternalImageUrl(product.imageUrl) || product.carouselImages?.some(isExternalImageUrl)) && (
+                          <button
+                            className={styles.adminActionButton}
+                            onClick={() => void onMigrateImages(product.id)}
+                            title="Descargar imágenes externas a almacenamiento local"
+                          >
+                            📥 Imágenes
+                          </button>
+                        )}
                         <DeleteButton product={product} isReadOnly={isReadOnly} onDelete={onDelete} />
                       </div>
                     </td>

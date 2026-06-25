@@ -24,6 +24,9 @@ export default async function CategoryPage({ params }: Props) {
     discount: p.discount || undefined,
     imageUrl: p.imageUrl || undefined,
     slug: p.slug,
+    size: p.specifications?.size,
+    installmentCount: p.installmentCount,
+    installmentAmount: p.installmentAmount,
   }));
 
   return (

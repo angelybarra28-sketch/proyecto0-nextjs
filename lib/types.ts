@@ -13,6 +13,8 @@ export interface Product {
   destacado: boolean;
   category?: string;
   referencePrice?: number;
+  installmentCount?: number;
+  installmentAmount?: number;
   specifications?: {
     size: string;
     material: string;

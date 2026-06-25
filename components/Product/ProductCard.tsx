@@ -12,6 +12,8 @@ interface ProductCardProps {
   productIndex: number;
   productId: number;
   slug: string;
+  installmentCount?: number;
+  installmentAmount?: number;
 }
 
 export default function ProductCard({
@@ -19,8 +21,15 @@ export default function ProductCard({
   price,
   discount,
   imageUrl,
-  slug
+  slug,
+  installmentCount,
+  installmentAmount,
 }: ProductCardProps) {
+  const hasCuotas = installmentCount && installmentAmount;
+  const cuotaText = hasCuotas
+    ? `${installmentCount} cuotas de $${installmentAmount.toLocaleString('es-AR')}`
+    : '';
+
   return (
     <div className={styles.productCard}>
       <Link href={`/producto/${slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -43,7 +52,11 @@ export default function ProductCard({
 
         <div className={styles.productInfo}>
           <h3 className={styles.productName}>{name}</h3>
-          <div className={styles.productPrice}>{price}</div>
+          {hasCuotas ? (
+            <div className={styles.installmentRow}>{cuotaText}</div>
+          ) : (
+            <div className={styles.productPrice}>{price}</div>
+          )}
           <button className={styles.productButton}>Ver Detalles</button>
         </div>
       </Link>

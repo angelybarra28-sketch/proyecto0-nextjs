@@ -9,6 +9,7 @@ import type { AdminCatalogCategory, AdminProductPayload } from '@/lib/services/a
 import { deleteAdminProduct as apiDeleteProduct, fetchAdminProducts, updateAdminProduct, createAdminProduct } from '@/lib/services/admin/client';
 import type { AdminPagination } from '@/lib/services/admin/types';
 import { useAdminProductTable } from '@/hooks/useAdminProductTable';
+import { migrateProductImagesAction } from '@/app/actions/migrateProductImages';
 import styles from '@/styles/Admin.module.css';
 
 type AdminProductsSectionProps = {
@@ -86,6 +87,11 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     }
   };
 
+  const handleUpdateCategory = async (productId: string, categoryId: string) => {
+    await updateAdminProduct(productId, { categoryId: categoryId || null });
+    await loadProducts();
+  };
+
   const handleDelete = async (product: AdminCatalogProduct) => {
     setIsSaving(true);
     setError('');
@@ -130,9 +136,14 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
 
     try {
       await updateAdminProduct(productId, payload);
+      const result = await migrateProductImagesAction(productId);
+      if (result.migrated > 0) {
+        setNotice(`Producto actualizado. ${result.migrated} imágen(es) migrada(s) a almacenamiento local`);
+      } else {
+        setNotice('Producto actualizado correctamente');
+      }
       setSelectedProduct(null);
       await loadProducts();
-      setNotice('Producto actualizado correctamente');
     } catch (saveError) {
       console.error('Error saving product:', saveError);
       setError(saveError instanceof Error ? saveError.message : 'No se pudo guardar el producto');
@@ -177,10 +188,15 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
         await loadProducts();
         setNotice('Producto creado correctamente (modo local)');
       } else {
-        await createAdminProduct(payload);
+        const created = await createAdminProduct(payload);
+        const result = await migrateProductImagesAction(created.id);
+        if (result.migrated > 0) {
+          setNotice(`Producto creado. ${result.migrated} imágen(es) migrada(s) a almacenamiento local`);
+        } else {
+          setNotice('Producto creado correctamente');
+        }
         setShowCreateForm(false);
         await loadProducts();
-        setNotice('Producto creado correctamente');
       }
     } catch (createError) {
       console.error('Error creating product:', createError);
@@ -191,6 +207,27 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
   };
 
   const isReadOnly = source === 'local-fallback';
+
+  const handleMigrateImages = async (productId: string) => {
+    setError('');
+    setNotice('');
+
+    try {
+      const result = await migrateProductImagesAction(productId);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      if (result.migrated > 0) {
+        setNotice(`${result.migrated} imágen(es) migrada(s) a almacenamiento local`);
+      } else {
+        setNotice('Las imágenes ya están en almacenamiento local');
+      }
+      await loadProducts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al migrar imágenes');
+    }
+  };
 
   return (
     <>
@@ -237,6 +274,8 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
         onEdit={handleEdit}
         onToggleStatus={handleToggleStatus}
         onDelete={handleDelete}
+        onUpdateCategory={handleUpdateCategory}
+        onMigrateImages={handleMigrateImages}
       />
     </>
   );

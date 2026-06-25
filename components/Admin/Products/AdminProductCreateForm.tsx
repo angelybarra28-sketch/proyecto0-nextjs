@@ -68,6 +68,15 @@ export function AdminProductCreateForm({
     recalculateValorCuota(price, value);
   };
 
+  const handleInstallmentAmountChange = (value: string) => {
+    setInstallmentAmount(value);
+    const c = parseInt(installmentCount, 10);
+    const cuota = parseFloat(value);
+    if (c > 0 && cuota > 0) {
+      setPrice((c * cuota).toString());
+    }
+  };
+
   const handleReferencePriceChange = (value: string) => {
     setReferencePrice(value);
     const ref = parseFloat(value);
@@ -207,12 +216,12 @@ export function AdminProductCreateForm({
                     min="0"
                     step="0.01"
                     value={installmentAmount}
-                    readOnly
-                    style={{ width: '120px', marginLeft: '0.5rem', backgroundColor: '#f5f5f5', color: '#333', cursor: 'default' }}
-                    tabIndex={-1}
+                    disabled={isSaving}
+                    onChange={(e) => handleInstallmentAmountChange(e.target.value)}
+                    style={{ width: '120px', marginLeft: '0.5rem' }}
                   />
                   <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>
-                    Valor por cuota = precio de venta ÷ cantidad de cuotas
+                    Precio = cuotas × valor cuota. Podés editar cualquiera de los dos.
                   </small>
                 </td>
               </tr>

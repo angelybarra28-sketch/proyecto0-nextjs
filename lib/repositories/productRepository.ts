@@ -172,6 +172,10 @@ export async function createProduct(
   supabase: SupabaseClient,
   input: ProductCreateInput
 ): Promise<CatalogProductRow> {
+  const newSpecs: Record<string, unknown> = {};
+  if (input.installmentCount !== null) newSpecs.installment_count = input.installmentCount;
+  if (input.installmentAmount !== null) newSpecs.installment_amount = input.installmentAmount;
+
   const { data, error } = await supabase
     .from('products')
     .insert({
@@ -188,7 +192,7 @@ export async function createProduct(
       featured: input.featured,
       image_url: input.imageUrl,
       carousel_images: input.carouselImages,
-      specifications: {},
+      specifications: newSpecs,
       features: [],
     })
     .select(productColumns)
@@ -206,7 +210,17 @@ export async function updateProduct(
   productId: string,
   input: ProductUpdateInput
 ): Promise<CatalogProductRow> {
-  const payload: Record<string, string | number | boolean | string[] | null> = {};
+  const hasInstallment = input.installmentCount !== undefined || input.installmentAmount !== undefined;
+
+  let specs: Record<string, unknown> | undefined;
+  if (hasInstallment) {
+    const current = await getProductById(supabase, productId);
+    specs = (current?.specifications as Record<string, unknown>) ?? {};
+    if (input.installmentCount !== undefined) specs.installment_count = input.installmentCount;
+    if (input.installmentAmount !== undefined) specs.installment_amount = input.installmentAmount;
+  }
+
+  const payload: Record<string, unknown> = {};
 
   if (input.categoryId !== undefined) payload.category_id = input.categoryId;
   if (input.name !== undefined) payload.name = input.name;
@@ -221,6 +235,7 @@ export async function updateProduct(
   if (input.featured !== undefined) payload.featured = input.featured;
   if (input.imageUrl !== undefined) payload.image_url = input.imageUrl;
   if (input.carouselImages !== undefined) payload.carousel_images = input.carouselImages;
+  if (specs) payload.specifications = specs;
 
   const { data, error } = await supabase
     .from('products')

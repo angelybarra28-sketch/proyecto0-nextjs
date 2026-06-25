@@ -100,10 +100,26 @@ function toSpecifications(value: unknown): Product['specifications'] {
   };
 }
 
+function extractInstallments(specs: unknown): { installmentCount?: number; installmentAmount?: number } {
+  if (!specs || typeof specs !== 'object' || Array.isArray(specs)) return {};
+  const obj = specs as Record<string, unknown>;
+  return {
+    installmentCount: typeof obj.installment_count === 'number' ? obj.installment_count
+      : typeof obj.installment_count === 'string' ? Number(obj.installment_count)
+      : undefined,
+    installmentAmount: typeof obj.installment_amount === 'number' ? obj.installment_amount
+      : typeof obj.installment_amount === 'string' ? Number(obj.installment_amount)
+      : undefined,
+  };
+}
+
 export function adaptCatalogProduct(row: CatalogProductRow): Product {
   const priceNumber = toNumber(row.price);
   const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
   const categoryName = category?.name ?? 'Sin categoría';
+  const installments = extractInstallments(row.specifications);
+  const installmentCount = installments.installmentCount ?? 8;
+  const installmentAmount = installments.installmentAmount ?? Math.round(priceNumber / installmentCount);
 
   return {
     id: row.legacy_product_id ?? stableNumericId(row.id),
@@ -120,6 +136,8 @@ export function adaptCatalogProduct(row: CatalogProductRow): Product {
     destacado: row.featured,
     category: categoryName,
     referencePrice: row.reference_price ?? undefined,
+    installmentCount,
+    installmentAmount,
     specifications: toSpecifications(row.specifications),
     features: toStringArray(row.features),
   };
@@ -127,6 +145,7 @@ export function adaptCatalogProduct(row: CatalogProductRow): Product {
 
 export function adaptAdminCatalogProduct(row: CatalogProductRow): AdminCatalogProduct {
   const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
+  const installments = extractInstallments(row.specifications);
 
   return {
     id: row.id,
@@ -140,8 +159,8 @@ export function adaptAdminCatalogProduct(row: CatalogProductRow): AdminCatalogPr
     compareAtPrice: row.compare_at_price === null ? null : toNumber(row.compare_at_price),
     discountLabel: row.discount_label ?? '',
     referencePrice: row.reference_price ?? null,
-    installmentCount: null,
-    installmentAmount: null,
+    installmentCount: installments.installmentCount ?? null,
+    installmentAmount: installments.installmentAmount ?? null,
     stock: row.stock,
     status: row.status,
     featured: row.featured,

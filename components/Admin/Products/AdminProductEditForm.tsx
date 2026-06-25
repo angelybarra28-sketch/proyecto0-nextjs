@@ -76,6 +76,15 @@ export function AdminProductEditForm({
     recalculateValorCuota(price, value);
   };
 
+  const handleInstallmentAmountChange = (value: string) => {
+    setInstallmentAmount(value);
+    const c = parseInt(installmentCount, 10);
+    const cuota = parseFloat(value);
+    if (c > 0 && cuota > 0) {
+      setPrice((c * cuota).toString());
+    }
+  };
+
   const currentCarouselImages = fromImagesText(carouselImages);
   const controlsDisabled = isSaving || isUploading;
 
@@ -195,9 +204,9 @@ export function AdminProductEditForm({
                     ))}
                   </select>
                   <span style={{ color: '#888' }}>cuotas de $</span>
-                  <input type="number" min="0" step="0.01" value={installmentAmount} readOnly style={{ width: '120px', marginLeft: '0.5rem', backgroundColor: '#f5f5f5', color: '#333', cursor: 'default' }} tabIndex={-1} />
+                  <input type="number" min="0" step="0.01" value={installmentAmount} disabled={controlsDisabled} onChange={(event) => handleInstallmentAmountChange(event.target.value)} style={{ width: '120px', marginLeft: '0.5rem' }} />
                   <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>
-                    Valor por cuota = precio de venta ÷ cantidad de cuotas
+                    Precio = cuotas × valor cuota. Podés editar cualquiera de los dos.
                   </small>
                 </td>
               </tr>

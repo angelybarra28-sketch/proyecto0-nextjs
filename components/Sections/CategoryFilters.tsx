@@ -10,6 +10,9 @@ interface FlatProduct {
   discount?: string;
   imageUrl?: string;
   slug: string;
+  size?: string;
+  installmentCount?: number;
+  installmentAmount?: number;
 }
 
 type CategoryFiltersProps = {
@@ -18,36 +21,53 @@ type CategoryFiltersProps = {
   products: FlatProduct[];
 };
 
-function extractSizes(names: string[]): string[] {
+function normalizeSize(raw: string): string {
+  return raw.replace(/\s*(?:plaza|plz|plazas)\s*/gi, '').trim();
+}
+
+function extractSizes(products: FlatProduct[]): string[] {
   const sizeSet = new Set<string>();
-  const patterns = [
-    /(\d+\s*\d*\/?\d*)\s*(plaza|plz|plazas)/gi,
-    /(queen|king|twin|full|double|single)/gi,
-    /\b(\d+\/\d+)\b/g,
-  ];
-  for (const name of names) {
-    for (const pattern of patterns) {
-      const matches = name.matchAll(pattern);
-      for (const m of matches) {
-        sizeSet.add(m[0].trim().toLowerCase());
+  for (const p of products) {
+    if (p.size && p.size !== 'N/A') {
+      const normalized = normalizeSize(p.size);
+      if (normalized) {
+        sizeSet.add(normalized);
+        continue;
       }
+    }
+    const full = p.name.match(/(\d+\s+\d+\/\d+)(?:\s*(?:plaza|plz|plazas))?/i);
+    if (full) {
+      sizeSet.add(full[1].trim());
+      continue;
+    }
+    const simple = p.name.match(/(\d+\/\d+)(?:\s*(?:plaza|plz|plazas))?/i);
+    if (simple) {
+      sizeSet.add(simple[1].trim());
+      continue;
+    }
+    const word = p.name.match(/(queen|king|twin|full|double|single)/i);
+    if (word) {
+      sizeSet.add(word[0].toLowerCase());
     }
   }
   return [...sizeSet].sort();
 }
 
-function matchesSize(name: string, size: string): boolean {
-  return name.toLowerCase().includes(size);
+function matchesSize(product: FlatProduct, size: string): boolean {
+  if (product.size && product.size !== 'N/A') {
+    return normalizeSize(product.size) === size;
+  }
+  return product.name.toLowerCase().includes(size);
 }
 
 export default function CategoryFilters({ title, id, products }: CategoryFiltersProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
-  const sizes = useMemo(() => extractSizes(products.map(p => p.name)), [products]);
+  const sizes = useMemo(() => extractSizes(products), [products]);
 
   const filtered = useMemo(() => {
     if (!selectedSize) return products;
-    return products.filter(p => matchesSize(p.name, selectedSize));
+    return products.filter(p => matchesSize(p, selectedSize));
   }, [products, selectedSize]);
 
   return (
