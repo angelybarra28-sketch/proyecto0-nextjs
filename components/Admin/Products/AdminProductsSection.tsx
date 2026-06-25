@@ -92,6 +92,36 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     await loadProducts();
   };
 
+  const handleUpdateInstallmentCount = async (productId: string, count: number) => {
+    setError('');
+    setNotice('');
+    try {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      const amount = product.installmentAmount ?? Math.round((product.price || 0) / count);
+      const price = count * amount;
+      await updateAdminProduct(productId, { installmentCount: count, installmentAmount: amount, price });
+      await loadProducts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar cuotas');
+    }
+  };
+
+  const handleUpdateInstallmentAmount = async (productId: string, amount: number) => {
+    setError('');
+    setNotice('');
+    try {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      const count = product.installmentCount ?? 8;
+      const price = count * amount;
+      await updateAdminProduct(productId, { installmentCount: count, installmentAmount: amount, price });
+      await loadProducts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar valor de cuota');
+    }
+  };
+
   const handleDelete = async (product: AdminCatalogProduct) => {
     setIsSaving(true);
     setError('');
@@ -275,6 +305,8 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
         onToggleStatus={handleToggleStatus}
         onDelete={handleDelete}
         onUpdateCategory={handleUpdateCategory}
+        onUpdateInstallmentCount={handleUpdateInstallmentCount}
+        onUpdateInstallmentAmount={handleUpdateInstallmentAmount}
         onMigrateImages={handleMigrateImages}
       />
     </>

@@ -6,7 +6,6 @@ import type { AdminCatalogCategory } from '@/lib/services/adminCatalogService';
 import { formatCurrency, getStatusClass } from '@/components/Admin/shared/formatters';
 import {
   type AdminProductTableState,
-  type AdminProductFeaturedFilter,
   type AdminProductSortDirection,
   type AdminProductSortKey,
   type AdminProductStatusFilter,
@@ -23,6 +22,8 @@ type AdminProductsTableProps = {
   onToggleStatus: (product: AdminCatalogProduct) => Promise<void>;
   onDelete?: (product: AdminCatalogProduct) => void;
   onUpdateCategory?: (productId: string, categoryId: string) => Promise<void>;
+  onUpdateInstallmentCount?: (productId: string, count: number) => Promise<void>;
+  onUpdateInstallmentAmount?: (productId: string, amount: number) => Promise<void>;
   onMigrateImages?: (productId: string) => Promise<void>;
 };
 
@@ -100,10 +101,12 @@ function isExternalImageUrl(url: string): boolean {
   return url.length > 0 && !url.includes('/storage/v1/object/public/');
 }
 
-export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onMigrateImages }: AdminProductsTableProps) {
-  const [editingCategory, setEditingCategory] = useState<string | null>(null);
-  const [pendingCategoryId, setPendingCategoryId] = useState<string>('');
-  const [savingCategory, setSavingCategory] = useState(false);
+export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onUpdateInstallmentCount, onUpdateInstallmentAmount, onMigrateImages }: AdminProductsTableProps) {
+  const [pendingCategories, setPendingCategories] = useState<Record<string, string>>({});
+  const [savingCategory, setSavingCategory] = useState<string | null>(null);
+  const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
+  const [pendingAmounts, setPendingAmounts] = useState<Record<string, number>>({});
+  const [savingInstallment, setSavingInstallment] = useState<string | null>(null);
   return (
     <section className={styles.section}>
       <div className={styles.adminTableHeader}>
@@ -137,17 +140,6 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
             <option value="INACTIVE">INACTIVE</option>
             <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
             <option value="ARCHIVED">ARCHIVED</option>
-          </select>
-        </label>
-        <label>
-          Featured
-          <select
-            value={table.featuredFilter}
-            onChange={(event) => table.setFeaturedFilter(event.target.value as AdminProductFeaturedFilter)}
-          >
-            <option value="all">Todos</option>
-            <option value="featured">Sí</option>
-            <option value="not-featured">No</option>
           </select>
         </label>
         <label>
@@ -206,9 +198,9 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                   <th>Nombre</th>
                   <th>Categoría</th>
                   <th>Precio</th>
-                  <th>Cuotas</th>
+                  <th>Cant. Cuotas</th>
+                  <th>Valor Cuota</th>
                   <th>Stock</th>
-                  <th>Featured</th>
                   <th>Status</th>
                   <th>Slug</th>
                   <th>Creado</th>
@@ -222,76 +214,131 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                       <strong>{product.name}</strong>
                     </td>
                     <td>
-                      {editingCategory === product.id ? (
+                      <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                        {!isReadOnly && onUpdateCategory ? (
+                          <>
+                            <select
+                              value={pendingCategories[product.id] ?? product.categoryId ?? ''}
+                              disabled={savingCategory === product.id}
+                              onChange={(e) => setPendingCategories(prev => ({ ...prev, [product.id]: e.target.value }))}
+                              style={{ width: 'auto', minWidth: 80 }}
+                            >
+                              <option value="">Sin categoría</option>
+                              {categories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                              ))}
+                            </select>
+                            <button
+                              className={styles.adminActionButton}
+                              disabled={savingCategory === product.id}
+                              onClick={async () => {
+                                if (!onUpdateCategory) return;
+                                setSavingCategory(product.id);
+                                try {
+                                  await onUpdateCategory(product.id, pendingCategories[product.id] ?? '');
+                                } finally {
+                                  setSavingCategory(null);
+                                  setPendingCategories(prev => {
+                                    const next = { ...prev };
+                                    delete next[product.id];
+                                    return next;
+                                  });
+                                }
+                              }}
+                              style={{ fontSize: '0.75rem', padding: '2px 6px', whiteSpace: 'nowrap' }}
+                            >
+                              {savingCategory === product.id ? '...' : '✓'}
+                            </button>
+                          </>
+                        ) : (
+                          <span>{product.categoryName}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>{formatCurrency(product.price)}</td>
+                    <td>
+                      {!isReadOnly && onUpdateInstallmentCount ? (
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                           <select
-                            value={pendingCategoryId}
-                            disabled={savingCategory}
-                            onChange={(e) => setPendingCategoryId(e.target.value)}
-                            style={{ width: '100%' }}
+                            value={pendingCounts[product.id] ?? product.installmentCount ?? 8}
+                            disabled={savingInstallment === product.id}
+                            onChange={(e) => setPendingCounts(prev => ({ ...prev, [product.id]: Number(e.target.value) }))}
+                            style={{ width: 'auto', minWidth: 60 }}
                           >
-                            <option value="">Sin categoría</option>
-                            {categories.map((cat) => (
-                              <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            {Array.from({ length: 24 }, (_, i) => i + 1).map(n => (
+                              <option key={n} value={n}>{n}</option>
                             ))}
                           </select>
                           <button
                             className={styles.adminActionButton}
-                            disabled={savingCategory}
+                            disabled={savingInstallment === product.id}
                             onClick={async () => {
-                              if (!onUpdateCategory) return;
-                              setSavingCategory(true);
+                              if (!onUpdateInstallmentCount) return;
+                              setSavingInstallment(product.id);
                               try {
-                                await onUpdateCategory(product.id, pendingCategoryId);
-                                setEditingCategory(null);
+                                const count = pendingCounts[product.id] ?? product.installmentCount ?? 8;
+                                await onUpdateInstallmentCount(product.id, count);
                               } finally {
-                                setSavingCategory(false);
+                                setSavingInstallment(null);
+                                setPendingCounts(prev => {
+                                  const next = { ...prev };
+                                  delete next[product.id];
+                                  return next;
+                                });
                               }
                             }}
                             style={{ fontSize: '0.75rem', padding: '2px 6px', whiteSpace: 'nowrap' }}
                           >
-                            {savingCategory ? '...' : '✓'}
-                          </button>
-                          <button
-                            className={styles.deleteBtn}
-                            disabled={savingCategory}
-                            onClick={() => setEditingCategory(null)}
-                            style={{ fontSize: '0.75rem', padding: '2px 6px', whiteSpace: 'nowrap' }}
-                          >
-                            ✕
+                            {savingInstallment === product.id ? '...' : '✓'}
                           </button>
                         </div>
                       ) : (
-                        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                          <span>{product.categoryName}</span>
-                          {!isReadOnly && onUpdateCategory && (
-                            <button
-                              className={styles.adminActionButton}
-                              onClick={() => {
-                                setEditingCategory(product.id);
-                                setPendingCategoryId(product.categoryId ?? '');
-                              }}
-                              style={{ fontSize: '0.75rem', padding: '1px 5px' }}
-                              title="Cambiar categoría"
-                            >
-                              ✎
-                            </button>
-                          )}
-                        </div>
+                        <span>{product.installmentCount ?? '-'}</span>
                       )}
                     </td>
-                    <td>{formatCurrency(product.price)}</td>
                     <td>
-                      {product.installmentCount && product.installmentAmount
-                        ? `${product.installmentCount}x ${formatCurrency(product.installmentAmount)}`
-                        : '-'}
+                      {!isReadOnly && onUpdateInstallmentAmount ? (
+                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            value={pendingAmounts[product.id] ?? product.installmentAmount ?? ''}
+                            disabled={savingInstallment === product.id}
+                            onChange={(e) => setPendingAmounts(prev => ({ ...prev, [product.id]: Number(e.target.value) }))}
+                            style={{ width: 90 }}
+                          />
+                          <button
+                            className={styles.adminActionButton}
+                            disabled={savingInstallment === product.id}
+                            onClick={async () => {
+                              if (!onUpdateInstallmentAmount) return;
+                              setSavingInstallment(product.id);
+                              try {
+                                const amount = pendingAmounts[product.id] ?? product.installmentAmount ?? 0;
+                                if (amount <= 0) return;
+                                await onUpdateInstallmentAmount(product.id, amount);
+                              } finally {
+                                setSavingInstallment(null);
+                                setPendingAmounts(prev => {
+                                  const next = { ...prev };
+                                  delete next[product.id];
+                                  return next;
+                                });
+                              }
+                            }}
+                            style={{ fontSize: '0.75rem', padding: '2px 6px', whiteSpace: 'nowrap' }}
+                          >
+                            {savingInstallment === product.id ? '...' : '✓'}
+                          </button>
+                        </div>
+                      ) : (
+                        <span>{product.installmentAmount ? formatCurrency(product.installmentAmount) : '-'}</span>
+                      )}
                     </td>
                     <td>
                       {product.stock}{' '}
                       {product.stock === 0 && <span className={styles.adminReadonlyBadge}>Sin stock</span>}
                       {product.stock > 0 && product.stock <= 5 && <span className={styles.adminReadonlyBadge}>Bajo stock</span>}
                     </td>
-                    <td>{product.featured ? 'Sí' : 'No'}</td>
                     <td>
                       <span className={`${styles.status} ${styles[getStatusClass(product.status === 'ACTIVE' ? 'PAID' : 'CANCELLED')]}`}>
                         {product.status}
