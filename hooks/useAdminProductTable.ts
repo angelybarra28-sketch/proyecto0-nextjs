@@ -6,6 +6,8 @@ import type { AdminPagination } from '@/lib/services/admin/types';
 import type { AdminProductFilters, AdminProductListInput, AdminProductSorting } from '@/lib/services/adminCatalogService';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
+export type AdminProductSizeFilter = AdminProductFilters['size'];
+
 export type AdminProductFeaturedFilter = AdminProductFilters['featured'];
 export type AdminProductStatusFilter = AdminProductFilters['status'];
 export type AdminProductSortKey = AdminProductSorting['sortKey'];
@@ -18,6 +20,7 @@ export function useAdminProductTable(pagination: AdminPagination | null) {
   const [statusFilter, setStatusFilterValue] = useState<AdminProductStatusFilter>('all');
   const [featuredFilter, setFeaturedFilterValue] = useState<AdminProductFeaturedFilter>('all');
   const [categoryId, setCategoryIdValue] = useState('');
+  const [size, setSizeValue] = useState<AdminProductSizeFilter>('');
   const [sortKey, setSortKeyValue] = useState<AdminProductSortKey>('createdAt');
   const [sortDirection, setSortDirectionValue] = useState<AdminProductSortDirection>('desc');
   const [page, setPageValue] = useState(1);
@@ -31,9 +34,10 @@ export function useAdminProductTable(pagination: AdminPagination | null) {
     status: statusFilter,
     featured: featuredFilter,
     categoryId,
+    size,
     sortKey,
     direction: sortDirection,
-  }), [categoryId, debouncedSearch, featuredFilter, page, pageSize, sortDirection, sortKey, statusFilter]);
+  }), [categoryId, debouncedSearch, featuredFilter, page, pageSize, size, sortDirection, sortKey, statusFilter]);
 
   const setSearch = (value: string) => {
     setSearchValue(value);
@@ -52,6 +56,11 @@ export function useAdminProductTable(pagination: AdminPagination | null) {
 
   const setCategoryId = (value: string) => {
     setCategoryIdValue(value);
+    setPageValue(1);
+  };
+
+  const setSize = (value: AdminProductSizeFilter) => {
+    setSizeValue(value);
     setPageValue(1);
   };
 
@@ -76,6 +85,7 @@ export function useAdminProductTable(pagination: AdminPagination | null) {
     statusFilter,
     featuredFilter,
     categoryId,
+    size,
     sortKey,
     sortDirection,
     page: pagination?.page ?? page,
@@ -89,6 +99,7 @@ export function useAdminProductTable(pagination: AdminPagination | null) {
     setStatusFilter,
     setFeaturedFilter,
     setCategoryId,
+    setSize,
     setSortKey,
     setSortDirection,
     setPage: setPageValue,

@@ -24,6 +24,7 @@ export async function GET(request: Request) {
       status: searchParams.get('status') ?? 'all',
       featured: searchParams.get('featured') ?? 'all',
       categoryId: searchParams.get('categoryId') ?? '',
+      size: searchParams.get('size') ?? '',
       sortKey: searchParams.get('sortKey') ?? 'createdAt',
       direction: searchParams.get('direction') ?? 'desc',
     }), context.requestId);

@@ -1,6 +1,8 @@
-import { allProducts } from './products';
+﻿import { allProducts } from './products';
 import type { ProductFilters, FilterOptions, ProductStats, FilteredProductsResult } from './types';
 import type { Product } from './types';
+import { normalizeSize, getSizeAliases } from './sizeUtils';
+import { normalizeCategory } from './categoryUtils';
 
 export type { Product };
 
@@ -23,20 +25,21 @@ export function getProductById(id: number): Product | undefined {
 }
 
 /**
- * Obtiene todos los productos de una categoría
- * @param categoria - El nombre de la categoría
- * @returns Array de productos en esa categoría
+ * Obtiene todos los productos de una categorÃ­a
+ * @param categoria - El nombre de la categorÃ­a
+ * @returns Array de productos en esa categorÃ­a
  */
 export function getProductsByCategory(categoria: string): Product[] {
+  const normalized = normalizeCategory(categoria);
   return allProducts.filter(
-    p => p.categoria.toLowerCase() === categoria.toLowerCase()
+    p => normalizeCategory(p.categoria) === normalized
   );
 }
 
 /**
- * Obtiene productos relacionados (misma categoría, excluyendo el actual)
+ * Obtiene productos relacionados (misma categorÃ­a, excluyendo el actual)
  * @param productSlug - El slug del producto actual
- * @param limit - Cantidad máxima de productos relacionados a retornar
+ * @param limit - Cantidad mÃ¡xima de productos relacionados a retornar
  * @returns Array de productos relacionados
  */
 export function getRelatedProducts(productSlug: string, limit = 4): Product[] {
@@ -46,14 +49,14 @@ export function getRelatedProducts(productSlug: string, limit = 4): Product[] {
 
   return allProducts
     .filter(p =>
-      p.categoria === currentProduct.categoria &&
+      normalizeCategory(p.categoria) === normalizeCategory(currentProduct.categoria) &&
       p.slug !== productSlug
     )
     .slice(0, limit);
 }
 
 /**
- * Obtiene todos los slugs de productos (útil para generateStaticParams)
+ * Obtiene todos los slugs de productos (Ãºtil para generateStaticParams)
  * @returns Array de objetos con el slug de cada producto
  */
 export function getAllProductSlugs() {
@@ -95,8 +98,8 @@ export function getAvailableProducts(products: Product[]): Product[] {
 /**
  * Obtiene productos dentro de un rango de precio
  * @param products - Array de productos
- * @param minPrice - Precio mínimo (incluido)
- * @param maxPrice - Precio máximo (incluido)
+ * @param minPrice - Precio mÃ­nimo (incluido)
+ * @param maxPrice - Precio mÃ¡ximo (incluido)
  * @returns Array de productos en el rango
  */
 export function getProductsByPriceRange(
@@ -110,8 +113,8 @@ export function getProductsByPriceRange(
 }
 
 /**
- * Normaliza una cadena de texto eliminando acentos, diacríticos y espacios innecesarios
- * y convirtiendo a minúsculas para búsquedas case-insensitive precisas.
+ * Normaliza una cadena de texto eliminando acentos, diacrÃ­ticos y espacios innecesarios
+ * y convirtiendo a minÃºsculas para bÃºsquedas case-insensitive precisas.
  * @param text - El texto a normalizar
  * @returns El texto normalizado
  */
@@ -125,11 +128,11 @@ export function normalizeSearch(text: string): string {
 }
 
 /**
- * Busca productos de manera case-insensitive sobre campos múltiples:
+ * Busca productos de manera case-insensitive sobre campos mÃºltiples:
  * name, category (categoria), tags, features y shortDescription.
  * @param products - Array de productos
- * @param query - Término de búsqueda
- * @returns Array de productos que coinciden con la búsqueda
+ * @param query - TÃ©rmino de bÃºsqueda
+ * @returns Array de productos que coinciden con la bÃºsqueda
  */
 export function searchProducts(products: Product[], query: string): Product[] {
   if (!query || query.trim() === '') return products;
@@ -138,7 +141,7 @@ export function searchProducts(products: Product[], query: string): Product[] {
   if (!normalizedQuery) return products;
 
   return products.filter(p => {
-    // Tipado dinámico para acceder a campos opcionales/futuros sin romper tipos existentes
+    // Tipado dinÃ¡mico para acceder a campos opcionales/futuros sin romper tipos existentes
     const item = p as {
       name?: string;
       categoria?: string;
@@ -176,7 +179,7 @@ export function searchProducts(products: Product[], query: string): Product[] {
       }
     }
 
-    // 5. shortDescription (también evalúa description por compatibilidad y robustez)
+    // 5. shortDescription (tambiÃ©n evalÃºa description por compatibilidad y robustez)
     const shortDescMatch = item.shortDescription ? normalizeSearch(item.shortDescription).includes(normalizedQuery) : false;
     const descMatch = item.description ? normalizeSearch(item.description).includes(normalizedQuery) : false;
 
@@ -185,9 +188,9 @@ export function searchProducts(products: Product[], query: string): Product[] {
 }
 
 /**
- * Obtiene estadísticas de productos para UI de filtros
+ * Obtiene estadÃ­sticas de productos para UI de filtros
  * @param products - Array de productos a analizar
- * @returns Estadísticas completas
+ * @returns EstadÃ­sticas completas
  */
 export function getProductStats(products: Product[]): ProductStats {
   const categoriesCount = new Map<string, number>();
@@ -199,7 +202,7 @@ export function getProductStats(products: Product[]): ProductStats {
   let totalPrice = 0;
 
   products.forEach(p => {
-    // Contar categorías
+    // Contar categorÃ­as
     const catCount = categoriesCount.get(p.categoria) || 0;
     categoriesCount.set(p.categoria, catCount + 1);
 
@@ -231,19 +234,19 @@ export function getProductStats(products: Product[]): ProductStats {
 
 /**
  * Obtiene opciones de filtros disponibles basadas en productos
- * Útil para renderizar UI de filtros (dropdowns, checkboxes, etc)
+ * Ãštil para renderizar UI de filtros (dropdowns, checkboxes, etc)
  * @param products - Array de productos a analizar
  * @returns Opciones de filtros agrupadas
  */
 export function getFilterOptions(products: Product[]): FilterOptions {
   const stats = getProductStats(products);
 
-  // Agrupar categorías con conteo
+  // Agrupar categorÃ­as con conteo
   const categories = Array.from(stats.categoriesCount.entries()).map(
     ([name, count]) => ({ name, count })
   ).sort((a, b) => b.count - a.count);
 
-  // Obtener porcentajes de descuento únicos
+  // Obtener porcentajes de descuento Ãºnicos
   const discountSet = new Set<number>();
   products.forEach(p => {
     if (p.discount) {
@@ -268,7 +271,7 @@ export function getFilterOptions(products: Product[]): FilterOptions {
 }
 
 /**
- * FUNCIÓN PRINCIPAL: Aplica múltiples filtros a un array de productos
+ * FUNCIÃ“N PRINCIPAL: Aplica mÃºltiples filtros a un array de productos
  * Soporta combinaciones complejas de filtros
  * @param products - Array de productos a filtrar
  * @param filters - Objeto con filtros a aplicar
@@ -276,7 +279,7 @@ export function getFilterOptions(products: Product[]): FilterOptions {
  *
  * EJEMPLO DE USO:
  * const filteredProducts = filterProducts(allProducts, {
- *   categoria: 'blanquería',
+ *   categoria: 'blanquerÃ­a',
  *   maxPrice: 20000,
  *   inStock: true,
  *   discountOnly: false
@@ -288,15 +291,26 @@ export function filterProducts(
 ): Product[] {
   let result = [...products];
 
-  // Filtro por búsqueda
+  // Filtro por tamaÃ±o
+  if (filters.size) {
+    const aliases = getSizeAliases(filters.size).map(a => a.toLowerCase());
+    result = result.filter(p => {
+      const productSize = p.specifications?.size;
+      if (productSize && aliases.includes(normalizeSize(productSize))) return true;
+      return aliases.some(a => p.name.toLowerCase().includes(a));
+    });
+  }
+
+  // Filtro por bÃºsqueda
   if (filters.searchQuery) {
     result = searchProducts(result, filters.searchQuery);
   }
 
-  // Filtro por categoría
+  // Filtro por categorÃ­a
   if (filters.categoria) {
+    const normalized = normalizeCategory(filters.categoria);
     result = result.filter(
-      p => p.categoria.toLowerCase() === filters.categoria!.toLowerCase()
+      p => normalizeCategory(p.categoria) === normalized
     );
   }
 
@@ -337,7 +351,7 @@ export function filterProducts(
 }
 
 /**
- * Ordena productos según criterio especificado
+ * Ordena productos segÃºn criterio especificado
  * @param products - Array de productos
  * @param sortBy - Criterio de ordenamiento
  * @returns Array ordenado
@@ -356,11 +370,11 @@ export function sortProducts(
       return sorted.sort((a, b) => b.priceNumber - a.priceNumber);
 
     case 'newest':
-      // Asumir que ID más alto = más nuevo (por consistencia con datos)
+      // Asumir que ID mÃ¡s alto = mÃ¡s nuevo (por consistencia con datos)
       return sorted.sort((a, b) => b.id - a.id);
 
     case 'popularity':
-      // Asumir que destacado = más popular
+      // Asumir que destacado = mÃ¡s popular
       return sorted.sort((a, b) => {
         if (a.destacado === b.destacado) return 0;
         return a.destacado ? -1 : 1;
@@ -373,8 +387,8 @@ export function sortProducts(
 
 /**
  * Aplica filtros y retorna resultado completo con opciones actualizadas
- * FUNCIÓN PARA UI AVANZADA: Útil para components que necesitan actualizar
- * los filtros disponibles después de aplicar filtros
+ * FUNCIÃ“N PARA UI AVANZADA: Ãštil para components que necesitan actualizar
+ * los filtros disponibles despuÃ©s de aplicar filtros
  * @param products - Array de productos
  * @param filters - Filtros a aplicar
  * @returns Resultado con productos filtrados y opciones actualizadas
@@ -395,11 +409,11 @@ export function applyFiltersWithOptions(
 }
 
 /**
- * Paginación simple de productos
+ * PaginaciÃ³n simple de productos
  * @param products - Array de productos
- * @param page - Número de página (1-indexed)
- * @param itemsPerPage - Items por página
- * @returns Productos de la página especificada
+ * @param page - NÃºmero de pÃ¡gina (1-indexed)
+ * @param itemsPerPage - Items por pÃ¡gina
+ * @returns Productos de la pÃ¡gina especificada
  */
 export function paginateProducts(
   products: Product[],
@@ -411,10 +425,10 @@ export function paginateProducts(
 }
 
 /**
- * Obtiene información de paginación
+ * Obtiene informaciÃ³n de paginaciÃ³n
  * @param total - Total de items
- * @param itemsPerPage - Items por página
- * @returns Objeto con info de paginación
+ * @param itemsPerPage - Items por pÃ¡gina
+ * @returns Objeto con info de paginaciÃ³n
  */
 export function getPaginationInfo(total: number, itemsPerPage: number = 12) {
   return {
@@ -423,3 +437,9 @@ export function getPaginationInfo(total: number, itemsPerPage: number = 12) {
     itemsPerPage
   };
 }
+
+
+
+
+
+

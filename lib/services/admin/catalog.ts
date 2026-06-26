@@ -38,6 +38,7 @@ export type AdminProductFilters = {
   status: ProductStatus | 'all';
   featured: 'all' | 'featured' | 'not-featured';
   categoryId: string;
+  size: string;
 };
 
 export type AdminProductSorting = {
@@ -50,6 +51,7 @@ export type AdminProductListInput = {
   status?: unknown;
   featured?: unknown;
   categoryId?: unknown;
+  size?: unknown;
   sortKey?: unknown;
   direction?: unknown;
   page?: unknown;
@@ -133,6 +135,7 @@ function normalizeProductFilters(input: AdminProductListInput): AdminProductFilt
     status,
     featured,
     categoryId: normalizeText(input.categoryId),
+    size: normalizeText(input.size),
   };
 }
 
@@ -196,6 +199,7 @@ function getLocalFallbackProducts(): AdminCatalogProduct[] {
     referencePrice: (product as { referencePrice?: number }).referencePrice ?? null,
     installmentCount: null,
     installmentAmount: null,
+    size: product.specifications?.size ?? null,
     stock: product.stock,
     status: 'ACTIVE',
     featured: product.destacado,
@@ -211,6 +215,7 @@ function filterLocalProducts(products: AdminCatalogProduct[], filters: AdminProd
   return products
     .filter((product) => !search || [product.name, product.slug, product.categoryName].some((value) => value.toLowerCase().includes(search)))
     .filter((product) => filters.status === 'all' || product.status === filters.status)
+    .filter((product) => !filters.size || (product.size && product.size.toLowerCase() === filters.size.toLowerCase()) || product.name.toLowerCase().includes(filters.size.toLowerCase()))
     .filter((product) => {
       if (filters.featured === 'featured') return product.featured;
       if (filters.featured === 'not-featured') return !product.featured;

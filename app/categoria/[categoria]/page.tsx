@@ -2,6 +2,7 @@ import Header from '@/components/Layout/Header';
 import CategoryFilters from '@/components/Sections/CategoryFilters';
 import Footer from '@/components/Layout/Footer';
 import { getCatalogCategories, getProductsByCategory } from '@/lib/services/catalogService';
+import { normalizeCategory } from '@/lib/categoryUtils';
 import Link from 'next/link';
 
 interface Props {
@@ -14,8 +15,11 @@ export default async function CategoryPage({ params }: Props) {
   const { categoria } = await params;
   
   const decodedCategory = decodeURIComponent(categoria);
+  const categoryForQuery = decodedCategory === 'invierno-abrigo'
+    ? 'invierno/abrigo'
+    : decodedCategory;
   
-  const products = await getProductsByCategory(decodedCategory);
+  const products = await getProductsByCategory(categoryForQuery);
 
   const adapted = products.map(p => ({
     id: p.id,
@@ -50,7 +54,7 @@ export default async function CategoryPage({ params }: Props) {
         </div>
 
         <CategoryFilters
-          title={`Categoría: ${decodedCategory}`}
+          title={`Categoría: ${decodeURIComponent(categoria)}`}
           id={categoria}
           products={adapted}
         />
@@ -64,7 +68,10 @@ export default async function CategoryPage({ params }: Props) {
 export async function generateMetadata({ params }: Props) {
   const { categoria } = await params;
   const decodedCategory = decodeURIComponent(categoria);
-  const products = await getProductsByCategory(decodedCategory);
+  const categoryForQuery = decodedCategory === 'invierno-abrigo'
+    ? 'invierno/abrigo'
+    : decodedCategory;
+  const products = await getProductsByCategory(categoryForQuery);
 
   return {
     title: `Categoría: ${decodedCategory} | ElectroBlancos`,

@@ -10,6 +10,7 @@ export type ImportProductFromUrlResult = {
     images: string[];
     referencePrice: number | null;
     source: string;
+    categoryName?: string;
   };
 } | {
   success: false;
@@ -37,6 +38,7 @@ export async function importProductFromUrlAction(
         images: data.images,
         referencePrice: data.referencePrice,
         source: data.source,
+        categoryName: data.categoryName,
       },
     };
   } catch (error) {

@@ -10,6 +10,7 @@ export type ImportedProductData = {
   images: string[];
   referencePrice: number | null;
   source: string;
+  categoryName?: string;
 };
 
 type ProductUrlImporterProps = {
@@ -99,6 +100,9 @@ export function ProductUrlImporter({ onImport }: ProductUrlImporterProps) {
             <p><strong>Imágenes:</strong> {lastImport.images.length} encontradas</p>
             {lastImport.referencePrice && (
               <p><strong>Precio de referencia:</strong> ${lastImport.referencePrice.toLocaleString('es-AR')}</p>
+            )}
+            {lastImport.categoryName && (
+              <p><strong>Categoría detectada:</strong> {lastImport.categoryName}</p>
             )}
           </div>
         </div>

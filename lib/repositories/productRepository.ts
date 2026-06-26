@@ -1,6 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+﻿import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CatalogProductRow } from '@/lib/adapters/catalogAdapter';
 import type { AdminSortDirection } from '@/lib/services/admin/types';
+import { getSizeAliases } from '@/lib/sizeUtils';
+import { normalizeCategory } from '@/lib/categoryUtils';
 
 export type ProductStatus = CatalogProductRow['status'];
 
@@ -31,6 +33,7 @@ export type ProductListFilters = {
   status: ProductStatus | 'all';
   featured: 'all' | 'featured' | 'not-featured';
   categoryId: string;
+  size: string;
   searchCategoryIds?: string[];
 };
 
@@ -142,6 +145,18 @@ export async function listProductsPaginated(
     query = query.eq('category_id', input.filters.categoryId);
   }
 
+  if (input.filters.size) {
+    const sizeQuery = input.filters.size.replaceAll('%', '').trim();
+    if (sizeQuery) {
+      const aliases = getSizeAliases(sizeQuery);
+      const nameConditions = aliases.map(a => `name.ilike.%${a}%`).join(',');
+      const specConditions = aliases.map(a => `specifications->>size.ilike.${a}`).join(',');
+      const combined = [specConditions, nameConditions].filter(Boolean).join(',');
+      if (combined) {
+        query = query.or(combined);
+      }
+    }
+  }
   if (input.filters.search) {
     const search = input.filters.search.replaceAll('%', '').replaceAll(',', ' ').trim();
     if (search) {
@@ -308,13 +323,13 @@ export async function listProductsByCategory(
   categoryName: string
 ): Promise<CatalogProductRow[]> {
   const products = await listProducts(supabase);
-  const normalizedInput = normalizeStr(categoryName);
+  const normalizedInput = normalizeCategory(categoryName);
 
   return products.filter(
     (product) => {
       const category = Array.isArray(product.categories) ? product.categories[0] : product.categories;
       const name = category?.name ?? '';
-      return normalizeStr(name) === normalizedInput;
+      return normalizeCategory(name) === normalizedInput;
     }
   );
 }
@@ -342,3 +357,5 @@ export async function deleteProduct(
     throw error;
   }
 }
+
+

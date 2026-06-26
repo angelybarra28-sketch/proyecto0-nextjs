@@ -96,6 +96,7 @@ export interface ProductFilters {
   tags?: string[];
   
   // Filtros avanzados (futuros)
+  size?: string;
   searchQuery?: string;
   sortBy?: 'price-asc' | 'price-desc' | 'newest' | 'popularity';
   page?: number;

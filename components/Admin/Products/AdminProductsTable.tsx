@@ -1,11 +1,14 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import type { AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
 import type { AdminCatalogCategory } from '@/lib/services/adminCatalogService';
 import { formatCurrency, getStatusClass } from '@/components/Admin/shared/formatters';
+import { useMemo } from 'react';
+import { normalizeSize } from '@/lib/sizeUtils';
 import {
   type AdminProductTableState,
+  type AdminProductSizeFilter,
   type AdminProductSortDirection,
   type AdminProductSortKey,
   type AdminProductStatusFilter,
@@ -24,6 +27,7 @@ type AdminProductsTableProps = {
   onUpdateCategory?: (productId: string, categoryId: string) => Promise<void>;
   onUpdateInstallmentCount?: (productId: string, count: number) => Promise<void>;
   onUpdateInstallmentAmount?: (productId: string, amount: number) => Promise<void>;
+  onUpdatePrice?: (productId: string, price: number) => Promise<void>;
   onMigrateImages?: (productId: string) => Promise<void>;
 };
 
@@ -68,7 +72,7 @@ function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalog
             onClick={(e) => e.stopPropagation()}
           >
             <p style={{ color: '#e74c3c', fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.75rem' }}>
-              ¿Estás seguro que deseas eliminar este producto?
+              Â¿EstÃ¡s seguro que deseas eliminar este producto?
             </p>
             <p style={{ color: '#b8a89c', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
               {product.name}
@@ -81,7 +85,7 @@ function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalog
                   onDelete(product);
                 }}
               >
-                Sí, eliminar
+                SÃ­, eliminar
               </button>
               <button
                 className={styles.adminActionButton}
@@ -101,12 +105,26 @@ function isExternalImageUrl(url: string): boolean {
   return url.length > 0 && !url.includes('/storage/v1/object/public/');
 }
 
-export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onUpdateInstallmentCount, onUpdateInstallmentAmount, onMigrateImages }: AdminProductsTableProps) {
+const DEFAULT_SIZES = ['queen', 'king', '1 1/2', '2 1/2'];
+
+function extractProductSizes(products: AdminCatalogProduct[]): string[] {
+  const sizeSet = new Set<string>();
+  DEFAULT_SIZES.forEach(s => sizeSet.add(s));
+  for (const p of products) {
+    if (p.size) sizeSet.add(normalizeSize(p.size));
+  }
+  return [...sizeSet].sort();
+}
+
+export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onUpdateInstallmentCount, onUpdateInstallmentAmount, onUpdatePrice, onMigrateImages }: AdminProductsTableProps) {
   const [pendingCategories, setPendingCategories] = useState<Record<string, string>>({});
   const [savingCategory, setSavingCategory] = useState<string | null>(null);
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
   const [pendingAmounts, setPendingAmounts] = useState<Record<string, number>>({});
   const [savingInstallment, setSavingInstallment] = useState<string | null>(null);
+  const [pendingPrices, setPendingPrices] = useState<Record<string, number>>({});
+  const [savingPrice, setSavingPrice] = useState<string | null>(null);
+  const sizes = useMemo(() => extractProductSizes(products), [products]);
   return (
     <section className={styles.section}>
       <div className={styles.adminTableHeader}>
@@ -124,7 +142,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           Buscar
           <input
             type="search"
-            placeholder="Nombre, slug o categoría"
+            placeholder="Nombre, slug o categorÃ­a"
             value={table.search}
             onChange={(event) => table.setSearch(event.target.value)}
           />
@@ -143,11 +161,20 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           </select>
         </label>
         <label>
-          Categoría
+          CategorÃ­a
           <select value={table.categoryId} onChange={(event) => table.setCategoryId(event.target.value)}>
             <option value="">Todas</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          SubcategorÃ­a
+          <select value={table.size} onChange={(event) => table.setSize(event.target.value as AdminProductSizeFilter)}>
+            <option value="">Todas</option>
+            {sizes.map((size) => (
+              <option key={size} value={size} style={{ textTransform: 'capitalize' }}>{size}</option>
             ))}
           </select>
         </label>
@@ -159,14 +186,14 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           >
             <option value="createdAt">Creado</option>
             <option value="name">Nombre</option>
-            <option value="category">Categoría</option>
+            <option value="category">CategorÃ­a</option>
             <option value="price">Precio</option>
             <option value="stock">Stock</option>
             <option value="status">Status</option>
           </select>
         </label>
         <label>
-          Dirección
+          DirecciÃ³n
           <select
             value={table.sortDirection}
             onChange={(event) => table.setSortDirection(event.target.value as AdminProductSortDirection)}
@@ -176,7 +203,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           </select>
         </label>
         <label>
-          Por página
+          Por pÃ¡gina
           <select value={table.pageSize} onChange={(event) => table.setPageSize(Number(event.target.value))}>
             <option value="10">10</option>
             <option value="25">25</option>
@@ -196,10 +223,10 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
               <thead>
                 <tr>
                   <th>Nombre</th>
-                  <th>Categoría</th>
-                  <th>Precio</th>
+                  <th>CategorÃ­a</th>
                   <th>Cant. Cuotas</th>
                   <th>Valor Cuota</th>
+                  <th>Precio de venta</th>
                   <th>Stock</th>
                   <th>Status</th>
                   <th>Slug</th>
@@ -223,7 +250,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                               onChange={(e) => setPendingCategories(prev => ({ ...prev, [product.id]: e.target.value }))}
                               style={{ width: 'auto', minWidth: 80 }}
                             >
-                              <option value="">Sin categoría</option>
+                              <option value="">Sin categorÃ­a</option>
                               {categories.map((cat) => (
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                               ))}
@@ -255,7 +282,6 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                         )}
                       </div>
                     </td>
-                    <td>{formatCurrency(product.price)}</td>
                     <td>
                       {!isReadOnly && onUpdateInstallmentCount ? (
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
@@ -335,6 +361,44 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                       )}
                     </td>
                     <td>
+                      {!isReadOnly && onUpdatePrice ? (
+                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            value={pendingPrices[product.id] ?? (product.installmentCount && product.installmentAmount ? product.installmentCount * product.installmentAmount : product.price)}
+                            disabled={savingPrice === product.id}
+                            onChange={(e) => setPendingPrices(prev => ({ ...prev, [product.id]: Number(e.target.value) }))}
+                            style={{ width: 100 }}
+                          />
+                          <button
+                            className={styles.adminActionButton}
+                            disabled={savingPrice === product.id}
+                            onClick={async () => {
+                              if (!onUpdatePrice) return;
+                              setSavingPrice(product.id);
+                              try {
+                                const newPrice = pendingPrices[product.id] ?? (product.installmentCount && product.installmentAmount ? product.installmentCount * product.installmentAmount : product.price);
+                                if (newPrice <= 0) return;
+                                await onUpdatePrice(product.id, newPrice);
+                              } finally {
+                                setSavingPrice(null);
+                                setPendingPrices(prev => {
+                                  const next = { ...prev };
+                                  delete next[product.id];
+                                  return next;
+                                });
+                              }
+                            }}
+                            style={{ fontSize: '0.75rem', padding: '2px 6px', whiteSpace: 'nowrap' }}
+                          >
+                            {savingPrice === product.id ? '...' : '✓'}
+                          </button>
+                        </div>
+                      ) : (
+                        <span>{formatCurrency(product.installmentCount && product.installmentAmount ? product.installmentCount * product.installmentAmount : product.price)}</span>
+                      )}
+                    </td>
+                    <td>
                       {product.stock}{' '}
                       {product.stock === 0 && <span className={styles.adminReadonlyBadge}>Sin stock</span>}
                       {product.stock > 0 && product.stock <= 5 && <span className={styles.adminReadonlyBadge}>Bajo stock</span>}
@@ -360,9 +424,9 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                           <button
                             className={styles.adminActionButton}
                             onClick={() => void onMigrateImages(product.id)}
-                            title="Descargar imágenes externas a almacenamiento local"
+                            title="Descargar imÃ¡genes externas a almacenamiento local"
                           >
-                            📥 Imágenes
+                            ðŸ“¥ ImÃ¡genes
                           </button>
                         )}
                         <DeleteButton product={product} isReadOnly={isReadOnly} onDelete={onDelete} />
@@ -375,7 +439,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           </div>
 
           <div className={styles.adminPagination}>
-            <span>Página {table.page} de {table.totalPages}</span>
+            <span>PÃ¡gina {table.page} de {table.totalPages}</span>
             <div className={styles.adminRowActions}>
               <button
                 className={styles.adminActionButton}
@@ -398,3 +462,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
     </section>
   );
 }
+
+
+
+

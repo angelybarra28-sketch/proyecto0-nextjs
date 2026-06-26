@@ -118,6 +118,7 @@ export async function fetchAdminProducts(input: AdminProductListInput = {}, sign
   appendDefinedParam(searchParams, 'status', input.status);
   appendDefinedParam(searchParams, 'featured', input.featured);
   appendDefinedParam(searchParams, 'categoryId', input.categoryId);
+  appendDefinedParam(searchParams, 'size', input.size);
   appendDefinedParam(searchParams, 'sortKey', input.sortKey);
   appendDefinedParam(searchParams, 'direction', input.direction);
   const query = searchParams.toString();

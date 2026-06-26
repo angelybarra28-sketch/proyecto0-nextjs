@@ -122,6 +122,21 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     }
   };
 
+  const handleUpdatePrice = async (productId: string, price: number) => {
+    setError('');
+    setNotice('');
+    try {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      const count = product.installmentCount ?? 8;
+      const amount = Math.round(price / count);
+      await updateAdminProduct(productId, { price, installmentAmount: amount });
+      await loadProducts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar precio de venta');
+    }
+  };
+
   const handleDelete = async (product: AdminCatalogProduct) => {
     setIsSaving(true);
     setError('');
@@ -307,6 +322,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
         onUpdateCategory={handleUpdateCategory}
         onUpdateInstallmentCount={handleUpdateInstallmentCount}
         onUpdateInstallmentAmount={handleUpdateInstallmentAmount}
+        onUpdatePrice={handleUpdatePrice}
         onMigrateImages={handleMigrateImages}
       />
     </>

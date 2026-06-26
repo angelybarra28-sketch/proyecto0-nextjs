@@ -87,6 +87,14 @@ export function AdminProductCreateForm({
     }
   };
 
+  function normalizeMatch(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
   const handleImport = (data: ImportedProductData) => {
     setName(data.name);
     setSlug(data.name
@@ -106,6 +114,13 @@ export function AdminProductCreateForm({
       const nuevoPrecio = (data.referencePrice * 3).toString();
       setPrice(nuevoPrecio);
       recalculateValorCuota(nuevoPrecio, installmentCount);
+    }
+    if (data.categoryName) {
+      const normalized = normalizeMatch(data.categoryName);
+      const match = categories.find(c => normalizeMatch(c.name) === normalized);
+      if (match) {
+        setCategoryId(match.id);
+      }
     }
   };
 

@@ -1,4 +1,5 @@
-import type { Product } from '@/lib/types';
+﻿import type { Product } from '@/lib/types';
+import { normalizeSize } from '@/lib/sizeUtils';
 
 export type CatalogCategoryRow = {
   id: string;
@@ -52,6 +53,7 @@ export type AdminCatalogProduct = {
   imageUrl: string;
   carouselImages: string[];
   createdAt: string | null;
+  size: string | null;
 };
 
 const defaultSpecifications = {
@@ -100,6 +102,14 @@ function toSpecifications(value: unknown): Product['specifications'] {
   };
 }
 
+function extractSize(specs: unknown): string | null {
+  if (!specs || typeof specs !== 'object' || Array.isArray(specs)) return null;
+  const obj = specs as Record<string, unknown>;
+  const size = obj.size;
+  const raw = typeof size === 'string' && size !== 'N/A' ? size.trim() : null;
+  return raw ? normalizeSize(raw) : null;
+}
+
 function extractInstallments(specs: unknown): { installmentCount?: number; installmentAmount?: number } {
   if (!specs || typeof specs !== 'object' || Array.isArray(specs)) return {};
   const obj = specs as Record<string, unknown>;
@@ -116,7 +126,7 @@ function extractInstallments(specs: unknown): { installmentCount?: number; insta
 export function adaptCatalogProduct(row: CatalogProductRow): Product {
   const priceNumber = toNumber(row.price);
   const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
-  const categoryName = category?.name ?? 'Sin categoría';
+  const categoryName = category?.name ?? 'Sin categorÃ­a';
   const installments = extractInstallments(row.specifications);
   const installmentCount = installments.installmentCount ?? 8;
   const installmentAmount = installments.installmentAmount ?? Math.round(priceNumber / installmentCount);
@@ -151,7 +161,7 @@ export function adaptAdminCatalogProduct(row: CatalogProductRow): AdminCatalogPr
     id: row.id,
     legacyProductId: row.legacy_product_id,
     categoryId: row.category_id,
-    categoryName: category?.name ?? 'Sin categoría',
+    categoryName: category?.name ?? 'Sin categorÃ­a',
     name: row.name,
     slug: row.slug,
     description: row.description ?? '',
@@ -161,6 +171,7 @@ export function adaptAdminCatalogProduct(row: CatalogProductRow): AdminCatalogPr
     referencePrice: row.reference_price ?? null,
     installmentCount: installments.installmentCount ?? null,
     installmentAmount: installments.installmentAmount ?? null,
+    size: extractSize(row.specifications),
     stock: row.stock,
     status: row.status,
     featured: row.featured,
@@ -169,3 +180,4 @@ export function adaptAdminCatalogProduct(row: CatalogProductRow): AdminCatalogPr
     createdAt: row.created_at ?? null,
   };
 }
+

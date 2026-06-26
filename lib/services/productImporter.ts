@@ -7,6 +7,7 @@ export type ImportedProductData = {
   referencePrice: number | null;
   source: 'mitiendanube' | 'mercadolibre' | 'unknown';
   rawData?: unknown;
+  categoryName?: string;
 };
 
 function detectSource(url: string): 'mitiendanube' | 'mercadolibre' | 'unknown' {
@@ -139,13 +140,160 @@ function extractMitiendaNubeImages(html: string): string[] {
   return extractAllImages(html, '');
 }
 
+function extractAllJsonLd(html: string): Record<string, unknown>[] {
+  const regex = /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi;
+  const results: Record<string, unknown>[] = [];
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (Array.isArray(parsed)) {
+        results.push(...parsed);
+      } else {
+        results.push(parsed);
+      }
+    } catch { /* skip invalid JSON-LD */ }
+  }
+  return results;
+}
+
+function extractUnitPriceFromJsonLd(html: string): number | null {
+  const blocks = extractAllJsonLd(html);
+  let allVariants: { name: string; price: number }[] = [];
+
+  // Buscar ProductGroup (variantes del producto actual)
+  // Puede estar al nivel superior o anidado dentro de WebPage.mainEntity
+  for (const block of blocks) {
+    let group: Record<string, unknown> | undefined;
+
+    if (block['@type'] === 'ProductGroup') {
+      group = block;
+    } else if (block['@type'] === 'WebPage') {
+      const mainEntity = block.mainEntity as Record<string, unknown> | undefined;
+      if (mainEntity?.['@type'] === 'ProductGroup') {
+        group = mainEntity;
+      }
+    }
+
+    if (group) {
+      const variants = group.hasVariant as Array<Record<string, unknown>> | undefined;
+      if (Array.isArray(variants) && variants.length > 0) {
+        for (const v of variants) {
+          const name = v.name as string | undefined;
+          const offers = v.offers as Record<string, unknown> | undefined;
+          const price = offers?.price;
+          if (name && typeof price === 'string') {
+            allVariants.push({ name: name.toLowerCase(), price: Number(price) });
+          }
+        }
+        break; // Solo el primer grupo encontrado
+      }
+    }
+  }
+
+  if (allVariants.length === 0) return null;
+
+  // Buscar variante con "xU" o "x unidad" o "x1"
+  const unitVariant = allVariants.find(v =>
+    v.name.includes('(xu)') || v.name.includes('(x unidad)') || v.name.includes('(x1)') || v.name.includes('(x u)')
+  );
+  if (unitVariant) return unitVariant.price;
+
+  // Si no hay xU, tomar el de mayor precio (menos unidades = más caro)
+  allVariants.sort((a, b) => b.price - a.price);
+  return allVariants[0].price;
+}
+
+function extractUnitPriceFromOptions(html: string): number | null {
+  const optionRegex = /<option[^>]*data-price-number="(\d+)"[^>]*>([^<]*)<\/option>/gi;
+  const variants: Array<{ price: number; label: string }> = [];
+  let match;
+
+  while ((match = optionRegex.exec(html)) !== null) {
+    const price = Number(match[1]);
+    const label = match[2].trim().toLowerCase();
+    if (!isNaN(price) && price > 0) {
+      variants.push({ price, label });
+    }
+  }
+
+  if (variants.length === 0) return null;
+
+  // 1. Buscar explícitamente "xU" o "unidad"
+  const unitVariant = variants.find(v => v.label.includes('xu') || v.label.includes('unidad') || v.label === '1');
+  if (unitVariant) return unitVariant.price;
+
+  // 2. Si no, tomar el de mayor precio (menos unidades = más caro)
+  variants.sort((a, b) => b.price - a.price);
+  return variants[0].price;
+}
+
+function typeMatches(types: unknown, value: string): boolean {
+  if (typeof types === 'string') return types === value;
+  if (Array.isArray(types)) return types.includes(value);
+  return false;
+}
+
+function extractCategoryFromBreadcrumb(blocks: Record<string, unknown>[]): string | null {
+  for (const block of blocks) {
+    // Intentar extraer breadcrumb de varias formas
+    const breadcrumb =
+      (block.breadcrumb as Record<string, unknown> | undefined)
+      ?? ((block as Record<string, unknown>).mainEntity as Record<string, unknown> | undefined)
+          ?.breadcrumb as Record<string, unknown> | undefined;
+
+    if (breadcrumb && breadcrumb['@type'] === 'BreadcrumbList') {
+      const items = breadcrumb.itemListElement as Array<Record<string, unknown>> | undefined;
+      if (Array.isArray(items) && items.length >= 3) {
+        const lastIndex = items.length - 1;
+        const categoryItem = items[lastIndex - 1];
+        const name = categoryItem?.name;
+        if (name && typeof name === 'string') return name.trim();
+      }
+    }
+
+    // También buscar WebPage.mainEntity que contenga ProductGroup con breadcrumb
+    if (typeMatches(block['@type'], 'WebPage')) {
+      const mainEntity = block.mainEntity as Record<string, unknown> | undefined;
+      if (mainEntity) {
+        const bc = mainEntity.breadcrumb as Record<string, unknown> | undefined;
+        if (bc?.['@type'] === 'BreadcrumbList') {
+          const items = bc.itemListElement as Array<Record<string, unknown>> | undefined;
+          if (Array.isArray(items) && items.length >= 3) {
+            const lastIndex = items.length - 1;
+            const categoryItem = items[lastIndex - 1];
+            const name = categoryItem?.name;
+            if (name && typeof name === 'string') return name.trim();
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function cleanProductName(name: string): string {
+  return name
+    .replace(/\s*x\d+\s*/gi, ' ')
+    .replace(/\s*x[Uu]\s*/gi, ' ')
+    .replace(/\s*cantidad\s*/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function parseMitiendaNube(url: string): Promise<ImportedProductData> {
   const html = await fetchHtml(url);
 
-  const name = extractMetaTag(html, 'og:title') || '';
+  let name = extractMetaTag(html, 'og:title') || '';
   const description = extractMetaTag(html, 'og:description') || '';
   const images = extractMitiendaNubeImages(html);
-  const referencePrice = extractPriceFromHtml(html);
+  const blocks = extractAllJsonLd(html);
+  const referencePrice =
+    extractUnitPriceFromJsonLd(html)
+    ?? extractUnitPriceFromOptions(html)
+    ?? extractPriceFromHtml(html);
+  const categoryName = extractCategoryFromBreadcrumb(blocks);
+  name = cleanProductName(name);
 
   return {
     name,
@@ -153,6 +301,7 @@ async function parseMitiendaNube(url: string): Promise<ImportedProductData> {
     images,
     referencePrice,
     source: 'mitiendanube',
+    categoryName: categoryName ?? undefined,
   };
 }
 

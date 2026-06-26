@@ -11,6 +11,7 @@ import {
   listProductsByCategory,
 } from '@/lib/repositories/productRepository';
 import { listActiveCategories } from '@/lib/repositories/categoryRepository';
+import { normalizeCategory } from '@/lib/categoryUtils';
 
 function getLocalProducts(): Product[] {
   return allProducts;
@@ -100,7 +101,7 @@ export async function getProductsByCategory(categoria: string): Promise<Product[
 
   return await hasSupabaseCatalogRows()
     ? []
-    : allProducts.filter((product) => stripAccents(product.categoria) === stripAccents(categoria));
+    : allProducts.filter((product) => normalizeCategory(product.categoria) === normalizeCategory(categoria));
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
@@ -130,16 +131,23 @@ export async function getCatalogCategories(): Promise<string[]> {
     try {
       const categories = await listActiveCategories(supabase);
       if (categories.length > 0) {
-        return categories.map((category) => category.slug);
+        const slugs = categories.map((category) => {
+          if (category.slug === 'toallones') return 'toallas';
+          return category.slug;
+        });
+        if (!slugs.includes('invierno-abrigo')) slugs.push('invierno-abrigo');
+        return slugs;
       }
     } catch (error) {
       console.error('Error loading categories from Supabase:', error);
     }
   }
 
-  return Array.from(
+  const slugs = Array.from(
     new Set(allProducts.map((product) => stripAccents(product.categoria)))
   );
+  if (!slugs.includes('invierno-abrigo')) slugs.push('invierno-abrigo');
+  return slugs;
 }
 
 export async function getProductSections(): Promise<{ section1: ProductSection; section2: ProductSection }> {
