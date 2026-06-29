@@ -1,6 +1,6 @@
 .productsSection {
   background-color: #1e1d1b;
-  padding: 2rem 20px;
+  padding: 1.5rem 20px;
   position: relative;
 }
 
@@ -12,7 +12,7 @@
 .sectionTitle {
   font-size: 1.8rem;
   text-align: center;
-  margin: 3rem 0 2rem 0;
+  margin: 2rem 0 1.5rem 0;
   color: #f5f2ec;
   padding: 0 20px;
   animation: revealLeft 1.4s cubic-bezier(0.25, 1, 0.5, 1);
@@ -21,8 +21,8 @@
 .productsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 2rem;
-  padding-bottom: 2rem;
+  gap: 1.5rem;
+  padding-bottom: 1.5rem;
 }
 
 @keyframes revealLeft {

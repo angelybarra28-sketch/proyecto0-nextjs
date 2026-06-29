@@ -1,6 +1,6 @@
 .aboutSection {
   background-color: #1e1d1b;
-  padding: 3rem 20px;
+  padding: 2rem 20px;
   border-top: 1px solid #363330;
   border-bottom: 1px solid #363330;
 }
@@ -13,14 +13,14 @@
 
 .aboutSection h2 {
   font-size: 1.6rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   color: #f5f2ec;
 }
 
 .aboutSection p {
   font-size: 0.95rem;
   color: #d3cdc4;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   line-height: 1.8;
 }
 

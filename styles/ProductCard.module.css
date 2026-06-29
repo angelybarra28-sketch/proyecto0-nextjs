@@ -61,13 +61,13 @@
 }
 
 .productInfo {
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 .productName {
   font-size: 0.95rem;
   color: #f5f2ec;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.5rem;
   font-weight: 500;
   transition: color 0.3s ease;
   min-height: 2.4rem;
@@ -81,14 +81,14 @@
   font-size: 1.1rem;
   color: #f5f2ec;
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .installmentRow {
   font-size: 1rem;
   color: #c8a87c;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .productButton {

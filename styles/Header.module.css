@@ -185,13 +185,13 @@
 }
 
 .electrodomesticosItem {
-  grid-column: 1;
-  justify-self: start;
+  grid-column: 3;
+  justify-self: end;
 }
 
 .blanqueriaItem {
-  grid-column: 3;
-  justify-self: end;
+  grid-column: 1;
+  justify-self: start;
 }
 
 .header.scrolled .mainNav>li {
@@ -201,14 +201,14 @@
 }
 
 .header.scrolled .electrodomesticosItem {
-  grid-column: 1;
-  justify-self: start;
+  grid-column: 3;
+  justify-self: end;
   text-align: center;
 }
 
 .header.scrolled .blanqueriaItem {
-  grid-column: 3;
-  justify-self: end;
+  grid-column: 1;
+  justify-self: start;
   text-align: center;
   margin-left: 0;
 }

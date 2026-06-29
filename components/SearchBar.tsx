@@ -14,7 +14,7 @@ export default function SearchBar({ placeholder = 'Buscar sábanas, acolchados, 
   const { query, setQuery, filteredProducts, clearSearch, totalResults, hasResults } = useProductSearch(products);
 
   return (
-    <div style={{ backgroundColor: '#1e1d1b', padding: '1.5rem 20px 2.5rem 20px' }}>
+    <div style={{ backgroundColor: '#1e1d1b', padding: '1rem 20px 1.5rem 20px' }}>
       <div className={styles.productsWrapper}>
         {/* Contenedor del Input */}
         <div style={{
@@ -86,8 +86,8 @@ export default function SearchBar({ placeholder = 'Buscar sábanas, acolchados, 
 
         {/* Sección de Resultados Activa */}
         {query.trim() !== '' && (
-          <div style={{ marginTop: '2.5rem' }}>
-            <h2 className={styles.sectionTitle} style={{ margin: '1rem 0 2rem 0', fontSize: '1.4rem', textAlign: 'left' }}>
+          <div style={{ marginTop: '1.5rem' }}>
+            <h2 className={styles.sectionTitle} style={{ margin: '0.5rem 0 1.5rem 0', fontSize: '1.4rem', textAlign: 'left' }}>
               Resultados para &quot;{query}&quot; ({totalResults} {totalResults === 1 ? 'producto' : 'productos'})
             </h2>
 
