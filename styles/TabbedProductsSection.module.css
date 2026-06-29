@@ -1,21 +1,66 @@
-.productsSection {
+.section {
   background-color: #1e1d1b;
   padding: 1rem 20px;
   position: relative;
 }
 
-.productsWrapper {
+.wrapper {
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.sectionTitle {
+.title {
   font-size: 1.8rem;
   text-align: center;
   margin: 1.5rem 0 1rem 0;
   color: #f5f2ec;
   padding: 0 20px;
   animation: revealLeft 1.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.tabsContainer {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  flex: 1;
+  max-width: 240px;
+  padding: 10px 24px;
+  background: #262422;
+  border: 1px solid #363330;
+  border-radius: 8px;
+  color: #b8a89c;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  border-color: #c8a87c;
+  color: #f5f2ec;
+}
+
+.tabActive {
+  background: #363330;
+  border-color: #c8a87c;
+  color: #f5f2ec;
+}
+
+.gridContainer {
+  transition: opacity 0.3s ease;
+}
+
+.fadeIn {
+  opacity: 1;
+}
+
+.fadeOut {
+  opacity: 0.5;
 }
 
 .carouselWrapper {
@@ -69,6 +114,26 @@
   min-width: 0;
 }
 
+.emptyMessage {
+  text-align: center;
+  padding: 3rem 20px;
+  background: #262422;
+  border: 1px solid #363330;
+  border-radius: 8px;
+  color: #b8a89c;
+  margin-bottom: 1.5rem;
+}
+
+.emptyMessage p:first-child {
+  font-size: 1.2rem;
+  color: #f5f2ec;
+  margin-bottom: 0.5rem;
+}
+
+.emptyMessage p:last-child {
+  font-size: 0.9rem;
+}
+
 @keyframes revealLeft {
   from {
     opacity: 0;
@@ -81,8 +146,19 @@
 }
 
 @media (max-width: 768px) {
-  .sectionTitle {
+  .title {
     font-size: 1.4rem;
+  }
+
+  .tabsContainer {
+    gap: 0.75rem;
+  }
+
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 12px;
+    font-size: 0.9rem;
   }
 
   .arrow {

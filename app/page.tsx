@@ -7,6 +7,7 @@ import BannerCarousel from '@/components/Sections/BannerCarousel';
 import Hero from '@/components/Sections/Hero';
 import SearchBar from '@/components/SearchBar';
 import ProductsSection from '@/components/Sections/ProductsSection';
+import TabbedProductsSection from '@/components/Sections/TabbedProductsSection';
 import About from '@/components/Sections/About';
 import Footer from '@/components/Layout/Footer';
 import { getProductSections, getProducts } from '@/lib/services/catalogService';
@@ -22,18 +23,14 @@ export default async function Home() {
       <Header />
       <BannerCarousel />
       <Hero />
+      <TabbedProductsSection products={products} />
       <Suspense fallback={<div style={{ backgroundColor: '#1e1d1b', height: '80px' }} />}>
         <SearchBar products={products} />
       </Suspense>
       <ProductsSection 
-        title={productData.section1.title} 
-        products={productData.section1.products}
-        id="electrodomesticos"
-      />
-      <ProductsSection 
         title={productData.section2.title} 
         products={productData.section2.products}
-        id="blanqueria"
+        id="tendencia"
       />
       <About />
       <Footer />
