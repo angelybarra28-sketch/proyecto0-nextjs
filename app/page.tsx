@@ -23,7 +23,7 @@ export default async function Home() {
       <Header />
       <BannerCarousel />
       <Hero />
-      <TabbedProductsSection products={products} />
+      <TabbedProductsSection products={products} id="productos-destacados" />
       <Suspense fallback={<div style={{ backgroundColor: '#1e1d1b', height: '80px' }} />}>
         <SearchBar products={products} />
       </Suspense>

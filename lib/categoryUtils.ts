@@ -14,3 +14,13 @@ export function normalizeCategory(name: string): string {
   }
   return cleaned;
 }
+
+export function slugifyCategory(label: string): string {
+  return label
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+}

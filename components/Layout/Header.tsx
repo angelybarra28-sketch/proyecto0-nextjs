@@ -103,7 +103,7 @@ export default function Header() {
         <div className={styles.headerTop}>
           <div className={styles.logoContainer}>
             <div className={styles.logo}>
-              <Image src="/logo/logo.png" alt="Logo" width={260} height={130} style={{ width: 'auto', maxHeight: '100%' }} priority />
+              <Image src="/logo/logo.png" alt="Logo" width={180} height={90} style={{ width: 'auto', maxHeight: '100%' }} priority />
             </div>
           </div>
         </div>

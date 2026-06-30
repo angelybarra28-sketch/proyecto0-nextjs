@@ -9,6 +9,7 @@ import styles from '@/styles/TabbedProductsSection.module.css';
 
 interface TabbedProductsSectionProps {
   products: Product[];
+  id?: string;
 }
 
 type TabKey = 'blanqueria' | 'hogar';
@@ -30,7 +31,7 @@ function getFeaturedByCategory(products: Product[], categories: string[]): Produ
   return fallback.slice(0, 8);
 }
 
-export default function TabbedProductsSection({ products }: TabbedProductsSectionProps) {
+export default function TabbedProductsSection({ products, id }: TabbedProductsSectionProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('blanqueria');
   const [animating, setAnimating] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -68,7 +69,7 @@ export default function TabbedProductsSection({ products }: TabbedProductsSectio
   }
 
   return (
-    <section className={styles.section}>
+    <section id={id} className={styles.section}>
       <div className={styles.wrapper}>
         <h2 className={styles.title}>Artículos más elegidos</h2>
 

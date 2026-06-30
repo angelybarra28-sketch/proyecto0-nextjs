@@ -5,8 +5,6 @@
 }
 
 .wrapper {
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
 .title {
@@ -114,6 +112,24 @@
   min-width: 0;
 }
 
+@media (min-width: 1400px) {
+  .carouselCard {
+    width: calc((100% - 96px) / 5);
+  }
+}
+
+@media (min-width: 1700px) {
+  .carouselCard {
+    width: calc((100% - 120px) / 6);
+  }
+}
+
+@media (min-width: 2000px) {
+  .carouselCard {
+    width: calc((100% - 144px) / 7);
+  }
+}
+
 .emptyMessage {
   text-align: center;
   padding: 3rem 20px;
@@ -167,7 +183,6 @@
 
   .carousel {
     gap: 12px;
-    scroll-snap-type: x mandatory;
   }
 
   .carouselCard {

@@ -6,6 +6,13 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import styles from '@/styles/BannerCarousel.module.css';
 
+function scrollDown() {
+  const target = document.getElementById('productos-destacados');
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 export default function BannerCarousel() {
   useEffect(() => {
     AOS.init({
@@ -49,6 +56,15 @@ export default function BannerCarousel() {
             </div>
           </div>
         </div>
+
+        <button
+          className={styles.scrollDown}
+          onClick={scrollDown}
+          aria-label="Ver productos"
+        >
+          <span className={styles.scrollText}>Ver productos</span>
+          <span className={styles.scrollArrow} />
+        </button>
       </div>
     </section>
   );
