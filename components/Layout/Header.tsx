@@ -111,7 +111,12 @@ export default function Header() {
         {/* Carrito - Derecha */}
         <Link href="/checkout" className={styles.cartIconLink}>
           <div className={styles.cartIcon}>
-            
+            <Image
+              src="/icons/cart-icon.png"
+              alt="Carrito"
+              width={24}
+              height={24}
+            />
             {items.length > 0 && (
               <span className={styles.cartBadge}>{items.length}</span>
             )}

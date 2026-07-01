@@ -80,9 +80,8 @@ export default function ProductInfo({
 
   return (
     <div className={styles.productInfo}>
-      {/* Título y Descripción */}
+      {/* Descripción */}
       <div className={styles.header}>
-        <h1 className={styles.title}>{name}</h1>
         <p className={styles.description}>{description}</p>
       </div>
 

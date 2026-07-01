@@ -40,10 +40,13 @@ export default async function ProductDetailBySlugPage({ params }: Props) {
         {serverProduct ? (
           <div className={styles.detailContainer}>
             <div className={styles.detailGrid}>
-              <ProductCarousel 
-                images={serverProduct.carouselImages || [serverProduct.imageUrl ?? '']} 
-                productName={serverProduct.name}
-              />
+              <div>
+                <h1 className={styles.title}>{serverProduct.name}</h1>
+                <ProductCarousel 
+                  images={serverProduct.carouselImages || [serverProduct.imageUrl ?? '']} 
+                  productName={serverProduct.name}
+                />
+              </div>
               <ProductInfo
                 productId={serverProduct.id}
                 name={serverProduct.name}

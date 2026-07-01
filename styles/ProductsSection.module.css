@@ -1,6 +1,6 @@
 .productsSection {
   background-color: #1e1d1b;
-  padding: 1rem 20px;
+  padding: 1rem 0;
   position: relative;
 }
 
@@ -17,43 +17,55 @@
 }
 
 .carouselWrapper {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
 .arrow {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #262422;
-  border: 1px solid #363330;
+  background: rgba(38, 36, 34, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
-  color: #b8a89c;
-  font-size: 1.4rem;
+  color: #f5f2ec;
+  font-size: 1.3rem;
   cursor: pointer;
   transition: all 0.3s ease;
   user-select: none;
+  backdrop-filter: blur(4px);
+}
+
+.arrow:first-of-type {
+  left: 8px;
+}
+
+.arrow:last-of-type {
+  right: 8px;
 }
 
 .arrow:hover {
-  border-color: #c8a87c;
-  color: #c8a87c;
-  background: #363330;
+  background: rgba(54, 51, 48, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .carousel {
   flex: 1;
   display: flex;
-  gap: 24px;
+  gap: 0;
   overflow-x: auto;
+  overflow-y: hidden;
+  padding: 30px 0;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding-bottom: 0.75rem;
 }
 
 .carousel::-webkit-scrollbar {
@@ -63,25 +75,26 @@
 .carouselCard {
   flex-shrink: 0;
   scroll-snap-align: start;
-  width: calc((100% - 72px) / 4);
+  width: 25%;
   min-width: 0;
+  margin: -30px 0;
 }
 
 @media (min-width: 1400px) {
   .carouselCard {
-    width: calc((100% - 96px) / 5);
+    width: 20%;
   }
 }
 
 @media (min-width: 1700px) {
   .carouselCard {
-    width: calc((100% - 120px) / 6);
+    width: 14.285%;
   }
 }
 
 @media (min-width: 2000px) {
   .carouselCard {
-    width: calc((100% - 144px) / 7);
+    width: 12.5%;
   }
 }
 
@@ -106,10 +119,10 @@
   }
 
   .carousel {
-    gap: 12px;
+    gap: 0;
   }
 
   .carouselCard {
-    width: 75vw;
+    width: 50%;
   }
 }

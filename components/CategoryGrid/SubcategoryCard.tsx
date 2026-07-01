@@ -27,8 +27,16 @@ export default function SubcategoryCard({ name, slug, products }: SubcategoryCar
     });
   }, [products]);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [loaded, setLoaded] = useState<Set<number>>(new Set([0]));
+  const initialIndex = useMemo(() => {
+    let hash = 0;
+    for (let i = 0; i < slug.length; i++) {
+      hash = ((hash << 5) - hash) + slug.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash) % Math.max(images.length, 1);
+  }, [slug, images.length]);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [loaded, setLoaded] = useState<Set<number>>(new Set([initialIndex]));
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -38,7 +46,7 @@ export default function SubcategoryCard({ name, slug, products }: SubcategoryCar
         const next = (prev + 1) % images.length;
         return next;
       });
-    }, 1500);
+    }, 2500);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };

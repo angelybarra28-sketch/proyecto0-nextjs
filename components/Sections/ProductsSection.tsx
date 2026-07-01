@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import ProductCard from '@/components/Product/ProductCard';
 import styles from '@/styles/ProductsSection.module.css';
 
@@ -37,6 +37,30 @@ export default function ProductsSection({ title, products, id }: ProductsSection
     });
   }, []);
 
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startAutoPlay = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (products.length <= 1) return;
+    intervalRef.current = setInterval(() => {
+      scrollCarousel('right');
+    }, 2500);
+  }, [products.length, scrollCarousel]);
+
+  const stopAutoPlay = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    startAutoPlay();
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [startAutoPlay]);
+
   return (
     <section id={id} className={styles.productsSection}>
       <div className={styles.productsWrapper}>
@@ -45,7 +69,12 @@ export default function ProductsSection({ title, products, id }: ProductsSection
           <button className={styles.arrow} onClick={() => scrollCarousel('left')} aria-label="Anterior">
             ‹
           </button>
-          <div className={styles.carousel} ref={carouselRef}>
+          <div
+            className={styles.carousel}
+            ref={carouselRef}
+            onMouseEnter={stopAutoPlay}
+            onMouseLeave={startAutoPlay}
+          >
             {products.map((product, index) => (
               <div key={product.id} className={styles.carouselCard}>
                 <ProductCard

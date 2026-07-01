@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import ProductCard from '@/components/Product/ProductCard';
 import type { Product } from '@/lib/types';
 import { BLANQUERIA_CATEGORIES, HOGAR_CATEGORIES } from '@/lib/categoryGroups';
@@ -58,6 +58,30 @@ export default function TabbedProductsSection({ products, id }: TabbedProductsSe
     });
   }, []);
 
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startAutoPlay = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (currentProducts.length <= 1) return;
+    intervalRef.current = setInterval(() => {
+      scrollCarousel('right');
+    }, 2500);
+  }, [currentProducts.length, scrollCarousel]);
+
+  const stopAutoPlay = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    startAutoPlay();
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [startAutoPlay]);
+
   function handleTabChange(tab: TabKey) {
     if (tab === activeTab) return;
     setAnimating(true);
@@ -96,7 +120,12 @@ export default function TabbedProductsSection({ products, id }: TabbedProductsSe
               <button className={styles.arrow} onClick={() => scrollCarousel('left')} aria-label="Anterior">
                 ‹
               </button>
-              <div className={styles.carousel} ref={carouselRef}>
+              <div
+                className={styles.carousel}
+                ref={carouselRef}
+                onMouseEnter={stopAutoPlay}
+                onMouseLeave={startAutoPlay}
+              >
                 {currentProducts.map((product, index) => (
                   <div key={product.id} className={styles.carouselCard}>
                     <ProductCard

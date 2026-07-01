@@ -1,8 +1,8 @@
 .carouselWrapper {
   position: relative;
-  width: 100%;
-  max-width: 600px;
-  margin-bottom: 2rem;
+  width: 90%;
+  max-width: 500px;
+  margin: 0 auto 2rem;
 }
 
 .mainImageContainer {
@@ -14,15 +14,9 @@
   overflow: hidden;
 }
 
-@media (max-width: 768px) {
-  .carouselWrapper {
-    max-width: 140%;
-    margin-left: -20%;
-  }
-}
-
 .mainImage {
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
 }
 
 .carouselButton {

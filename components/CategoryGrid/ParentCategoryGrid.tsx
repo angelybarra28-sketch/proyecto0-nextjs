@@ -23,7 +23,6 @@ interface ParentCategoryGridProps {
 
 export default function ParentCategoryGrid({ title, subcategories }: ParentCategoryGridProps) {
   const visible = subcategories.filter(s => s.products.length > 0);
-  const empty = subcategories.filter(s => s.products.length === 0);
 
   return (
     <section className={styles.section}>
@@ -38,12 +37,7 @@ export default function ParentCategoryGrid({ title, subcategories }: ParentCateg
               products={sub.products}
             />
           ))}
-          {empty.map(sub => (
-            <div key={sub.slug} className={styles.emptyCard}>
-              <span className={styles.emptyLabel}>{sub.name}</span>
-              <span className={styles.emptySub}>Próximamente</span>
-            </div>
-          ))}
+
         </div>
       </div>
     </section>

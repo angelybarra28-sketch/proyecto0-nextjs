@@ -31,26 +31,24 @@ export default function ProductCard({
     : '';
 
   return (
-    <div className={styles.productCard}>
-      <Link href={`/producto/${slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-        <div className={styles.productImage}>
-          {discount && <div className={styles.discountBadge}>{discount}</div>}
-          
-          {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt={name}
-              fill
-              className={styles.image}
-            />
-          ) : (
-            <div className={styles.placeholder}>
-              <span>📸 Imagen no disponible</span>
-            </div>
-          )}
-        </div>
+    <Link href={`/producto/${slug}`} className={styles.card}>
+      <div className={styles.imageContainer}>
+        {discount && <div className={styles.discountBadge}>{discount}</div>}
 
-        <div className={styles.productInfo}>
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={name}
+            fill
+            className={styles.image}
+          />
+        ) : (
+          <div className={styles.placeholder}>
+            <span>📸 Imagen no disponible</span>
+          </div>
+        )}
+
+        <div className={styles.overlay}>
           <h3 className={styles.productName}>{name}</h3>
           {hasCuotas ? (
             <div className={styles.installmentRow}>{cuotaText}</div>
@@ -59,7 +57,7 @@ export default function ProductCard({
           )}
           <button className={styles.productButton}>Ver Detalles</button>
         </div>
-      </Link>
-    </div>
+      </div>
+    </Link>
   );
 }

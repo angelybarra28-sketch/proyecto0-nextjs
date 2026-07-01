@@ -1,44 +1,42 @@
-.productCard {
-  background-color: #262422;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.5s ease;
-  border: 1px solid #363330;
-  animation: revealLeft 1.4s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-.productCard:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-  border-color: #e8e4df;
-}
-
-.productImage {
-  width: 100%;
-  height: 200px;
-  background: linear-gradient(135deg, #363330 0%, #262422 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  font-size: 0.9rem;
+.card {
+  display: block;
   position: relative;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  background: #262422;
+  animation: revealLeft 1.4s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 0.4s ease, box-shadow 0.4s ease, filter 0.4s ease;
+}
+
+.card:hover {
+  transform: scale(1.06);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+  filter: brightness(1.12) contrast(1.04);
+  z-index: 10;
+}
+
+.imageContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
-.productImage .image {
+.image {
   object-fit: cover;
 }
 
 .placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  color: #666;
+  color: #555;
   font-size: 0.9rem;
-  text-align: center;
-  padding: 1rem;
+  background: #1e1d1b;
 }
 
 .discountBadge {
@@ -51,62 +49,67 @@
   border-radius: 4px;
   font-size: 0.8rem;
   font-weight: 600;
-  opacity: 0;
-  transition: opacity 0.4s ease;
   z-index: 10;
+  transition: opacity 0.4s ease;
+  opacity: 0.7;
 }
 
-.productCard:hover .discountBadge {
+.card:hover .discountBadge {
   opacity: 1;
 }
 
-.productInfo {
-  padding: 1rem;
+.overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 3rem 1rem 1rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+  z-index: 2;
+  text-align: center;
 }
 
 .productName {
   font-size: 0.95rem;
+  font-weight: 700;
   color: #f5f2ec;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  transition: color 0.3s ease;
-  min-height: 2.4rem;
-}
-
-.productCard:hover .productName {
-  color: #e8e4df;
-}
-
-.productPrice {
-  font-size: 1.1rem;
-  color: #f5f2ec;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
+  margin: 0 0 0.3rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .installmentRow {
-  font-size: 1rem;
-  color: #c8a87c;
+  font-size: 0.9rem;
   font-weight: 700;
-  margin-bottom: 0.75rem;
+  color: #c8a87c;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.productPrice {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f5f2ec;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .productButton {
-  width: 100%;
-  padding: 0.7rem;
-  background-color: #4a433a;
+  padding: 0.4rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
   color: #f5f2ec;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
+  display: inline-block;
 }
 
 .productButton:hover {
-  background-color: #5a5248;
-  transform: scale(1.02);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 @keyframes revealLeft {
@@ -121,31 +124,28 @@
 }
 
 @media (max-width: 768px) {
-  .productImage {
-    height: 120px;
-  }
-
-  .placeholder span {
-    font-size: 0.8rem;
-  }
-
-  .productInfo {
-    padding: 0.75rem;
+  .overlay {
+    padding: 2rem 0.75rem 0.75rem;
   }
 
   .productName {
     font-size: 0.75rem;
-    margin-bottom: 0.4rem;
-    min-height: auto;
+    margin-bottom: 0.2rem;
   }
 
+  .installmentRow,
   .productPrice {
-    font-size: 0.85rem;
-    margin-bottom: 0.6rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.35rem;
   }
 
   .productButton {
-    padding: 0.5rem;
-    font-size: 0.7rem;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.65rem;
+  }
+
+  .discountBadge {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.65rem;
   }
 }
