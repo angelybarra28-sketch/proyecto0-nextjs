@@ -6,7 +6,7 @@ export const productData = {
     products: [] as Product[],
   },
   section2: {
-    title: 'Tendencia, productos en alta demanda',
+    title: 'Tendencias',
     products: [] as Product[],
   },
 };

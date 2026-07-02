@@ -8,6 +8,7 @@ import Hero from '@/components/Sections/Hero';
 import SearchBar from '@/components/SearchBar';
 import ProductsSection from '@/components/Sections/ProductsSection';
 import TabbedProductsSection from '@/components/Sections/TabbedProductsSection';
+import CategoryAccordion from '@/components/Sections/CategoryAccordion';
 import About from '@/components/Sections/About';
 import Footer from '@/components/Layout/Footer';
 import { getProductSections, getProducts } from '@/lib/services/catalogService';
@@ -27,6 +28,7 @@ export default async function Home() {
       <Suspense fallback={<div style={{ backgroundColor: '#1e1d1b', height: '80px' }} />}>
         <SearchBar products={products} />
       </Suspense>
+      <CategoryAccordion products={products} />
       <ProductsSection 
         title={productData.section2.title} 
         products={productData.section2.products}

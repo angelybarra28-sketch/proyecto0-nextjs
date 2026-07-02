@@ -6,6 +6,7 @@ export const BLANQUERIA_CATEGORIES = [
   'Cubrecamas',
   'Toallones',
   'Mantelería',
+  'Cortinas',
 ];
 
 export const HOGAR_CATEGORIES = [
