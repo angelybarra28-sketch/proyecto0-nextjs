@@ -26,21 +26,17 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 5;
+  z-index: 15;
   width: 36px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(38, 36, 34, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 50%;
-  color: #f5f2ec;
-  font-size: 1.3rem;
+  color: #c8a87c;
+  font-size: 1.8rem;
   cursor: pointer;
   transition: all 0.3s ease;
   user-select: none;
-  backdrop-filter: blur(4px);
 }
 
 .arrow:first-of-type {
@@ -52,8 +48,7 @@
 }
 
 .arrow:hover {
-  background: rgba(54, 51, 48, 0.9);
-  border-color: rgba(255, 255, 255, 0.3);
+  color: #f5f2ec;
 }
 
 .carousel {

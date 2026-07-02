@@ -26,7 +26,7 @@
 /* OFERTAS DESTACADAS */
 .offersSection {
   position: absolute;
-  bottom: 40px;
+  bottom: 65px;
   left: 0;
   right: 0;
   z-index: 105;
@@ -125,7 +125,7 @@
   }
 
   .offersSection {
-    bottom: 20px;
+    bottom: 35px;
     padding: 0 10px;
   }
 
