@@ -34,12 +34,25 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.4s ease;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .ctaButton:hover {
   background-color: #e8e4df;
   transform: scale(1.05);
+}
+
+.whatsappIcon {
+  width: 20px;
+  height: 20px;
+  animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 
 @media (max-width: 768px) {

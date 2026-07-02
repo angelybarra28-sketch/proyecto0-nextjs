@@ -1,8 +1,14 @@
 'use client';
 
+import Image from 'next/image';
 import styles from '@/styles/About.module.css';
+import { contactInfo } from '@/lib/config';
 
 export default function About() {
+  const handleWhatsApp = () => {
+    window.open(`https://wa.me/${contactInfo.whatsapp}`, '_blank');
+  };
+
   return (
     <section className={styles.aboutSection}>
       <div className={styles.aboutContainer}>
@@ -14,7 +20,12 @@ export default function About() {
         <p>
           Trabajamos en cuotas fijas en pesos sin interes. No dudes en consultarnos, estaremos ahi para asesorarte de la mejor manera.
         </p>
-        <button className={styles.ctaButton}>Contáctanos por WhatsApp</button>
+        <button className={styles.ctaButton} onClick={handleWhatsApp}>
+          <span className={styles.whatsappIcon}>
+            <Image src="/logo/whatsapp-desktop.png" width={20} height={20} alt="WhatsApp" />
+          </span>
+          Contáctanos por WhatsApp
+        </button>
       </div>
     </section>
   );
