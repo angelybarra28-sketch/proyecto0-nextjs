@@ -1,5 +1,6 @@
 ﻿const SIZE_ALIAS_MAP: Record<string, string[]> = {
   '1 1/2': ['twin', '1/2', 'individual', 'plaza 1/2'],
+  'infantil': ['infantil'],
 };
 
 function normalizeRaw(value: string): string {

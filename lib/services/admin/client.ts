@@ -15,6 +15,15 @@ function appendDefinedParam(searchParams: URLSearchParams, key: string, value: u
   }
 }
 
+async function parseApiError(response: Response): Promise<string> {
+  try {
+    const payload = await response.json();
+    return payload?.error?.message ?? payload?.message ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export async function fetchAdminSales(input: AdminSaleListInput = {}, signal?: AbortSignal): Promise<AdminSalesPayload> {
   const searchParams = new URLSearchParams();
   appendDefinedParam(searchParams, 'page', input.page);
@@ -143,8 +152,8 @@ export async function createAdminProduct(
   });
 
   if (!response.ok) {
-    const payload = await response.json() as { message?: string };
-    throw new Error(payload.message ?? 'No se pudo crear el producto');
+    const message = await parseApiError(response);
+    throw new Error(message || 'No se pudo crear el producto');
   }
 
   const payload = await response.json() as { product: AdminCatalogProduct };
@@ -164,8 +173,8 @@ export async function updateAdminProduct(
   });
 
   if (!response.ok) {
-    const payload = await response.json() as { message?: string };
-    throw new Error(payload.message ?? 'No se pudo actualizar el producto');
+    const message = await parseApiError(response);
+    throw new Error(message || 'No se pudo actualizar el producto');
   }
 
   const payload = await response.json() as { product: AdminCatalogProduct };
@@ -178,8 +187,8 @@ export async function deleteAdminProduct(productId: string): Promise<void> {
   });
 
   if (!response.ok) {
-    const payload = await response.json() as { message?: string };
-    throw new Error(payload.message ?? 'No se pudo eliminar el producto');
+    const message = await parseApiError(response);
+    throw new Error(message || 'No se pudo eliminar el producto');
   }
 }
 
@@ -197,8 +206,8 @@ export async function uploadAdminProductImage(
   });
 
   if (!response.ok) {
-    const payload = await response.json() as { message?: string };
-    throw new Error(payload.message ?? 'No se pudo subir la imagen');
+    const message = await parseApiError(response);
+    throw new Error(message || 'No se pudo subir la imagen');
   }
 
   const payload = await response.json() as { image: UploadedProductImage };
@@ -215,8 +224,8 @@ export async function deleteAdminProductImage(url: string, productId?: string): 
   });
 
   if (!response.ok) {
-    const payload = await response.json() as { message?: string };
-    throw new Error(payload.message ?? 'No se pudo eliminar la imagen');
+    const message = await parseApiError(response);
+    throw new Error(message || 'No se pudo eliminar la imagen');
   }
 
   const payload = await response.json() as { deleted: boolean };

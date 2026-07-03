@@ -51,6 +51,12 @@ export function AdminProductEditForm({
   const [price, setPrice] = useState(product.price.toString());
   const [referencePrice, setReferencePrice] = useState(product.referencePrice?.toString() ?? '');
   const [stock, setStock] = useState(product.stock.toString());
+  const selectedProductCategory = categories.find((category) => category.id === product.categoryId);
+  const initialParentCategoryId = selectedProductCategory?.parentId ? selectedProductCategory.parentId : (product.categoryId ?? '');
+  const initialSubcategoryId = selectedProductCategory?.parentId ? (product.categoryId ?? '') : '';
+
+  const [parentCategoryId, setParentCategoryId] = useState(initialParentCategoryId);
+  const [subcategoryId, setSubcategoryId] = useState(initialSubcategoryId);
   const [categoryId, setCategoryId] = useState(product.categoryId ?? '');
   const [featured, setFeatured] = useState(product.featured);
   const [status, setStatus] = useState<AdminProductPayload['status']>(product.status);
@@ -85,6 +91,10 @@ export function AdminProductEditForm({
     }
   };
 
+  const parentCategories = categories.filter((category) => !category.parentId);
+  const subcategories = parentCategoryId
+    ? categories.filter((category) => category.parentId === parentCategoryId)
+    : [];
   const currentCarouselImages = fromImagesText(carouselImages);
   const controlsDisabled = isSaving || isUploading;
 
@@ -217,14 +227,44 @@ export function AdminProductEditForm({
               <tr>
                 <td>Categoría</td>
                 <td>
-                  <select value={categoryId} disabled={controlsDisabled} onChange={(event) => setCategoryId(event.target.value)}>
+                  <select
+                    value={parentCategoryId}
+                    disabled={controlsDisabled}
+                    onChange={(event) => {
+                      const parentId = event.target.value;
+                      setParentCategoryId(parentId);
+                      setSubcategoryId('');
+                      setCategoryId(parentId);
+                    }}
+                  >
                     <option value="">Sin categoría</option>
-                    {categories.map((category) => (
+                    {parentCategories.map((category) => (
                       <option key={category.id} value={category.id}>{category.name}</option>
                     ))}
                   </select>
                 </td>
               </tr>
+              {subcategories.length > 0 && (
+                <tr>
+                  <td>Subcategoría</td>
+                  <td>
+                    <select
+                      value={subcategoryId}
+                      disabled={controlsDisabled}
+                      onChange={(event) => {
+                        const subcategoryValue = event.target.value;
+                        setSubcategoryId(subcategoryValue);
+                        setCategoryId(subcategoryValue || parentCategoryId);
+                      }}
+                    >
+                      <option value="">Ninguna / usar categoría principal</option>
+                      {subcategories.map((subcategory) => (
+                        <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+              )}
               <tr>
                 <td>Featured</td>
                 <td><input type="checkbox" checked={featured} disabled={controlsDisabled} onChange={(event) => setFeatured(event.target.checked)} /></td>

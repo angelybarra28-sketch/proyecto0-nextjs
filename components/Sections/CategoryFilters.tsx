@@ -23,7 +23,7 @@ type CategoryFiltersProps = {
   products: FlatProduct[];
 };
 
-const DEFAULT_SIZES = ['queen', 'king'];
+const DEFAULT_SIZES = ['queen', 'king', 'infantil'];
 
 function extractSizes(products: FlatProduct[], categoryTitle: string, categoryId: string): string[] {
   const sizeSet = new Set<string>();
@@ -57,7 +57,7 @@ function extractSizes(products: FlatProduct[], categoryTitle: string, categoryId
       sizeSet.add(normalizeSize(simple[1]));
       continue;
     }
-    const word = p.name.match(/(queen|king|twin|full|double|single)/i);
+    const word = p.name.match(/(queen|king|twin|full|double|single|infantil)/i);
     if (word) {
       sizeSet.add(normalizeSize(word[0]));
     }
@@ -71,7 +71,7 @@ function getProductNormalizedSize(product: FlatProduct): string | null {
   if (full) return normalizeSize(full[1]);
   const simple = product.name.match(/(\d+\/\d+)(?:\s*(?:plaza|plz|plazas))?/i);
   if (simple) return normalizeSize(simple[1]);
-  const word = product.name.match(/(queen|king|twin|full|double|single)/i);
+  const word = product.name.match(/(queen|king|twin|full|double|single|infantil)/i);
   if (word) return normalizeSize(word[0]);
   return null;
 }
@@ -96,7 +96,7 @@ function parseSizeTokens(value: string): string[] {
     });
   }
 
-  const words = rest.match(/(queen|king|twin|full|double|single)/gi);
+  const words = rest.match(/(queen|king|twin|full|double|single|infantil)/gi);
   if (words) {
     words.forEach(w => tokens.push(w.toLowerCase()));
   }
@@ -156,24 +156,30 @@ export default function CategoryFilters({ title, id, products }: CategoryFilters
       {sizes.length > 0 && (
         <div style={{
           display: 'flex',
-          gap: '0.5rem',
-          flexWrap: 'wrap',
-          padding: '0.75rem 20px',
+          gap: '0.2rem',
+          flexWrap: 'nowrap',
+          overflowX: 'auto',
+          padding: '0.35rem 8px',
           maxWidth: 1200,
           margin: '0 auto',
           marginBottom: '0.5rem',
+          whiteSpace: 'nowrap',
+          WebkitOverflowScrolling: 'touch',
         }}>
           <button
             onClick={() => setSelectedSize(null)}
             style={{
-              padding: '0.35rem 0.75rem',
-              borderRadius: 6,
+              padding: '0.22rem 0.45rem',
+              minWidth: 52,
+              borderRadius: 5,
               border: selectedSize === null ? '1px solid #c8a87c' : '1px solid #363330',
               background: selectedSize === null ? '#c8a87c' : '#2a2826',
               color: selectedSize === null ? '#1a1a1a' : '#b8a89c',
               cursor: 'pointer',
               fontWeight: selectedSize === null ? 700 : 400,
-              fontSize: '0.85rem',
+              fontSize: '0.75rem',
+              whiteSpace: 'nowrap',
+              flex: '0 0 auto',
             }}
           >
             Todos
@@ -183,15 +189,18 @@ export default function CategoryFilters({ title, id, products }: CategoryFilters
               key={size}
               onClick={() => setSelectedSize(size === selectedSize ? null : size)}
               style={{
-                padding: '0.35rem 0.75rem',
-                borderRadius: 6,
+                padding: '0.22rem 0.45rem',
+                minWidth: 52,
+                borderRadius: 5,
                 border: size === selectedSize ? '1px solid #c8a87c' : '1px solid #363330',
                 background: size === selectedSize ? '#c8a87c' : '#2a2826',
                 color: size === selectedSize ? '#1a1a1a' : '#b8a89c',
                 cursor: 'pointer',
                 fontWeight: size === selectedSize ? 700 : 400,
-                fontSize: '0.85rem',
+                fontSize: '0.75rem',
                 textTransform: 'capitalize',
+                whiteSpace: 'nowrap',
+                flex: '0 0 auto',
               }}
             >
               {size}

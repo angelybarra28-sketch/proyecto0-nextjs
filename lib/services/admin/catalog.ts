@@ -25,6 +25,7 @@ export type AdminCatalogCategory = {
   id: string;
   name: string;
   slug: string;
+  parentId: string | null;
 };
 
 export type AdminCatalogPayload = {
@@ -347,6 +348,7 @@ export async function getAdminCatalog(input: AdminProductListInput = {}): Promis
         id: category.id,
         name: category.name,
         slug: category.slug,
+        parentId: category.parent_id,
       })),
       source: 'supabase',
       pagination: createPagination(resolvedPage, limit, result.total),
@@ -354,7 +356,7 @@ export async function getAdminCatalog(input: AdminProductListInput = {}): Promis
       sorting,
       error: null,
     };
-  } catch (error) {
+  } catch {
     return buildLocalFallbackCatalog(page, limit, filters, sorting);
   }
 }
@@ -368,6 +370,7 @@ export async function createAdminProduct(payload: AdminProductPayload): Promise<
 
   const input = validateProductPayload(payload, true) as ProductCreateInput;
   await assertValidCategory(input.categoryId);
+  await assertUniqueSlug('', input.slug);
   const product = await createProduct(supabase, input);
 
   return adaptAdminCatalogProduct(product);

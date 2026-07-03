@@ -7,6 +7,17 @@ export const BLANQUERIA_CATEGORIES = [
   'Toallones',
   'Mantelería',
   'Cortinas',
+  'Alfombras',
+  'Batas',
+  'Verano',
+  'Invierno',
+  'Infantil',
+  'Cocina',
+  'Baño',
+  'Colchas',
+  'Otros',
+  'Mantas',
+  'Ganchos',
 ];
 
 export const HOGAR_CATEGORIES = [

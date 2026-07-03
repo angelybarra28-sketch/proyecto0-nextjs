@@ -24,8 +24,6 @@ interface ProductsSectionProps {
 export default function ProductsSection({ title, products, id }: ProductsSectionProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  if (products.length === 0) return null;
-
   const scrollCarousel = useCallback((direction: 'left' | 'right') => {
     if (!carouselRef.current) return;
     const card = carouselRef.current.querySelector('*');
@@ -60,6 +58,8 @@ export default function ProductsSection({ title, products, id }: ProductsSection
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [startAutoPlay]);
+
+  if (products.length === 0) return null;
 
   return (
     <section id={id} className={styles.productsSection}>
