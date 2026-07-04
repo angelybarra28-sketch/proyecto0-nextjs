@@ -87,6 +87,76 @@ export async function registerAdminSalePayment(
   return payload.payment;
 }
 
+export async function fetchAdminCategories(signal?: AbortSignal): Promise<import('@/lib/services/adminCategoryService').AdminCategoryPayload> {
+  const response = await fetch('/api/admin/categories', { signal });
+
+  if (!response.ok) {
+    throw new Error('No se pudieron cargar las categorías');
+  }
+
+  return await response.json() as import('@/lib/services/adminCategoryService').AdminCategoryPayload;
+}
+
+export async function createAdminCategory(input: {
+  name: string;
+  slug: string;
+  description?: string | null;
+  parentId?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+}): Promise<import('@/lib/services/adminCategoryService').AdminCategoryItem> {
+  const response = await fetch('/api/admin/categories', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { error?: { message?: string } };
+    throw new Error(payload?.error?.message || 'No se pudo crear la categoría');
+  }
+
+  const payload = await response.json() as { category: import('@/lib/services/adminCategoryService').AdminCategoryItem };
+  return payload.category;
+}
+
+export async function updateAdminCategory(
+  id: string,
+  input: {
+    name?: string;
+    slug?: string;
+    description?: string | null;
+    parentId?: string | null;
+    sortOrder?: number;
+    isActive?: boolean;
+  }
+): Promise<import('@/lib/services/adminCategoryService').AdminCategoryItem> {
+  const response = await fetch(`/api/admin/categories/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { error?: { message?: string } };
+    throw new Error(payload?.error?.message || 'No se pudo actualizar la categoría');
+  }
+
+  const payload = await response.json() as { category: import('@/lib/services/adminCategoryService').AdminCategoryItem };
+  return payload.category;
+}
+
+export async function deleteAdminCategory(id: string): Promise<void> {
+  const response = await fetch(`/api/admin/categories/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { error?: { message?: string } };
+    throw new Error(payload?.error?.message || 'No se pudo eliminar la categoría');
+  }
+}
+
 export async function fetchCollectionSummary(signal?: AbortSignal): Promise<CollectionSummary> {
   const response = await fetch('/api/admin/collections/summary', { signal });
 

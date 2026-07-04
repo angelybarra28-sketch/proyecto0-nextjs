@@ -107,6 +107,27 @@ function isExternalImageUrl(url: string): boolean {
 
 const DEFAULT_SIZES = ['queen', 'king', '1 1/2', '2 1/2'];
 
+function getCategoryPathLabel(catId: string | undefined, allCats: AdminCatalogCategory[]): string {
+  if (!catId) return '';
+  const cat = allCats.find(c => c.id === catId);
+  if (!cat) return '';
+  const parts: string[] = [cat.name];
+  let current = cat;
+  while (current.parentId) {
+    const parent = allCats.find(c => c.id === current.parentId);
+    if (!parent) break;
+    parts.unshift(parent.name);
+    current = parent;
+  }
+  return parts.join(' → ');
+}
+
+function getCategoryLabels(catIds: string[], allCats: AdminCatalogCategory[]): string[] {
+  return catIds
+    .map(id => getCategoryPathLabel(id, allCats))
+    .filter(Boolean);
+}
+
 function extractProductSizes(products: AdminCatalogProduct[]): string[] {
   const sizeSet = new Set<string>();
   DEFAULT_SIZES.forEach(s => sizeSet.add(s));
@@ -142,7 +163,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           Buscar
           <input
             type="search"
-            placeholder="Nombre, slug o categorÃ­a"
+            placeholder="Nombre, slug o categoría"
             value={table.search}
             onChange={(event) => table.setSearch(event.target.value)}
           />
@@ -161,16 +182,18 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           </select>
         </label>
         <label>
-          CategorÃ­a
+          Categoría
           <select value={table.categoryId} onChange={(event) => table.setCategoryId(event.target.value)}>
             <option value="">Todas</option>
             {categories.map((category) => (
-              <option key={category.id} value={category.id}>{category.name}</option>
+              <option key={category.id} value={category.id}>
+                {getCategoryPathLabel(category.id, categories)}
+              </option>
             ))}
           </select>
         </label>
         <label>
-          SubcategorÃ­a
+          Talle
           <select value={table.size} onChange={(event) => table.setSize(event.target.value as AdminProductSizeFilter)}>
             <option value="">Todas</option>
             {sizes.map((size) => (
@@ -186,7 +209,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           >
             <option value="createdAt">Creado</option>
             <option value="name">Nombre</option>
-            <option value="category">CategorÃ­a</option>
+            <option value="category">Categoría</option>
             <option value="price">Precio</option>
             <option value="stock">Stock</option>
             <option value="status">Status</option>
@@ -223,7 +246,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
               <thead>
                 <tr>
                   <th>Nombre</th>
-                  <th>CategorÃ­a</th>
+                  <th colSpan={2}>Categorías</th>
                   <th>Cant. Cuotas</th>
                   <th>Valor Cuota</th>
                   <th>Precio de venta</th>
@@ -240,8 +263,8 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                     <td>
                       <strong>{product.name}</strong>
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                    <td colSpan={2}>
+                      <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         {!isReadOnly && onUpdateCategory ? (
                           <>
                             <select
@@ -250,9 +273,11 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                               onChange={(e) => setPendingCategories(prev => ({ ...prev, [product.id]: e.target.value }))}
                               style={{ width: 'auto', minWidth: 80 }}
                             >
-                              <option value="">Sin categorÃ­a</option>
+                              <option value="">Sin categoría</option>
                               {categories.map((cat) => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                <option key={cat.id} value={cat.id}>
+                                  {getCategoryPathLabel(cat.id, categories)}
+                                </option>
                               ))}
                             </select>
                             <button
@@ -276,9 +301,23 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                             >
                               {savingCategory === product.id ? '...' : '✓'}
                             </button>
+                            {product.categoryNames && product.categoryNames.length > 1 && (
+                              <span style={{ fontSize: '0.75rem', color: '#888' }}>
+                                +{product.categoryNames.length - 1} más
+                              </span>
+                            )}
                           </>
                         ) : (
-                          <span>{product.categoryName}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                            {getCategoryLabels(product.categoryIds ?? [], categories).map((label, i) => (
+                              <span key={i} style={{ fontSize: i > 0 ? '0.8rem' : undefined, color: i > 0 ? '#b8a89c' : undefined }}>
+                                {label}
+                              </span>
+                            ))}
+                            {(!product.categoryIds || product.categoryIds.length === 0) && (
+                              <span>{product.categoryName}</span>
+                            )}
+                          </div>
                         )}
                       </div>
                     </td>

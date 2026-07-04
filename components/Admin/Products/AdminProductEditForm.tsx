@@ -34,6 +34,22 @@ function calculateValorCuota(precio: number, cuotas: number): string {
   return '';
 }
 
+const SEP = ' → ';
+
+function buildCategoryLabel(catId: string, allCats: AdminCatalogCategory[]): string {
+  const cat = allCats.find(c => c.id === catId);
+  if (!cat) return catId;
+  const parts: string[] = [cat.name];
+  let current = cat;
+  while (current.parentId) {
+    const parent = allCats.find(c => c.id === current.parentId);
+    if (!parent) break;
+    parts.unshift(parent.name);
+    current = parent;
+  }
+  return parts.join(SEP);
+}
+
 export function AdminProductEditForm({
   product,
   categories,
@@ -51,13 +67,7 @@ export function AdminProductEditForm({
   const [price, setPrice] = useState(product.price.toString());
   const [referencePrice, setReferencePrice] = useState(product.referencePrice?.toString() ?? '');
   const [stock, setStock] = useState(product.stock.toString());
-  const selectedProductCategory = categories.find((category) => category.id === product.categoryId);
-  const initialParentCategoryId = selectedProductCategory?.parentId ? selectedProductCategory.parentId : (product.categoryId ?? '');
-  const initialSubcategoryId = selectedProductCategory?.parentId ? (product.categoryId ?? '') : '';
-
-  const [parentCategoryId, setParentCategoryId] = useState(initialParentCategoryId);
-  const [subcategoryId, setSubcategoryId] = useState(initialSubcategoryId);
-  const [categoryId, setCategoryId] = useState(product.categoryId ?? '');
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(product.categoryIds ?? []);
   const [featured, setFeatured] = useState(product.featured);
   const [status, setStatus] = useState<AdminProductPayload['status']>(product.status);
   const [description, setDescription] = useState(product.description);
@@ -91,10 +101,15 @@ export function AdminProductEditForm({
     }
   };
 
-  const parentCategories = categories.filter((category) => !category.parentId);
-  const subcategories = parentCategoryId
-    ? categories.filter((category) => category.parentId === parentCategoryId)
-    : [];
+  const toggleCategory = (catId: string) => {
+    setSelectedCategoryIds(prev =>
+      prev.includes(catId)
+        ? prev.filter(id => id !== catId)
+        : [...prev, catId]
+    );
+  };
+
+  const madreCategories = categories.filter((category) => !category.parentId);
   const currentCarouselImages = fromImagesText(carouselImages);
   const controlsDisabled = isSaving || isUploading;
 
@@ -161,7 +176,8 @@ export function AdminProductEditForm({
         onSubmit={(event) => {
           event.preventDefault();
           void onSubmit(product.id, {
-            categoryId: categoryId || null,
+            categoryId: selectedCategoryIds[0] ?? null,
+            categoryIds: selectedCategoryIds,
             name,
             slug,
             description,
@@ -225,46 +241,61 @@ export function AdminProductEditForm({
                 <td><input type="number" min="0" step="1" value={stock} disabled={controlsDisabled} onChange={(event) => setStock(event.target.value)} required /></td>
               </tr>
               <tr>
-                <td>Categoría</td>
+                <td style={{ verticalAlign: 'top' }}>Categorías</td>
                 <td>
-                  <select
-                    value={parentCategoryId}
-                    disabled={controlsDisabled}
-                    onChange={(event) => {
-                      const parentId = event.target.value;
-                      setParentCategoryId(parentId);
-                      setSubcategoryId('');
-                      setCategoryId(parentId);
-                    }}
-                  >
-                    <option value="">Sin categoría</option>
-                    {parentCategories.map((category) => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </select>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: 300, overflowY: 'auto' }}>
+                    {madreCategories.map((madre) => {
+                      const childCats = categories.filter(c => c.parentId === madre.id);
+                      const grandchildCats = childCats.length > 0
+                        ? categories.filter(c => childCats.some(cc => cc.id === c.parentId))
+                        : [];
+                      return (
+                        <div key={madre.id} style={{ marginBottom: '0.5rem' }}>
+                          <label style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedCategoryIds.includes(madre.id)}
+                              disabled={controlsDisabled}
+                              onChange={() => toggleCategory(madre.id)}
+                            />
+                            {madre.name}
+                          </label>
+                          {childCats.length > 0 && (
+                            <div style={{ marginLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              {childCats.map((cat) => (
+                                <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedCategoryIds.includes(cat.id)}
+                                    disabled={controlsDisabled}
+                                    onChange={() => toggleCategory(cat.id)}
+                                  />
+                                  {cat.name}
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                          {grandchildCats.length > 0 && (
+                            <div style={{ marginLeft: '3rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              {grandchildCats.map((sub) => (
+                                <label key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedCategoryIds.includes(sub.id)}
+                                    disabled={controlsDisabled}
+                                    onChange={() => toggleCategory(sub.id)}
+                                  />
+                                  {buildCategoryLabel(sub.id, categories)}
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </td>
               </tr>
-              {subcategories.length > 0 && (
-                <tr>
-                  <td>Subcategoría</td>
-                  <td>
-                    <select
-                      value={subcategoryId}
-                      disabled={controlsDisabled}
-                      onChange={(event) => {
-                        const subcategoryValue = event.target.value;
-                        setSubcategoryId(subcategoryValue);
-                        setCategoryId(subcategoryValue || parentCategoryId);
-                      }}
-                    >
-                      <option value="">Ninguna / usar categoría principal</option>
-                      {subcategories.map((subcategory) => (
-                        <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              )}
               <tr>
                 <td>Featured</td>
                 <td><input type="checkbox" checked={featured} disabled={controlsDisabled} onChange={(event) => setFeatured(event.target.checked)} /></td>

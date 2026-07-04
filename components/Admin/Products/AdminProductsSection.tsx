@@ -88,7 +88,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
   };
 
   const handleUpdateCategory = async (productId: string, categoryId: string) => {
-    await updateAdminProduct(productId, { categoryId: categoryId || null });
+    await updateAdminProduct(productId, { categoryId: categoryId || null, categoryIds: categoryId ? [categoryId] : [] });
     await loadProducts();
   };
 
@@ -211,6 +211,8 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
           legacyProductId: null,
           categoryId: payload.categoryId,
           categoryName: categories.find(c => c.id === payload.categoryId)?.name || 'Sin categoría',
+          categoryIds: payload.categoryIds ?? [],
+          categoryNames: (payload.categoryIds ?? []).map(id => categories.find(c => c.id === id)?.name || '').filter(Boolean),
           name: payload.name,
           slug: payload.slug,
           description: payload.description,

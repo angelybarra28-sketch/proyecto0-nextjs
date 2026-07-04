@@ -3,6 +3,7 @@ console.log('SITE URL:', process.env.NEXT_PUBLIC_SITE_URL);
 
 import { Suspense } from 'react';
 import Header from '@/components/Layout/Header';
+import CategoryNavBar from '@/components/Layout/CategoryNavBar';
 import BannerCarousel from '@/components/Sections/BannerCarousel';
 import Hero from '@/components/Sections/Hero';
 import SearchBar from '@/components/SearchBar';
@@ -22,6 +23,7 @@ export default async function Home() {
   return (
     <>
       <Header />
+      <CategoryNavBar />
       <BannerCarousel />
       <Hero />
       <TabbedProductsSection products={products} id="productos-destacados" />

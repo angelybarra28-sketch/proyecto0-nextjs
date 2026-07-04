@@ -106,6 +106,13 @@ create table if not exists products (
   archived_at timestamptz
 );
 
+create table if not exists product_categories (
+  product_id uuid not null references products(id) on delete cascade,
+  category_id uuid not null references categories(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (product_id, category_id)
+);
+
 create table if not exists customers (
   id uuid primary key default gen_random_uuid(),
   full_name text not null,

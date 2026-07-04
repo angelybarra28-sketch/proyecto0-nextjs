@@ -31,6 +31,7 @@ export type CatalogProductRow = {
   features: unknown;
   created_at?: string;
   categories: Pick<CatalogCategoryRow, 'name' | 'slug'> | Array<Pick<CatalogCategoryRow, 'name' | 'slug'>> | null;
+  product_categories?: Array<{ category_id: string; category: Pick<CatalogCategoryRow, 'id' | 'name' | 'slug'> }>;
 };
 
 export type AdminCatalogProduct = {
@@ -38,6 +39,8 @@ export type AdminCatalogProduct = {
   legacyProductId: number | null;
   categoryId: string | null;
   categoryName: string;
+  categoryIds: string[];
+  categoryNames: string[];
   name: string;
   slug: string;
   description: string;
@@ -123,10 +126,41 @@ function extractInstallments(specs: unknown): { installmentCount?: number; insta
   };
 }
 
+function extractCategoryIds(row: CatalogProductRow): { categoryId: string | null; categoryName: string; categoryIds: string[]; categoryNames: string[] } {
+  const fromJoin = Array.isArray(row.categories) ? row.categories[0] : row.categories;
+  const fallbackName = fromJoin?.name ?? 'Sin categorÃ­a';
+
+  if (row.product_categories && row.product_categories.length > 0) {
+    const ids = row.product_categories.map(pc => pc.category_id);
+    const names = row.product_categories.map(pc => pc.category?.name ?? '').filter(Boolean);
+    return {
+      categoryId: ids[0] ?? row.category_id,
+      categoryName: names[0] ?? fallbackName,
+      categoryIds: ids,
+      categoryNames: names,
+    };
+  }
+
+  if (row.category_id) {
+    return {
+      categoryId: row.category_id,
+      categoryName: fallbackName,
+      categoryIds: [row.category_id],
+      categoryNames: [fallbackName],
+    };
+  }
+
+  return {
+    categoryId: null,
+    categoryName: fallbackName,
+    categoryIds: [],
+    categoryNames: [],
+  };
+}
+
 export function adaptCatalogProduct(row: CatalogProductRow): Product {
   const priceNumber = toNumber(row.price);
-  const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
-  const categoryName = category?.name ?? 'Sin categorÃ­a';
+  const { categoryName } = extractCategoryIds(row);
   const installments = extractInstallments(row.specifications);
   const installmentCount = installments.installmentCount ?? 8;
   const installmentAmount = installments.installmentAmount ?? Math.round(priceNumber / installmentCount);
@@ -154,14 +188,16 @@ export function adaptCatalogProduct(row: CatalogProductRow): Product {
 }
 
 export function adaptAdminCatalogProduct(row: CatalogProductRow): AdminCatalogProduct {
-  const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
   const installments = extractInstallments(row.specifications);
+  const catInfo = extractCategoryIds(row);
 
   return {
     id: row.id,
     legacyProductId: row.legacy_product_id,
-    categoryId: row.category_id,
-    categoryName: category?.name ?? 'Sin categorÃ­a',
+    categoryId: catInfo.categoryId,
+    categoryName: catInfo.categoryName,
+    categoryIds: catInfo.categoryIds,
+    categoryNames: catInfo.categoryNames,
     name: row.name,
     slug: row.slug,
     description: row.description ?? '',

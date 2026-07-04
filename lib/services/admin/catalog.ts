@@ -61,6 +61,7 @@ export type AdminProductListInput = {
 
 export type AdminProductPayload = {
   categoryId: string | null;
+  categoryIds: string[];
   name: string;
   slug: string;
   description: string;
@@ -158,8 +159,14 @@ function validateProductPayload(payload: Partial<AdminProductPayload>, requireBa
   if (!requireBaseFields && payload.name !== undefined && !name) throw new Error('El nombre es obligatorio');
   if (!requireBaseFields && payload.slug !== undefined && !slug) throw new Error('El slug es obligatorio');
 
+  const categoryIds = payload.categoryIds === undefined ? undefined : normalizeStringArray(payload.categoryIds);
+  const categoryId = categoryIds !== undefined
+    ? (categoryIds[0] ?? null)
+    : (payload.categoryId === undefined ? undefined : payload.categoryId);
+
   return {
-    categoryId: payload.categoryId === undefined ? undefined : payload.categoryId,
+    categoryId,
+    categoryIds: categoryIds ?? [],
     name,
     slug,
     description: payload.description === undefined ? undefined : normalizeNullableText(payload.description),
@@ -191,6 +198,8 @@ function getLocalFallbackProducts(): AdminCatalogProduct[] {
     legacyProductId: product.id,
     categoryId: null,
     categoryName: product.categoria,
+    categoryIds: [],
+    categoryNames: [],
     name: product.name,
     slug: product.slug,
     description: product.description ?? '',
@@ -245,18 +254,25 @@ function sortLocalProducts(products: AdminCatalogProduct[], sorting: AdminProduc
   });
 }
 
-async function assertValidCategory(categoryId: string | null | undefined): Promise<void> {
-  if (categoryId === undefined || categoryId === null) return;
+async function assertValidCategories(categoryIds: string[] | undefined): Promise<void> {
+  if (!categoryIds || categoryIds.length === 0) return;
 
   const supabase = getSupabaseAdminClient();
   if (!supabase) throw new Error('Supabase no está configurado');
 
   const categories = await listActiveCategories(supabase);
-  const exists = categories.some((category) => category.id === categoryId);
+  const validIds = new Set(categories.map(c => c.id));
 
-  if (!exists) {
-    throw new Error('Categoría inválida');
+  for (const id of categoryIds) {
+    if (!validIds.has(id)) {
+      throw new Error(`Categoría inválida: ${id}`);
+    }
   }
+}
+
+async function assertValidCategory(categoryId: string | null | undefined): Promise<void> {
+  if (categoryId === undefined || categoryId === null) return;
+  await assertValidCategories([categoryId]);
 }
 
 async function assertUniqueSlug(productId: string, slug: string | undefined): Promise<void> {
@@ -369,7 +385,10 @@ export async function createAdminProduct(payload: AdminProductPayload): Promise<
   }
 
   const input = validateProductPayload(payload, true) as ProductCreateInput;
-  await assertValidCategory(input.categoryId);
+  await assertValidCategories(input.categoryIds);
+  if (input.categoryId && !input.categoryIds.includes(input.categoryId)) {
+    input.categoryIds = [input.categoryId, ...input.categoryIds];
+  }
   await assertUniqueSlug('', input.slug);
   const product = await createProduct(supabase, input);
 
@@ -387,7 +406,10 @@ export async function updateAdminProduct(
   }
 
   const input = validateProductPayload(payload, false) as ProductUpdateInput;
-  await assertValidCategory(input.categoryId);
+  await assertValidCategories(input.categoryIds);
+  if (input.categoryId && input.categoryIds && !input.categoryIds.includes(input.categoryId)) {
+    input.categoryIds = [input.categoryId, ...input.categoryIds];
+  }
   await assertUniqueSlug(productId, input.slug);
   const product = await updateProduct(supabase, productId, input);
 

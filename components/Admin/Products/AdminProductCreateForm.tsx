@@ -45,13 +45,14 @@ export function AdminProductCreateForm({
   const [installmentAmount, setInstallmentAmount] = useState('');
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('0');
-  const [categoryId, setCategoryId] = useState('');
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [featured, setFeatured] = useState(false);
   const [status, setStatus] = useState<AdminProductPayload['status']>('ACTIVE');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [carouselImages, setCarouselImages] = useState('');
   const [referencePrice, setReferencePrice] = useState('');
+
   const recalculateValorCuota = (precio: string, cuotas: string) => {
     const p = parseFloat(precio);
     const c = parseInt(cuotas, 10);
@@ -87,12 +88,25 @@ export function AdminProductCreateForm({
     }
   };
 
+  const toggleCategory = (catId: string) => {
+    setSelectedCategoryIds(prev =>
+      prev.includes(catId)
+        ? prev.filter(id => id !== catId)
+        : [...prev, catId]
+    );
+  };
+
   function normalizeMatch(value: string): string {
     return value
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+  }
+
+  function findCategoryByName(name: string): AdminCatalogCategory | undefined {
+    const normalized = normalizeMatch(name);
+    return categories.find(c => normalizeMatch(c.name) === normalized);
   }
 
   const handleImport = (data: ImportedProductData) => {
@@ -116,10 +130,9 @@ export function AdminProductCreateForm({
       recalculateValorCuota(nuevoPrecio, installmentCount);
     }
     if (data.categoryName) {
-      const normalized = normalizeMatch(data.categoryName);
-      const match = categories.find(c => normalizeMatch(c.name) === normalized);
+      const match = findCategoryByName(data.categoryName);
       if (match) {
-        setCategoryId(match.id);
+        setSelectedCategoryIds([match.id]);
       }
     }
   };
@@ -127,7 +140,8 @@ export function AdminProductCreateForm({
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     void onSubmit({
-      categoryId: categoryId || null,
+      categoryId: selectedCategoryIds[0] ?? null,
+      categoryIds: selectedCategoryIds,
       name,
       slug,
       description,
@@ -144,6 +158,8 @@ export function AdminProductCreateForm({
       carouselImages: fromImagesText(carouselImages),
     });
   };
+
+  const madreCategories = categories.filter((category) => !category.parentId);
 
   return (
     <section className={styles.section}>
@@ -255,20 +271,63 @@ export function AdminProductCreateForm({
                 </td>
               </tr>
               <tr>
-                <td>Categoría</td>
+                <td style={{ verticalAlign: 'top' }}>Categorías</td>
                 <td>
-                  <select
-                    value={categoryId}
-                    disabled={isSaving}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                  >
-                    <option value="">Sin categoría</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: 300, overflowY: 'auto' }}>
+                    {madreCategories.map((madre) => {
+                      const childCats = categories.filter(c => c.parentId === madre.id);
+                      const grandchildCats = childCats.length > 0
+                        ? categories.filter(c => childCats.some(cc => cc.id === c.parentId))
+                        : [];
+                      return (
+                        <div key={madre.id} style={{ marginBottom: '0.5rem' }}>
+                          <label style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedCategoryIds.includes(madre.id)}
+                              disabled={isSaving}
+                              onChange={() => toggleCategory(madre.id)}
+                            />
+                            {madre.name}
+                          </label>
+                          {childCats.length > 0 && (
+                            <div style={{ marginLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              {childCats.map((cat) => (
+                                <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedCategoryIds.includes(cat.id)}
+                                    disabled={isSaving}
+                                    onChange={() => toggleCategory(cat.id)}
+                                  />
+                                  {cat.name}
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                          {grandchildCats.length > 0 && (
+                            <div style={{ marginLeft: '3rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              {grandchildCats.map((sub) => {
+                                const cat = categories.find(c => c.id === sub.parentId);
+                                const label = cat ? `${cat.name} → ${sub.name}` : sub.name;
+                                return (
+                                  <label key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedCategoryIds.includes(sub.id)}
+                                      disabled={isSaving}
+                                      onChange={() => toggleCategory(sub.id)}
+                                    />
+                                    {label}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </td>
               </tr>
               <tr>

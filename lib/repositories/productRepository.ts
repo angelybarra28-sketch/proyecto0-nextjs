@@ -8,6 +8,7 @@ export type ProductStatus = CatalogProductRow['status'];
 
 export type ProductCreateInput = {
   categoryId: string | null;
+  categoryIds: string[];
   name: string;
   slug: string;
   description: string | null;
@@ -71,7 +72,11 @@ const productColumns = `
   specifications,
   features,
   created_at,
-  categories:category_id (name, slug)
+  categories:category_id (name, slug),
+  product_categories!left (
+    category_id,
+    category:category_id (id, name, slug)
+  )
 `;
 
 function productsQuery(supabase: SupabaseClient) {
@@ -183,6 +188,32 @@ export async function listProductsPaginated(
   };
 }
 
+async function setProductCategories(
+  supabase: SupabaseClient,
+  productId: string,
+  categoryIds: string[]
+): Promise<void> {
+  const { error: deleteError } = await supabase
+    .from('product_categories')
+    .delete()
+    .eq('product_id', productId);
+
+  if (deleteError) throw deleteError;
+
+  if (categoryIds.length === 0) return;
+
+  const rows = categoryIds.map(categoryId => ({
+    product_id: productId,
+    category_id: categoryId,
+  }));
+
+  const { error: insertError } = await supabase
+    .from('product_categories')
+    .insert(rows);
+
+  if (insertError) throw insertError;
+}
+
 export async function createProduct(
   supabase: SupabaseClient,
   input: ProductCreateInput
@@ -194,7 +225,7 @@ export async function createProduct(
   const { data, error } = await supabase
     .from('products')
     .insert({
-      category_id: input.categoryId,
+      category_id: input.categoryId ?? input.categoryIds[0] ?? null,
       name: input.name,
       slug: input.slug,
       description: input.description,
@@ -217,7 +248,13 @@ export async function createProduct(
     throw error;
   }
 
-  return data as unknown as CatalogProductRow;
+  const product = data as unknown as CatalogProductRow;
+
+  if (input.categoryIds.length > 0) {
+    await setProductCategories(supabase, product.id, input.categoryIds);
+  }
+
+  return product;
 }
 
 export async function updateProduct(
@@ -238,6 +275,7 @@ export async function updateProduct(
   const payload: Record<string, unknown> = {};
 
   if (input.categoryId !== undefined) payload.category_id = input.categoryId;
+  if (input.categoryIds !== undefined) payload.category_id = input.categoryIds[0] ?? null;
   if (input.name !== undefined) payload.name = input.name;
   if (input.slug !== undefined) payload.slug = input.slug;
   if (input.description !== undefined) payload.description = input.description;
@@ -263,7 +301,13 @@ export async function updateProduct(
     throw error;
   }
 
-  return data as unknown as CatalogProductRow;
+  const product = data as unknown as CatalogProductRow;
+
+  if (input.categoryIds !== undefined) {
+    await setProductCategories(supabase, productId, input.categoryIds);
+  }
+
+  return product;
 }
 
 export async function getProductBySlug(
@@ -348,6 +392,13 @@ export async function deleteProduct(
   supabase: SupabaseClient,
   productId: string
 ): Promise<void> {
+  const { error: junctionError } = await supabase
+    .from('product_categories')
+    .delete()
+    .eq('product_id', productId);
+
+  if (junctionError) throw junctionError;
+
   const { error } = await supabase
     .from('products')
     .delete()
