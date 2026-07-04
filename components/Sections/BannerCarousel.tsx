@@ -5,6 +5,7 @@ import Image from 'next/image';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import styles from '@/styles/BannerCarousel.module.css';
+import CategoryNavBar from '@/components/Layout/CategoryNavBar';
 
 function scrollDown() {
   const target = document.getElementById('productos-destacados');
@@ -25,6 +26,9 @@ export default function BannerCarousel() {
   return (
     <section className={styles.bannerCarousel}>
       <div className={styles.carouselContainer}>
+        <div className={styles.categoryOverlay}>
+          <CategoryNavBar floating />
+        </div>
         <div className={styles.carouselImage}>
           <Image
             src="/assets/fondo-hero.webp"

@@ -32,11 +32,24 @@ type CategoryGroup = {
   }[];
 };
 
-const NAV_MADRE_SLUGS = ['blanqueria', 'electrodomesticos-y-articulos'];
+const NAV_MADRE_SLUGS = ['blanqueria', 'articulos-del-hogar'];
 
-export default function CategoryNavBar() {
+const FALLBACK_LEFT: CategoryGroup = {
+  id: 'fb-blanqueria',
+  name: 'Blanqueria',
+  slug: 'blanqueria',
+  categories: [],
+};
+
+const FALLBACK_RIGHT: CategoryGroup = {
+  id: 'fb-articulos',
+  name: 'Artículos del Hogar',
+  slug: 'articulos-del-hogar',
+  categories: [],
+};
+
+export default function CategoryNavBar({ floating }: { floating?: boolean }) {
   const [madreGroups, setMadreGroups] = useState<CategoryGroup[]>([]);
-  const [topOffset, setTopOffset] = useState(0);
 
   useEffect(() => {
     fetch('/api/categories')
@@ -49,36 +62,22 @@ export default function CategoryNavBar() {
       .catch((err) => console.error('Error loading category nav:', err));
   }, []);
 
-  useEffect(() => {
-    const el = document.querySelector('header');
-    if (!el) return;
-
-    const updateHeight = () => {
-      setTopOffset(el.getBoundingClientRect().height);
-    };
-
-    updateHeight();
-
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   function findMadre(slug: string): CategoryGroup | undefined {
     return madreGroups.find(
       (m) => (m.slug || slugifyCategory(m.name)) === slug
     );
   }
 
-  const leftGroup = findMadre(NAV_MADRE_SLUGS[0]);
-  const rightGroup = findMadre(NAV_MADRE_SLUGS[1]);
+  const leftGroup = findMadre(NAV_MADRE_SLUGS[0]) ?? FALLBACK_LEFT;
+  const rightGroup = findMadre(NAV_MADRE_SLUGS[1]) ?? FALLBACK_RIGHT;
 
   function renderMadreItem(group: CategoryGroup) {
+    const btnClass = floating ? styles.floatingButton : styles.uiverseButton;
     return (
       <li>
         <Link
           href={`/categoria/${encodeURIComponent(group.slug || slugifyCategory(group.name))}`}
-          className={styles.uiverseButton}
+          className={btnClass}
         >
           <span className={styles.buttonText}>{group.name}</span>
         </Link>
@@ -112,14 +111,20 @@ export default function CategoryNavBar() {
     );
   }
 
+  if (floating) {
+    return (
+      <ul className={styles.floatingNav}>
+        {renderMadreItem(leftGroup)}
+        {renderMadreItem(rightGroup)}
+      </ul>
+    );
+  }
+
   return (
-    <nav
-      className={styles.categoryNavBar}
-      style={{ top: topOffset }}
-    >
+    <nav className={styles.categoryNavBar}>
       <ul className={styles.mainNav}>
-        {leftGroup && renderMadreItem(leftGroup)}
-        {rightGroup && renderMadreItem(rightGroup)}
+        {renderMadreItem(leftGroup)}
+        {renderMadreItem(rightGroup)}
       </ul>
     </nav>
   );

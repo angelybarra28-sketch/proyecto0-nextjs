@@ -2,18 +2,15 @@
   position: sticky;
   top: 0;
   z-index: 999;
-  background-color: #4a433a;
-  border-bottom: 1px solid #363330;
-  padding: 6px 0;
+  padding: 8px 16px;
   transition: top 0.3s ease;
 }
 
 .mainNav {
   list-style: none;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 3rem;
   margin: 0;
   padding: 0;
   position: relative;
@@ -24,30 +21,24 @@
   text-align: center;
 }
 
-/* From Uiverse.io by MuhammadHasann (adapted, no leaf icons) */
 .uiverseButton {
-  position: relative;
-  padding: 7px 12px;
-  background: #4a433a;
-  font-size: 10px;
-  font-weight: 700;
-  color: #f5f2ec;
-  border: 1px solid #5a5248;
-  border-radius: 8px;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.3), inset 1px 1px 2px rgba(255,255,255,0.1);
-  transition: all .3s ease-in-out;
+  padding: 8px 20px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3a3a3a;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  transition: all .2s ease;
   cursor: pointer;
-  display: flex !important;
+  display: flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
   text-align: center;
-  white-space: normal;
-  line-height: 1.2;
-  z-index: 5;
-  transform-style: preserve-3d;
-  width: 105px;
-  min-height: 32px;
+  white-space: nowrap;
+  line-height: 1.4;
+  min-height: 36px;
 }
 
 .buttonText {
@@ -56,8 +47,49 @@
 }
 
 .uiverseButton:hover {
-  padding: 10px 20px;
-  border-radius: 8px 8px 24px 24px;
+  border-color: #a0a0a0;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.floatingNav {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0;
+}
+
+.floatingNav > li {
+  position: relative;
+}
+
+.floatingButton {
+  padding: 8px 20px;
+  background: #4a433a;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f5f2ec;
+  border: 1px solid #5a5248;
+  border-radius: 8px;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.3), inset 1px 1px 2px rgba(255,255,255,0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.4;
+  min-height: 36px;
+}
+
+.floatingButton:hover {
+  background: #5a5248;
+  border-color: #f5f2ec;
+  transform: translateY(-1px);
+  box-shadow: 2px 4px 10px rgba(0,0,0,0.4), inset 1px 1px 2px rgba(255,255,255,0.1);
 }
 
 .submenu {
@@ -68,7 +100,7 @@
   transform: translateX(-50%);
   background-color: #4a433a;
   border: 1px solid #5a5248;
-  border-radius: 4px;
+  border-radius: 8px;
   min-width: 150px;
   display: none;
   flex-direction: column;
@@ -76,9 +108,11 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
-.mainNav>li:hover .submenu {
+.mainNav>li:hover .submenu,
+.floatingNav>li:hover .submenu {
   display: flex;
 }
 
@@ -112,7 +146,7 @@
   left: 100%;
   background-color: #4a433a;
   border: 1px solid #5a5248;
-  border-radius: 4px;
+  border-radius: 8px;
   min-width: 150px;
   display: none;
   flex-direction: column;
@@ -120,6 +154,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 .nestedSubmenu li a {
@@ -139,27 +174,20 @@
 
 @media (max-width: 768px) {
   .categoryNavBar {
-    padding: 4px 0;
-  }
-
-  .mainNav {
-    gap: 1rem;
+    padding: 6px 12px;
   }
 
   .uiverseButton {
-    padding: 4px 5px;
-    font-size: 8px;
+    padding: 6px 12px;
+    font-size: 11px;
     border-radius: 4px;
-    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
     min-height: 30px;
-    width: 80px;
-    white-space: normal;
-    text-align: center;
+    white-space: nowrap;
   }
 
   .uiverseButton:hover {
-    padding: 6px 4px;
-    border-radius: 4px 4px 12px 12px;
+    background: rgba(0, 0, 0, 0.03);
+    border-color: #a0a0a0;
   }
 
   .submenu {
