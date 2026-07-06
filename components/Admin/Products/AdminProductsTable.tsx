@@ -88,7 +88,7 @@ function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalog
                 SÃ­, eliminar
               </button>
               <button
-                className={styles.adminActionButton}
+                className={styles.adminTableActionButton}
                 onClick={() => setShowConfirm(false)}
               >
                 No, cancelar
@@ -320,8 +320,6 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                   <th>Precio de venta</th>
                   <th>Stock</th>
                   <th>Status</th>
-                  <th>Slug</th>
-                  <th>Creado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -389,7 +387,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                                   </select>
                                 )}
                                 <button
-                                  className={styles.adminActionButton}
+                                  className={styles.adminTableActionButton}
                                   disabled={savingCategory === product.id || !hasChanged}
                                   onClick={async () => {
                                     if (!onUpdateCategory) return;
@@ -445,7 +443,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                             ))}
                           </select>
                           <button
-                            className={styles.adminActionButton}
+                            className={styles.adminTableActionButton}
                             disabled={savingInstallment === product.id}
                             onClick={async () => {
                               if (!onUpdateInstallmentCount) return;
@@ -482,7 +480,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                             style={{ width: 90 }}
                           />
                           <button
-                            className={styles.adminActionButton}
+                            className={styles.adminTableActionButton}
                             disabled={savingInstallment === product.id}
                             onClick={async () => {
                               if (!onUpdateInstallmentAmount) return;
@@ -520,7 +518,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                             style={{ width: 100 }}
                           />
                           <button
-                            className={styles.adminActionButton}
+                            className={styles.adminTableActionButton}
                             disabled={savingPrice === product.id}
                             onClick={async () => {
                               if (!onUpdatePrice) return;
@@ -557,13 +555,11 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                         {product.status}
                       </span>
                     </td>
-                    <td><code>{product.slug}</code></td>
-                    <td>{product.createdAt ? new Date(product.createdAt).toLocaleDateString('es-AR') : '-'}</td>
                     <td>
                       <div className={styles.adminRowActions}>
-                        <button className={styles.adminActionButton} disabled={isReadOnly} onClick={() => onEdit(product)}>Editar</button>
+                        <button className={styles.adminTableActionButton} disabled={isReadOnly} onClick={() => onEdit(product)}>Editar</button>
                         <button
-                          className={styles.adminActionButton}
+                          className={styles.adminTableActionButton}
                           disabled={isReadOnly}
                           onClick={() => void onToggleStatus(product)}
                         >
@@ -571,7 +567,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                         </button>
                         {onMigrateImages && (isExternalImageUrl(product.imageUrl) || product.carouselImages?.some(isExternalImageUrl)) && (
                           <button
-                            className={styles.adminActionButton}
+                            className={styles.adminTableActionButton}
                             onClick={() => void onMigrateImages(product.id)}
                             title="Descargar imÃ¡genes externas a almacenamiento local"
                           >
@@ -591,7 +587,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
             <span>Página {table.page} de {table.totalPages}</span>
             <div className={styles.adminPaginationPages}>
               <button
-                className={styles.adminActionButton}
+                className={styles.adminTableActionButton}
                 disabled={table.page === 1}
                 onClick={() => table.setPage(table.page - 1)}
               >
@@ -618,7 +614,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                   ) : (
                     <button
                       key={p}
-                      className={`${styles.adminActionButton} ${p === current ? styles.adminPaginationActive : ''}`}
+                      className={`${styles.adminTableActionButton} ${p === current ? styles.adminPaginationActive : ''}`}
                       onClick={() => table.setPage(p)}
                     >
                       {p}
@@ -627,7 +623,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                 );
               })()}
               <button
-                className={styles.adminActionButton}
+                className={styles.adminTableActionButton}
                 disabled={table.page === table.totalPages}
                 onClick={() => table.setPage(table.page + 1)}
               >

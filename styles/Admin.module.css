@@ -124,6 +124,14 @@
   color: #f5f2ec;
 }
 
+.table td input[type="checkbox"] {
+  width: auto;
+  height: 18px;
+  padding: 0;
+  accent-color: #f7c59f;
+  cursor: pointer;
+}
+
 .table td input:focus,
 .table td select:focus,
 .table td textarea:focus {
@@ -418,6 +426,31 @@
   background: rgba(255, 255, 255, 0.05);
   color: #f5f2ec;
   transform: translateY(-2px);
+}
+
+.adminTableActionButton {
+  text-align: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #5a5248;
+  border-radius: 6px;
+  background: #4a433a;
+  color: #f5f2ec;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3), inset 1px 1px 2px rgba(255, 255, 255, 0.05);
+}
+
+.adminTableActionButton:hover:not(:disabled) {
+  background: #5a5248;
+  color: #f5f2ec;
+  transform: translateY(-1px);
+}
+
+.adminTableActionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 @media (max-width: 1400px) {
