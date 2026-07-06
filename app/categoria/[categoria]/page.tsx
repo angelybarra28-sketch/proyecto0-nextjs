@@ -2,9 +2,12 @@ import Header from '@/components/Layout/Header';
 import CategoryFilters from '@/components/Sections/CategoryFilters';
 import Footer from '@/components/Layout/Footer';
 import { getCatalogCategories, getProductsByCategory } from '@/lib/services/catalogService';
-import { normalizeCategory, slugifyCategory } from '@/lib/categoryUtils';
+import { slugifyCategory, normalizeCategory } from '@/lib/categoryUtils';
+import { listActiveCategories } from '@/lib/repositories/categoryRepository';
+import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { PARENT_CATEGORIES } from '@/lib/categoryGroups';
 import ParentCategoryGrid from '@/components/CategoryGrid/ParentCategoryGrid';
+import type { CatalogCategoryRow } from '@/lib/adapters/catalogAdapter';
 import Link from 'next/link';
 
 interface Props {
@@ -65,6 +68,26 @@ export default async function CategoryPage({ params }: Props) {
 
   const products = await getProductsByCategory(categoryForQuery);
 
+  let subcategories: CatalogCategoryRow[] = [];
+  try {
+    const supabase = getSupabaseAdminClient();
+    if (supabase) {
+      const allCats = await listActiveCategories(supabase);
+      const normalizedInput = normalizeCategory(categoryForQuery);
+      const slugTarget = allCats.find(
+        c => normalizeCategory(c.slug ?? '') === normalizedInput
+      );
+      const target = slugTarget ?? allCats.find(
+        c => normalizeCategory(c.name) === normalizedInput
+      );
+      if (target) {
+        subcategories = allCats.filter(c => c.parent_id === target.id);
+      }
+    }
+  } catch {
+    // silencioso
+  }
+
   const adapted = products.map(p => ({
     id: p.id,
     name: p.name,
@@ -73,6 +96,7 @@ export default async function CategoryPage({ params }: Props) {
     imageUrl: p.imageUrl || undefined,
     slug: p.slug,
     size: p.specifications?.size,
+    categoryName: p.category,
     installmentCount: p.installmentCount,
     installmentAmount: p.installmentAmount,
   }));
@@ -101,6 +125,7 @@ export default async function CategoryPage({ params }: Props) {
           title={`Categoría: ${decodeURIComponent(categoria)}`}
           id={categoria}
           products={adapted}
+          subcategories={subcategories}
         />
       </main>
 

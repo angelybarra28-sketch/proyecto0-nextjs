@@ -128,6 +128,21 @@ function getCategoryLabels(catIds: string[], allCats: AdminCatalogCategory[]): s
     .filter(Boolean);
 }
 
+function categoryIdToCascade(
+  catId: string | null | undefined,
+  allCats: AdminCatalogCategory[]
+): { madre: string; child: string; grandchild: string } {
+  if (!catId) return { madre: '', child: '', grandchild: '' };
+  const cat = allCats.find(c => c.id === catId);
+  if (!cat) return { madre: '', child: '', grandchild: '' };
+  if (!cat.parentId) return { madre: cat.id, child: '', grandchild: '' };
+  const parent = allCats.find(c => c.id === cat.parentId);
+  if (!parent || !parent.parentId) {
+    return { madre: parent?.id ?? cat.parentId, child: cat.id, grandchild: '' };
+  }
+  return { madre: parent.parentId, child: parent.id, grandchild: cat.id };
+}
+
 function extractProductSizes(products: AdminCatalogProduct[]): string[] {
   const sizeSet = new Set<string>();
   DEFAULT_SIZES.forEach(s => sizeSet.add(s));
@@ -138,14 +153,18 @@ function extractProductSizes(products: AdminCatalogProduct[]): string[] {
 }
 
 export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onUpdateInstallmentCount, onUpdateInstallmentAmount, onUpdatePrice, onMigrateImages }: AdminProductsTableProps) {
-  const [pendingCategories, setPendingCategories] = useState<Record<string, string>>({});
+  const [pendingCascade, setPendingCascade] = useState<Record<string, { madre: string; child: string; grandchild: string }>>({});
   const [savingCategory, setSavingCategory] = useState<string | null>(null);
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
   const [pendingAmounts, setPendingAmounts] = useState<Record<string, number>>({});
   const [savingInstallment, setSavingInstallment] = useState<string | null>(null);
   const [pendingPrices, setPendingPrices] = useState<Record<string, number>>({});
   const [savingPrice, setSavingPrice] = useState<string | null>(null);
+  const [filterMadre, setFilterMadre] = useState('');
+  const [filterChild, setFilterChild] = useState('');
+  const [filterGrandchild, setFilterGrandchild] = useState('');
   const sizes = useMemo(() => extractProductSizes(products), [products]);
+  const madreCategories = useMemo(() => categories.filter(c => !c.parentId), [categories]);
   return (
     <section className={styles.section}>
       <div className={styles.adminTableHeader}>
@@ -181,16 +200,65 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
             <option value="ARCHIVED">ARCHIVED</option>
           </select>
         </label>
-        <label>
-          Categoría
-          <select value={table.categoryId} onChange={(event) => table.setCategoryId(event.target.value)}>
-            <option value="">Todas</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {getCategoryPathLabel(category.id, categories)}
-              </option>
-            ))}
-          </select>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <span style={{ fontSize: '0.8rem', color: '#b8a89c' }}>Categoría</span>
+          <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <select
+              value={filterMadre}
+              onChange={(e) => {
+                const v = e.target.value;
+                setFilterMadre(v);
+                setFilterChild('');
+                setFilterGrandchild('');
+                table.setCategoryId(v);
+              }}
+              style={{ minWidth: 100 }}
+            >
+              <option value="">Todas</option>
+              {madreCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+            {filterMadre && (() => {
+              const childCats = categories.filter(c => c.parentId === filterMadre);
+              return childCats.length > 0 ? (
+                <select
+                  value={filterChild}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFilterChild(v);
+                    setFilterGrandchild('');
+                    table.setCategoryId(v);
+                  }}
+                  style={{ minWidth: 100 }}
+                >
+                  <option value="">Todas</option>
+                  {childCats.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              ) : null;
+            })()}
+            {filterChild && (() => {
+              const grandchildCats = categories.filter(c => c.parentId === filterChild);
+              return grandchildCats.length > 0 ? (
+                <select
+                  value={filterGrandchild}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFilterGrandchild(v);
+                    table.setCategoryId(v);
+                  }}
+                  style={{ minWidth: 100 }}
+                >
+                  <option value="">Todas</option>
+                  {grandchildCats.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              ) : null;
+            })()}
+          </div>
         </label>
         <label>
           Talle
@@ -266,47 +334,89 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                     <td colSpan={2}>
                       <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         {!isReadOnly && onUpdateCategory ? (
-                          <>
-                            <select
-                              value={pendingCategories[product.id] ?? product.categoryId ?? ''}
-                              disabled={savingCategory === product.id}
-                              onChange={(e) => setPendingCategories(prev => ({ ...prev, [product.id]: e.target.value }))}
-                              style={{ width: 'auto', minWidth: 80 }}
-                            >
-                              <option value="">Sin categoría</option>
-                              {categories.map((cat) => (
-                                <option key={cat.id} value={cat.id}>
-                                  {getCategoryPathLabel(cat.id, categories)}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              className={styles.adminActionButton}
-                              disabled={savingCategory === product.id}
-                              onClick={async () => {
-                                if (!onUpdateCategory) return;
-                                setSavingCategory(product.id);
-                                try {
-                                  await onUpdateCategory(product.id, pendingCategories[product.id] ?? '');
-                                } finally {
-                                  setSavingCategory(null);
-                                  setPendingCategories(prev => {
-                                    const next = { ...prev };
-                                    delete next[product.id];
-                                    return next;
-                                  });
-                                }
-                              }}
-                              style={{ fontSize: '0.75rem', padding: '2px 6px', whiteSpace: 'nowrap' }}
-                            >
-                              {savingCategory === product.id ? '...' : '✓'}
-                            </button>
-                            {product.categoryNames && product.categoryNames.length > 1 && (
-                              <span style={{ fontSize: '0.75rem', color: '#888' }}>
-                                +{product.categoryNames.length - 1} más
-                              </span>
-                            )}
-                          </>
+                          (() => {
+                            const cascade = pendingCascade[product.id] ?? categoryIdToCascade(product.categoryId, categories);
+                            const rowChildCats = cascade.madre ? categories.filter(c => c.parentId === cascade.madre) : [];
+                            const rowGrandchildCats = cascade.child ? categories.filter(c => c.parentId === cascade.child) : [];
+                            const resolvedCatId = cascade.grandchild || cascade.child || cascade.madre || '';
+                            const hasChanged = resolvedCatId !== (product.categoryId ?? '');
+                            return (
+                              <>
+                                <select
+                                  value={cascade.madre}
+                                  disabled={savingCategory === product.id}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    setPendingCascade(prev => ({ ...prev, [product.id]: { madre: v, child: '', grandchild: '' } }));
+                                  }}
+                                  style={{ minWidth: 80 }}
+                                >
+                                  <option value="">Sin categoría</option>
+                                  {madreCategories.map((cat) => (
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                  ))}
+                                </select>
+                                {rowChildCats.length > 0 && (
+                                  <select
+                                    value={cascade.child}
+                                    disabled={savingCategory === product.id}
+                                    onChange={(e) => {
+                                      const v = e.target.value;
+                                      setPendingCascade(prev => ({ ...prev, [product.id]: { ...prev[product.id], child: v, grandchild: '' } }));
+                                    }}
+                                    style={{ minWidth: 80 }}
+                                  >
+                                    <option value="">—</option>
+                                    {rowChildCats.map((cat) => (
+                                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                  </select>
+                                )}
+                                {rowGrandchildCats.length > 0 && (
+                                  <select
+                                    value={cascade.grandchild}
+                                    disabled={savingCategory === product.id}
+                                    onChange={(e) => {
+                                      const v = e.target.value;
+                                      setPendingCascade(prev => ({ ...prev, [product.id]: { ...prev[product.id], grandchild: v } }));
+                                    }}
+                                    style={{ minWidth: 80 }}
+                                  >
+                                    <option value="">—</option>
+                                    {rowGrandchildCats.map((cat) => (
+                                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                  </select>
+                                )}
+                                <button
+                                  className={styles.adminActionButton}
+                                  disabled={savingCategory === product.id || !hasChanged}
+                                  onClick={async () => {
+                                    if (!onUpdateCategory) return;
+                                    setSavingCategory(product.id);
+                                    try {
+                                      await onUpdateCategory(product.id, resolvedCatId);
+                                    } finally {
+                                      setSavingCategory(null);
+                                      setPendingCascade(prev => {
+                                        const next = { ...prev };
+                                        delete next[product.id];
+                                        return next;
+                                      });
+                                    }
+                                  }}
+                                  style={{ fontSize: '0.75rem', padding: '2px 6px', whiteSpace: 'nowrap' }}
+                                >
+                                  {savingCategory === product.id ? '...' : '✓'}
+                                </button>
+                                {product.categoryNames && product.categoryNames.length > 1 && (
+                                  <span style={{ fontSize: '0.75rem', color: '#888' }}>
+                                    +{product.categoryNames.length - 1} más
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
                             {getCategoryLabels(product.categoryIds ?? [], categories).map((label, i) => (
@@ -478,8 +588,8 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           </div>
 
           <div className={styles.adminPagination}>
-            <span>PÃ¡gina {table.page} de {table.totalPages}</span>
-            <div className={styles.adminRowActions}>
+            <span>Página {table.page} de {table.totalPages}</span>
+            <div className={styles.adminPaginationPages}>
               <button
                 className={styles.adminActionButton}
                 disabled={table.page === 1}
@@ -487,6 +597,35 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
               >
                 Anterior
               </button>
+              {(() => {
+                const total = table.totalPages;
+                const current = table.page;
+                const pages: (number | 'dots')[] = [];
+                if (total <= 7) {
+                  for (let i = 1; i <= total; i++) pages.push(i);
+                } else {
+                  pages.push(1);
+                  if (current > 3) pages.push('dots');
+                  const start = Math.max(2, current - 1);
+                  const end = Math.min(total - 1, current + 1);
+                  for (let i = start; i <= end; i++) pages.push(i);
+                  if (current < total - 2) pages.push('dots');
+                  pages.push(total);
+                }
+                return pages.map((p, i) =>
+                  p === 'dots' ? (
+                    <span key={`dots-${i}`} className={styles.adminPaginationDots}>…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      className={`${styles.adminActionButton} ${p === current ? styles.adminPaginationActive : ''}`}
+                      onClick={() => table.setPage(p)}
+                    >
+                      {p}
+                    </button>
+                  )
+                );
+              })()}
               <button
                 className={styles.adminActionButton}
                 disabled={table.page === table.totalPages}

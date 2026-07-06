@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
 import type { AdminCatalogCategory, AdminProductPayload } from '@/lib/services/adminCatalogService';
 import { deleteAdminProductImage, uploadAdminProductImage } from '@/lib/services/admin/client';
@@ -34,20 +34,38 @@ function calculateValorCuota(precio: number, cuotas: number): string {
   return '';
 }
 
-const SEP = ' → ';
-
-function buildCategoryLabel(catId: string, allCats: AdminCatalogCategory[]): string {
-  const cat = allCats.find(c => c.id === catId);
-  if (!cat) return catId;
-  const parts: string[] = [cat.name];
-  let current = cat;
-  while (current.parentId) {
-    const parent = allCats.find(c => c.id === current.parentId);
-    if (!parent) break;
-    parts.unshift(parent.name);
-    current = parent;
+function resolveCascade(
+  categoryId: string | null | undefined,
+  categories: AdminCatalogCategory[]
+): { cascadeMadre: string; cascadeChild: string; cascadeGrandchild: string } {
+  if (!categoryId) return { cascadeMadre: '', cascadeChild: '', cascadeGrandchild: '' };
+  const cat = categories.find(c => c.id === categoryId);
+  if (!cat) return { cascadeMadre: '', cascadeChild: '', cascadeGrandchild: '' };
+  if (!cat.parentId) return { cascadeMadre: cat.id, cascadeChild: '', cascadeGrandchild: '' };
+  const parent = categories.find(c => c.id === cat.parentId);
+  if (!parent || !parent.parentId) {
+    return { cascadeMadre: parent?.id ?? cat.parentId, cascadeChild: cat.id, cascadeGrandchild: '' };
   }
-  return parts.join(SEP);
+  return { cascadeMadre: parent.parentId, cascadeChild: parent.id, cascadeGrandchild: cat.id };
+}
+
+function initCascadeFromProduct(
+  product: AdminCatalogProduct,
+  categories: AdminCatalogCategory[]
+): { cascadeMadre: string; cascadeChild: string; cascadeGrandchild: string; cascadeMadre2: string; cascadeChild2: string; cascadeGrandchild2: string; showSecondCascade: boolean } {
+  const firstCatId = product.categoryIds?.[0] ?? product.categoryId;
+  const first = resolveCascade(firstCatId, categories);
+  const secondCatId = product.categoryIds?.[1];
+  const second = resolveCascade(secondCatId, categories);
+  return {
+    cascadeMadre: first.cascadeMadre,
+    cascadeChild: first.cascadeChild,
+    cascadeGrandchild: first.cascadeGrandchild,
+    cascadeMadre2: second.cascadeMadre,
+    cascadeChild2: second.cascadeChild,
+    cascadeGrandchild2: second.cascadeGrandchild,
+    showSecondCascade: !!secondCatId,
+  };
 }
 
 export function AdminProductEditForm({
@@ -67,8 +85,16 @@ export function AdminProductEditForm({
   const [price, setPrice] = useState(product.price.toString());
   const [referencePrice, setReferencePrice] = useState(product.referencePrice?.toString() ?? '');
   const [stock, setStock] = useState(product.stock.toString());
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(product.categoryIds ?? []);
   const [featured, setFeatured] = useState(product.featured);
+
+  const initialCascade = useMemo(() => initCascadeFromProduct(product, categories), [product, categories]);
+  const [cascadeMadre, setCascadeMadre] = useState<string>(initialCascade.cascadeMadre);
+  const [cascadeChild, setCascadeChild] = useState<string>(initialCascade.cascadeChild);
+  const [cascadeGrandchild, setCascadeGrandchild] = useState<string>(initialCascade.cascadeGrandchild);
+  const [cascadeMadre2, setCascadeMadre2] = useState<string>(initialCascade.cascadeMadre2);
+  const [cascadeChild2, setCascadeChild2] = useState<string>(initialCascade.cascadeChild2);
+  const [cascadeGrandchild2, setCascadeGrandchild2] = useState<string>(initialCascade.cascadeGrandchild2);
+  const [showSecondCascade, setShowSecondCascade] = useState(initialCascade.showSecondCascade);
   const [status, setStatus] = useState<AdminProductPayload['status']>(product.status);
   const [description, setDescription] = useState(product.description);
   const [imageUrl, setImageUrl] = useState(product.imageUrl);
@@ -101,15 +127,63 @@ export function AdminProductEditForm({
     }
   };
 
-  const toggleCategory = (catId: string) => {
-    setSelectedCategoryIds(prev =>
-      prev.includes(catId)
-        ? prev.filter(id => id !== catId)
-        : [...prev, catId]
-    );
+  const madreCategories = categories.filter((category) => !category.parentId);
+
+  const childCategories = cascadeMadre
+    ? categories.filter(c => c.parentId === cascadeMadre)
+    : [];
+
+  const grandchildCategories = cascadeChild
+    ? categories.filter(c => c.parentId === cascadeChild)
+    : [];
+
+  const resolvedPrimary: string | null = (() => {
+    if (cascadeGrandchild) return cascadeGrandchild;
+    if (cascadeChild) return cascadeChild;
+    if (cascadeMadre) return cascadeMadre;
+    return null;
+  })();
+
+  const resolvedSecondary: string | null = (() => {
+    if (cascadeGrandchild2) return cascadeGrandchild2;
+    if (cascadeChild2) return cascadeChild2;
+    if (cascadeMadre2) return cascadeMadre2;
+    return null;
+  })();
+
+  const resolvedCategoryIds: string[] = [resolvedPrimary, resolvedSecondary].filter((id): id is string => id !== null);
+
+  const handleCascadeMadre = (value: string) => {
+    setCascadeMadre(value);
+    setCascadeChild('');
+    setCascadeGrandchild('');
   };
 
-  const madreCategories = categories.filter((category) => !category.parentId);
+  const handleCascadeChild = (value: string) => {
+    setCascadeChild(value);
+    setCascadeGrandchild('');
+  };
+
+  const handleCascadeMadre2 = (value: string) => {
+    setCascadeMadre2(value);
+    setCascadeChild2('');
+    setCascadeGrandchild2('');
+  };
+
+  const handleCascadeChild2 = (value: string) => {
+    setCascadeChild2(value);
+    setCascadeGrandchild2('');
+  };
+
+  const handleToggleSecondCascade = () => {
+    if (showSecondCascade) {
+      setCascadeMadre2('');
+      setCascadeChild2('');
+      setCascadeGrandchild2('');
+    }
+    setShowSecondCascade((prev) => !prev);
+  };
+
   const currentCarouselImages = fromImagesText(carouselImages);
   const controlsDisabled = isSaving || isUploading;
 
@@ -176,8 +250,8 @@ export function AdminProductEditForm({
         onSubmit={(event) => {
           event.preventDefault();
           void onSubmit(product.id, {
-            categoryId: selectedCategoryIds[0] ?? null,
-            categoryIds: selectedCategoryIds,
+            categoryId: resolvedCategoryIds[0] ?? null,
+            categoryIds: resolvedCategoryIds,
             name,
             slug,
             description,
@@ -243,56 +317,174 @@ export function AdminProductEditForm({
               <tr>
                 <td style={{ verticalAlign: 'top' }}>Categorías</td>
                 <td>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: 300, overflowY: 'auto' }}>
-                    {madreCategories.map((madre) => {
-                      const childCats = categories.filter(c => c.parentId === madre.id);
-                      const grandchildCats = childCats.length > 0
-                        ? categories.filter(c => childCats.some(cc => cc.id === c.parentId))
-                        : [];
-                      return (
-                        <div key={madre.id} style={{ marginBottom: '0.5rem' }}>
-                          <label style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                            <input
-                              type="checkbox"
-                              checked={selectedCategoryIds.includes(madre.id)}
-                              disabled={controlsDisabled}
-                              onChange={() => toggleCategory(madre.id)}
-                            />
-                            {madre.name}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                        Categoría principal
+                      </label>
+                      <select
+                        value={cascadeMadre}
+                        disabled={controlsDisabled}
+                        onChange={(e) => handleCascadeMadre(e.target.value)}
+                        style={{ width: '100%' }}
+                      >
+                        <option value="">— Seleccionar —</option>
+                        {madreCategories.map((madre) => (
+                          <option key={madre.id} value={madre.id}>{madre.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {childCategories.length > 0 && (
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                          Subcategoría
+                        </label>
+                        <select
+                          value={cascadeChild}
+                          disabled={controlsDisabled}
+                          onChange={(e) => handleCascadeChild(e.target.value)}
+                          style={{ width: '100%' }}
+                        >
+                          <option value="">— Ninguna (solo categoría principal) —</option>
+                          {childCategories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {grandchildCategories.length > 0 && (
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                          Subcategoría específica
+                        </label>
+                        <select
+                          value={cascadeGrandchild}
+                          disabled={controlsDisabled}
+                          onChange={(e) => setCascadeGrandchild(e.target.value)}
+                          style={{ width: '100%' }}
+                        >
+                          <option value="">— Ninguna —</option>
+                          {grandchildCategories.map((sub) => (
+                            <option key={sub.id} value={sub.id}>{sub.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {resolvedPrimary && (
+                      <div style={{ fontSize: '0.85rem', color: '#c8a87c', marginTop: '0.25rem' }}>
+                        ✓ Seleccionado: {categories.find(c => c.id === resolvedPrimary)?.name ?? resolvedPrimary}
+                      </div>
+                    )}
+
+                    {!showSecondCascade && (
+                      <button
+                        type="button"
+                        disabled={controlsDisabled}
+                        onClick={handleToggleSecondCascade}
+                        style={{
+                          background: 'none',
+                          border: '1px dashed #b8a89c',
+                          borderRadius: '4px',
+                          padding: '0.5rem',
+                          cursor: 'pointer',
+                          color: '#b8a89c',
+                          fontSize: '0.85rem',
+                          marginTop: '0.25rem',
+                        }}
+                      >
+                        + Agregar otra categoría
+                      </button>
+                    )}
+
+                    {showSecondCascade && (
+                      <>
+                        <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '0.25rem 0' }} />
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                            Categoría secundaria (opcional)
                           </label>
-                          {childCats.length > 0 && (
-                            <div style={{ marginLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                              {childCats.map((cat) => (
-                                <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedCategoryIds.includes(cat.id)}
-                                    disabled={controlsDisabled}
-                                    onChange={() => toggleCategory(cat.id)}
-                                  />
-                                  {cat.name}
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                          {grandchildCats.length > 0 && (
-                            <div style={{ marginLeft: '3rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                              {grandchildCats.map((sub) => (
-                                <label key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedCategoryIds.includes(sub.id)}
-                                    disabled={controlsDisabled}
-                                    onChange={() => toggleCategory(sub.id)}
-                                  />
-                                  {buildCategoryLabel(sub.id, categories)}
-                                </label>
-                              ))}
-                            </div>
-                          )}
+                          <select
+                            value={cascadeMadre2}
+                            disabled={controlsDisabled}
+                            onChange={(e) => handleCascadeMadre2(e.target.value)}
+                            style={{ width: '100%' }}
+                          >
+                            <option value="">— Seleccionar —</option>
+                            {madreCategories.map((madre) => (
+                              <option key={madre.id} value={madre.id}>{madre.name}</option>
+                            ))}
+                          </select>
                         </div>
-                      );
-                    })}
+                        {(() => {
+                          const childCats2 = cascadeMadre2
+                            ? categories.filter(c => c.parentId === cascadeMadre2)
+                            : [];
+                          return childCats2.length > 0 && (
+                            <div>
+                              <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                                Subcategoría
+                              </label>
+                              <select
+                                value={cascadeChild2}
+                                disabled={controlsDisabled}
+                                onChange={(e) => handleCascadeChild2(e.target.value)}
+                                style={{ width: '100%' }}
+                              >
+                                <option value="">— Ninguna (solo categoría principal) —</option>
+                                {childCats2.map((cat) => (
+                                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        })()}
+                        {(() => {
+                          const grandchildCats2 = cascadeChild2
+                            ? categories.filter(c => c.parentId === cascadeChild2)
+                            : [];
+                          return grandchildCats2.length > 0 && (
+                            <div>
+                              <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                                Subcategoría específica
+                              </label>
+                              <select
+                                value={cascadeGrandchild2}
+                                disabled={controlsDisabled}
+                                onChange={(e) => setCascadeGrandchild2(e.target.value)}
+                                style={{ width: '100%' }}
+                              >
+                                <option value="">— Ninguna —</option>
+                                {grandchildCats2.map((sub) => (
+                                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        })()}
+                        {resolvedSecondary && (
+                          <div style={{ fontSize: '0.85rem', color: '#c8a87c', marginTop: '0.25rem' }}>
+                            ✓ Seleccionado: {categories.find(c => c.id === resolvedSecondary)?.name ?? resolvedSecondary}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          disabled={controlsDisabled}
+                          onClick={handleToggleSecondCascade}
+                          style={{
+                            background: 'none',
+                            border: '1px solid #555',
+                            borderRadius: '4px',
+                            padding: '0.4rem',
+                            cursor: 'pointer',
+                            color: '#e07070',
+                            fontSize: '0.85rem',
+                            marginTop: '0.25rem',
+                          }}
+                        >
+                          − Quitar categoría secundaria
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>

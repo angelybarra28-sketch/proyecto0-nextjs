@@ -252,6 +252,29 @@
   font-size: 14px;
 }
 
+.adminPaginationPages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.adminPaginationPages button {
+  min-width: 36px;
+  text-align: center;
+}
+
+.adminPaginationActive {
+  background: #f7c59f !important;
+  color: #1e1d1b !important;
+  border-color: #f7c59f !important;
+  font-weight: 800;
+}
+
+.adminPaginationDots {
+  padding: 0 4px;
+  color: #8a7e72;
+}
+
 .deleteBtn {
   background: #d4543b;
   color: white;

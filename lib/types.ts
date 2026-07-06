@@ -9,6 +9,7 @@ export interface Product {
   description?: string;
   slug: string;
   categoria: string;
+  categoryId?: string;
   stock: number;
   destacado: boolean;
   category?: string;

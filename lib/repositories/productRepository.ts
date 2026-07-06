@@ -1,8 +1,10 @@
 ﻿import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CatalogProductRow } from '@/lib/adapters/catalogAdapter';
+import type { CatalogCategoryRow } from '@/lib/adapters/catalogAdapter';
 import type { AdminSortDirection } from '@/lib/services/admin/types';
 import { getSizeAliases } from '@/lib/sizeUtils';
 import { normalizeCategory } from '@/lib/categoryUtils';
+import { listActiveCategories } from '@/lib/repositories/categoryRepository';
 
 export type ProductStatus = CatalogProductRow['status'];
 
@@ -77,6 +79,28 @@ const productColumns = `
     category_id,
     category:category_id (id, name, slug)
   )
+`;
+
+const publicProductColumns = `
+  id,
+  legacy_product_id,
+  category_id,
+  name,
+  slug,
+  description,
+  price,
+  compare_at_price,
+  discount_label,
+  reference_price,
+  stock,
+  status,
+  featured,
+  image_url,
+  carousel_images,
+  specifications,
+  features,
+  created_at,
+  categories:category_id (name, slug)
 `;
 
 function productsQuery(supabase: SupabaseClient) {
@@ -355,27 +379,50 @@ export async function getProductByLegacyId(
   return data as unknown as CatalogProductRow | null;
 }
 
-function normalizeStr(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+function collectDescendantIds(
+  categories: CatalogCategoryRow[],
+  parentId: string
+): Set<string> {
+  const ids = new Set<string>([parentId]);
+  for (const cat of categories) {
+    if (cat.parent_id === parentId) {
+      const childIds = collectDescendantIds(categories, cat.id);
+      childIds.forEach(id => ids.add(id));
+    }
+  }
+  return ids;
 }
 
 export async function listProductsByCategory(
   supabase: SupabaseClient,
   categoryName: string
 ): Promise<CatalogProductRow[]> {
-  const products = await listProducts(supabase);
+  const allCategories = await listActiveCategories(supabase);
+
   const normalizedInput = normalizeCategory(categoryName);
 
-  return products.filter(
-    (product) => {
-      const category = Array.isArray(product.categories) ? product.categories[0] : product.categories;
-      const name = category?.name ?? '';
-      return normalizeCategory(name) === normalizedInput;
-    }
+  const slugTarget = allCategories.find(
+    c => normalizeCategory(c.slug ?? '') === normalizedInput
   );
+  const target = slugTarget ?? allCategories.find(
+    c => normalizeCategory(c.name) === normalizedInput
+  );
+
+  if (!target) return [];
+
+  const categoryIds = [...collectDescendantIds(allCategories, target.id)];
+
+  const { data, error } = await supabase
+    .from('products')
+    .select(publicProductColumns)
+    .eq('status', 'ACTIVE')
+    .in('category_id', categoryIds)
+    .order('featured', { ascending: false })
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []) as unknown as CatalogProductRow[];
 }
 
 export async function listFeaturedProducts(supabase: SupabaseClient): Promise<CatalogProductRow[]> {

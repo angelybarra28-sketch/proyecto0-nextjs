@@ -56,7 +56,6 @@ export default function BannerCarousel() {
               data-aos-delay="250"
             >
               <h3>Envío a domicilio o punto de encuentro</h3>
-              <p>Nos acercamos personalmente para que elijas el producto</p>
             </div>
           </div>
         </div>

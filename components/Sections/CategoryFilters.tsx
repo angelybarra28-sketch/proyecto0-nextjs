@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import ProductsSection from '@/components/Sections/ProductsSection';
 import { normalizeSize, getSizeAliases } from '@/lib/sizeUtils';
 import { normalizeCategory } from '@/lib/categoryUtils';
+import type { CatalogCategoryRow } from '@/lib/adapters/catalogAdapter';
 
 interface FlatProduct {
   id: number;
@@ -13,6 +14,7 @@ interface FlatProduct {
   imageUrl?: string;
   slug: string;
   size?: string;
+  categoryName?: string;
   installmentCount?: number;
   installmentAmount?: number;
 }
@@ -21,6 +23,7 @@ type CategoryFiltersProps = {
   title: string;
   id: string;
   products: FlatProduct[];
+  subcategories?: CatalogCategoryRow[];
 };
 
 const DEFAULT_SIZES = ['queen', 'king', 'infantil'];
@@ -139,21 +142,37 @@ function matchesSize(product: FlatProduct, size: string, isWinterCategory: boole
   return aliases.some(a => normalizeSize(a) === productSize);
 }
 
-export default function CategoryFilters({ title, id, products }: CategoryFiltersProps) {
+export default function CategoryFilters({ title, id, products, subcategories }: CategoryFiltersProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
-  const sizes = useMemo(() => extractSizes(products, title, id), [products, title, id]);
+  const useSubcategoryChips = subcategories && subcategories.length > 0;
+
+  const sizes = useMemo(() => {
+    if (useSubcategoryChips) return [];
+    return extractSizes(products, title, id);
+  }, [products, title, id, useSubcategoryChips]);
 
   const isWinter = useMemo(() => normalizeCategory(id) === 'invierno/abrigo', [id]);
 
   const filtered = useMemo(() => {
     if (!selectedSize) return products;
+    if (useSubcategoryChips) {
+      const selectedNormalized = normalizeCategory(selectedSize);
+      return products.filter(p => {
+        if (!p.categoryName) return false;
+        return normalizeCategory(p.categoryName) === selectedNormalized;
+      });
+    }
     return products.filter(p => matchesSize(p, selectedSize, isWinter));
-  }, [products, selectedSize, isWinter]);
+  }, [products, selectedSize, isWinter, useSubcategoryChips]);
+
+  const chips = useSubcategoryChips
+    ? subcategories.map(c => c.name)
+    : sizes;
 
   return (
     <div>
-      {sizes.length > 0 && (
+      {chips.length > 0 && (
         <div style={{
           display: 'flex',
           gap: '0.2rem',
@@ -184,26 +203,26 @@ export default function CategoryFilters({ title, id, products }: CategoryFilters
           >
             Todos
           </button>
-          {sizes.map(size => (
+          {chips.map(chip => (
             <button
-              key={size}
-              onClick={() => setSelectedSize(size === selectedSize ? null : size)}
+              key={chip}
+              onClick={() => setSelectedSize(chip === selectedSize ? null : chip)}
               style={{
                 padding: '0.22rem 0.45rem',
                 minWidth: 52,
                 borderRadius: 5,
-                border: size === selectedSize ? '1px solid #c8a87c' : '1px solid #363330',
-                background: size === selectedSize ? '#c8a87c' : '#2a2826',
-                color: size === selectedSize ? '#1a1a1a' : '#b8a89c',
+                border: chip === selectedSize ? '1px solid #c8a87c' : '1px solid #363330',
+                background: chip === selectedSize ? '#c8a87c' : '#2a2826',
+                color: chip === selectedSize ? '#1a1a1a' : '#b8a89c',
                 cursor: 'pointer',
-                fontWeight: size === selectedSize ? 700 : 400,
+                fontWeight: chip === selectedSize ? 700 : 400,
                 fontSize: '0.75rem',
                 textTransform: 'capitalize',
                 whiteSpace: 'nowrap',
                 flex: '0 0 auto',
               }}
             >
-              {size}
+              {chip}
             </button>
           ))}
         </div>

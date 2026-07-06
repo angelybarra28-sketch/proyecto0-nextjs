@@ -11,34 +11,18 @@ type CatNode = {
   slug: string;
 };
 
+type CatWithDescIds = {
+  name: string;
+  slug: string;
+  descendantIds: Set<string>;
+};
+
 type MadreGroup = {
   id: string;
   name: string;
   slug: string;
   categories: (CatNode & { subcategories: CatNode[] })[];
 };
-
-const FALLBACK_CATEGORIES: CatNode[] = [
-  { id: 'fb-1', name: 'Sábanas', slug: 'sabanas' },
-  { id: 'fb-2', name: 'Acolchados', slug: 'acolchados' },
-  { id: 'fb-3', name: 'Frazadas', slug: 'frazadas' },
-  { id: 'fb-4', name: 'Almohadas', slug: 'almohadas' },
-  { id: 'fb-5', name: 'Cubrecamas', slug: 'cubrecamas' },
-  { id: 'fb-6', name: 'Toallones', slug: 'toallones' },
-  { id: 'fb-7', name: 'Mantelería', slug: 'manteleria' },
-  { id: 'fb-8', name: 'Cortinas', slug: 'cortinas' },
-  { id: 'fb-9', name: 'Alfombras', slug: 'alfombras' },
-  { id: 'fb-10', name: 'Batas', slug: 'batas' },
-  { id: 'fb-11', name: 'Verano', slug: 'verano' },
-  { id: 'fb-12', name: 'Invierno', slug: 'invierno' },
-  { id: 'fb-13', name: 'Infantil', slug: 'infantil' },
-  { id: 'fb-14', name: 'Cocina', slug: 'cocina' },
-  { id: 'fb-15', name: 'Baño', slug: 'bano' },
-  { id: 'fb-16', name: 'Colchas', slug: 'colchas' },
-  { id: 'fb-17', name: 'Mantas', slug: 'mantas' },
-  { id: 'fb-18', name: 'Ganchos', slug: 'ganchos' },
-  { id: 'fb-19', name: 'Otros', slug: 'otros' },
-];
 
 interface CategoryAccordionProps {
   products: Product[];
@@ -58,12 +42,19 @@ export default function CategoryAccordion({ products }: CategoryAccordionProps) 
       .catch((err) => console.error('Error loading categories for accordion:', err));
   }, []);
 
-  const categories = useMemo(() => {
+  const categories = useMemo<CatWithDescIds[]>(() => {
     const blanqueria = madreGroups.find((m) => m.slug === 'blanqueria');
     if (blanqueria && blanqueria.categories.length > 0) {
-      return blanqueria.categories.map((c) => ({ name: c.name, slug: c.slug }));
+      return blanqueria.categories.map((c) => ({
+        name: c.name,
+        slug: c.slug,
+        descendantIds: new Set([
+          c.id,
+          ...c.subcategories.map((s) => s.id),
+        ]),
+      }));
     }
-    return FALLBACK_CATEGORIES;
+    return [];
   }, [madreGroups]);
 
   if (categories.length === 0) return null;
@@ -73,7 +64,7 @@ export default function CategoryAccordion({ products }: CategoryAccordionProps) 
       <div className={styles.card}>
         <h2 className={styles.title}>Categorías</h2>
         {categories.map((cat) => {
-          const product = products.find((p) => p.categoria === cat.name && p.imageUrl);
+          const product = products.find((p) => p.imageUrl && p.categoryId && cat.descendantIds.has(p.categoryId));
           const imageUrl = product?.imageUrl;
           return (
             <Link
