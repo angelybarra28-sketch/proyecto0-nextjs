@@ -1,5 +1,4 @@
 import { adaptAdminCatalogProduct, type AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
-import { allProducts } from '@/lib/products';
 import { listActiveCategories } from '@/lib/repositories/categoryRepository';
 import {
   createProduct,
@@ -31,7 +30,6 @@ export type AdminCatalogCategory = {
 export type AdminCatalogPayload = {
   products: AdminCatalogProduct[];
   categories: AdminCatalogCategory[];
-  source: 'supabase' | 'local-fallback';
 } & AdminListResponse<AdminCatalogProduct, AdminProductFilters, AdminProductSorting>;
 
 export type AdminProductFilters = {
@@ -192,67 +190,7 @@ function validateProductPayload(payload: Partial<AdminProductPayload>, requireBa
   };
 }
 
-function getLocalFallbackProducts(): AdminCatalogProduct[] {
-  return allProducts.map((product) => ({
-    id: `local-${product.id}`,
-    legacyProductId: product.id,
-    categoryId: null,
-    categoryName: product.categoria,
-    categoryIds: [],
-    categoryNames: [],
-    name: product.name,
-    slug: product.slug,
-    description: product.description ?? '',
-    price: product.priceNumber,
-    compareAtPrice: null,
-    discountLabel: product.discount ?? '',
-    referencePrice: (product as { referencePrice?: number }).referencePrice ?? null,
-    installmentCount: null,
-    installmentAmount: null,
-    size: product.specifications?.size ?? null,
-    stock: product.stock,
-    status: 'ACTIVE',
-    featured: product.destacado,
-    imageUrl: product.imageUrl ?? '',
-    carouselImages: product.carouselImages ?? [],
-    createdAt: null,
-  }));
-}
 
-function filterLocalProducts(products: AdminCatalogProduct[], filters: AdminProductFilters): AdminCatalogProduct[] {
-  const search = filters.search.toLowerCase();
-
-  return products
-    .filter((product) => !search || [product.name, product.slug, product.categoryName].some((value) => value.toLowerCase().includes(search)))
-    .filter((product) => filters.status === 'all' || product.status === filters.status)
-    .filter((product) => !filters.size || (product.size && product.size.toLowerCase() === filters.size.toLowerCase()) || product.name.toLowerCase().includes(filters.size.toLowerCase()))
-    .filter((product) => {
-      if (filters.featured === 'featured') return product.featured;
-      if (filters.featured === 'not-featured') return !product.featured;
-      return true;
-    });
-}
-
-function sortLocalProducts(products: AdminCatalogProduct[], sorting: AdminProductSorting): AdminCatalogProduct[] {
-  return [...products].sort((firstProduct, secondProduct) => {
-    const firstValue = sorting.sortKey === 'price' ? firstProduct.price
-      : sorting.sortKey === 'stock' ? firstProduct.stock
-        : sorting.sortKey === 'status' ? firstProduct.status
-          : sorting.sortKey === 'createdAt' ? firstProduct.createdAt ?? ''
-            : sorting.sortKey === 'category' ? firstProduct.categoryName
-              : firstProduct.name;
-    const secondValue = sorting.sortKey === 'price' ? secondProduct.price
-      : sorting.sortKey === 'stock' ? secondProduct.stock
-        : sorting.sortKey === 'status' ? secondProduct.status
-          : sorting.sortKey === 'createdAt' ? secondProduct.createdAt ?? ''
-            : sorting.sortKey === 'category' ? secondProduct.categoryName
-              : secondProduct.name;
-
-    if (firstValue < secondValue) return sorting.direction === 'asc' ? -1 : 1;
-    if (firstValue > secondValue) return sorting.direction === 'asc' ? 1 : -1;
-    return firstProduct.name.localeCompare(secondProduct.name, 'es-AR');
-  });
-}
 
 async function assertValidCategories(categoryIds: string[] | undefined): Promise<void> {
   if (!categoryIds || categoryIds.length === 0) return;
@@ -289,50 +227,39 @@ async function assertUniqueSlug(productId: string, slug: string | undefined): Pr
   }
 }
 
-function buildLocalFallbackCatalog(
-  page: number,
-  limit: number,
-  filters: AdminProductFilters,
-  sorting: AdminProductSorting
-): AdminCatalogPayload {
-  const filteredProducts = sortLocalProducts(filterLocalProducts(getLocalFallbackProducts(), filters), sorting);
-  const pagination = createPagination(page, limit, filteredProducts.length);
-  const products = filteredProducts.slice((page - 1) * limit, page * limit);
-
-  return {
-    success: true,
-    data: products,
-    products,
-    categories: [],
-    source: 'local-fallback',
-    pagination,
-    filters,
-    sorting,
-    error: null,
-  };
-}
-
 export async function getAdminCatalog(input: AdminProductListInput = {}): Promise<AdminCatalogPayload> {
   const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    throw new Error('Supabase no está configurado');
+  }
+
   const page = normalizePage(input.page);
   const limit = normalizeLimit(input.limit);
   const filters = normalizeProductFilters(input);
   const sorting = normalizeProductSorting(input);
 
-  if (!supabase) {
-    return buildLocalFallbackCatalog(page, limit, filters, sorting);
-  }
+  const categories = await listActiveCategories(supabase);
+  const search = filters.search.toLowerCase();
+  const searchCategoryIds = search
+    ? categories
+      .filter((category) => category.name.toLowerCase().includes(search) || category.slug.toLowerCase().includes(search))
+      .map((category) => category.id)
+    : [];
+  let result = await listProductsPaginated(supabase, {
+    page,
+    limit,
+    filters: {
+      ...filters,
+      searchCategoryIds,
+    },
+    sorting,
+  });
+  const totalPages = Math.max(1, Math.ceil(result.total / limit));
+  const resolvedPage = Math.min(page, totalPages);
 
-  try {
-    const categories = await listActiveCategories(supabase);
-    const search = filters.search.toLowerCase();
-    const searchCategoryIds = search
-      ? categories
-        .filter((category) => category.name.toLowerCase().includes(search) || category.slug.toLowerCase().includes(search))
-        .map((category) => category.id)
-      : [];
-    let result = await listProductsPaginated(supabase, {
-      page,
+  if (resolvedPage !== page) {
+    result = await listProductsPaginated(supabase, {
+      page: resolvedPage,
       limit,
       filters: {
         ...filters,
@@ -340,41 +267,24 @@ export async function getAdminCatalog(input: AdminProductListInput = {}): Promis
       },
       sorting,
     });
-    const totalPages = Math.max(1, Math.ceil(result.total / limit));
-    const resolvedPage = Math.min(page, totalPages);
-
-    if (resolvedPage !== page) {
-      result = await listProductsPaginated(supabase, {
-        page: resolvedPage,
-        limit,
-        filters: {
-          ...filters,
-          searchCategoryIds,
-        },
-        sorting,
-      });
-    }
-    const products = result.products.map(adaptAdminCatalogProduct);
-
-    return {
-      success: true,
-      data: products,
-      products,
-      categories: categories.map((category) => ({
-        id: category.id,
-        name: category.name,
-        slug: category.slug,
-        parentId: category.parent_id,
-      })),
-      source: 'supabase',
-      pagination: createPagination(resolvedPage, limit, result.total),
-      filters,
-      sorting,
-      error: null,
-    };
-  } catch {
-    return buildLocalFallbackCatalog(page, limit, filters, sorting);
   }
+  const products = result.products.map(adaptAdminCatalogProduct);
+
+  return {
+    success: true,
+    data: products,
+    products,
+    categories: categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      parentId: category.parent_id,
+    })),
+    pagination: createPagination(resolvedPage, limit, result.total),
+    filters,
+    sorting,
+    error: null,
+  };
 }
 
 export async function createAdminProduct(payload: AdminProductPayload): Promise<AdminCatalogProduct> {

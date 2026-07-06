@@ -100,7 +100,11 @@ const publicProductColumns = `
   specifications,
   features,
   created_at,
-  categories:category_id (name, slug)
+  categories:category_id (name, slug),
+  product_categories!left (
+    category_id,
+    category:category_id (id, name, slug)
+  )
 `;
 
 function productsQuery(supabase: SupabaseClient) {
@@ -412,7 +416,7 @@ export async function listProductsByCategory(
 
   const categoryIds = [...collectDescendantIds(allCategories, target.id)];
 
-  const { data, error } = await supabase
+  const { data: primaryData, error: primaryError } = await supabase
     .from('products')
     .select(publicProductColumns)
     .eq('status', 'ACTIVE')
@@ -420,9 +424,40 @@ export async function listProductsByCategory(
     .order('featured', { ascending: false })
     .order('name', { ascending: true });
 
-  if (error) throw error;
+  if (primaryError) throw primaryError;
+  const primary = (primaryData ?? []) as unknown as CatalogProductRow[];
 
-  return (data ?? []) as unknown as CatalogProductRow[];
+  const { data: secondaryLinks } = await supabase
+    .from('product_categories')
+    .select('product_id')
+    .in('category_id', categoryIds);
+
+  const secondaryProductIds = [...new Set((secondaryLinks ?? []).map(j => j.product_id))];
+
+  let secondary: CatalogProductRow[] = [];
+  if (secondaryProductIds.length > 0) {
+    const { data: secondaryData, error: secondaryError } = await supabase
+      .from('products')
+      .select(publicProductColumns)
+      .eq('status', 'ACTIVE')
+      .in('id', secondaryProductIds)
+      .order('featured', { ascending: false })
+      .order('name', { ascending: true });
+
+    if (secondaryError) throw secondaryError;
+    secondary = (secondaryData ?? []) as unknown as CatalogProductRow[];
+  }
+
+  const seen = new Set<string>();
+  const merged: CatalogProductRow[] = [];
+  for (const row of [...primary, ...secondary]) {
+    if (!seen.has(row.id)) {
+      seen.add(row.id);
+      merged.push(row);
+    }
+  }
+
+  return merged;
 }
 
 export async function listFeaturedProducts(supabase: SupabaseClient): Promise<CatalogProductRow[]> {

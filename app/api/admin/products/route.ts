@@ -10,11 +10,7 @@ export async function GET(request: Request) {
 
   try {
     const authorizationError = await requireAdminUser();
-    if (authorizationError) {
-      const catalog = await getAdminCatalog({});
-      if (catalog.source === 'local-fallback') return NextResponse.json(catalog);
-      return authorizationError;
-    }
+    if (authorizationError) return authorizationError;
 
     const searchParams = new URL(request.url).searchParams;
     const catalog = await measureAsync('admin.products', 'list', () => getAdminCatalog({

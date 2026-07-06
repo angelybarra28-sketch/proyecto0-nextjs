@@ -63,6 +63,44 @@ export function AdminOverviewPage() {
       <h1 className={styles.title}>Panel de Administración</h1>
       <p className={styles.subtitle}>Bienvenido, {user?.nombreApellido}</p>
 
+      <div className={styles.actionButtonsRow}>
+        <Link href="/admin/cuenta-corriente">
+          <button className={styles.adminActionButton}>
+            Cuenta Corriente
+          </button>
+        </Link>
+
+        <Link href="/admin/importacion-cartera">
+          <button className={styles.adminActionButton}>
+            Importar Cartera Excel
+          </button>
+        </Link>
+
+        <Link href="/admin/productos">
+          <button className={styles.adminActionButton}>
+            Productos
+          </button>
+        </Link>
+
+        <Link href="/admin/categorias">
+          <button className={styles.adminActionButton}>
+            Categorías
+          </button>
+        </Link>
+
+        <Link href="/admin/ventas/nueva">
+          <button className={styles.adminPrimaryButton}>
+            <span className={styles.desktopOnly}>+ CARGAR </span>VENTA MANUAL
+          </button>
+        </Link>
+
+        <Link href="/">
+          <button className={styles.adminSecondaryButton}>
+            Volver al inicio
+          </button>
+        </Link>
+      </div>
+
       <div className={styles.sections}>
         <FinancialDashboardSection
           dashboard={dashboard}
@@ -120,43 +158,6 @@ export function AdminOverviewPage() {
         </section>
       </div>
 
-      <div className={styles.actionButtonsRow}>
-        <Link href="/admin/cuenta-corriente">
-          <button className={styles.adminActionButton}>
-            Cuenta Corriente
-          </button>
-        </Link>
-
-        <Link href="/admin/importacion-cartera">
-          <button className={styles.adminActionButton}>
-            Importar Cartera Excel
-          </button>
-        </Link>
-
-        <Link href="/admin/productos">
-          <button className={styles.adminActionButton}>
-            Productos
-          </button>
-        </Link>
-
-        <Link href="/admin/categorias">
-          <button className={styles.adminActionButton}>
-            Categorías
-          </button>
-        </Link>
-
-        <Link href="/admin/ventas/nueva">
-          <button className="rounded-lg border border-emerald-700 px-2.5 py-2 bg-emerald-600 text-white cursor-pointer text-[13px] font-semibold transition-all duration-200 ease-out shadow-md hover:bg-emerald-700 hover:-translate-y-0.5">
-            + CARGAR VENTA MANUAL
-          </button>
-        </Link>
-
-        <Link href="/">
-          <button className={styles.adminActionButton}>
-            Volver al inicio
-          </button>
-        </Link>
-      </div>
     </div>
   );
 }

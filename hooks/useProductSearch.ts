@@ -2,10 +2,9 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { searchProducts, normalizeSearch } from '@/lib/product-utils';
-import { allProducts } from '@/lib/products';
 import type { Product } from '@/lib/types';
 
-export function useProductSearch(initialProducts: Product[] = allProducts, delayMs = 300) {
+export function useProductSearch(initialProducts: Product[] = [], delayMs = 300) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [query, setQueryState] = useState<string>('');

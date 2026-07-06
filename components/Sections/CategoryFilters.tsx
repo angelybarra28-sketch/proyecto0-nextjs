@@ -15,6 +15,7 @@ interface FlatProduct {
   slug: string;
   size?: string;
   categoryName?: string;
+  categoryNames?: string[];
   installmentCount?: number;
   installmentAmount?: number;
 }
@@ -159,8 +160,8 @@ export default function CategoryFilters({ title, id, products, subcategories }: 
     if (useSubcategoryChips) {
       const selectedNormalized = normalizeCategory(selectedSize);
       return products.filter(p => {
-        if (!p.categoryName) return false;
-        return normalizeCategory(p.categoryName) === selectedNormalized;
+        const names = p.categoryNames?.length ? p.categoryNames : (p.categoryName ? [p.categoryName] : []);
+        return names.some(n => normalizeCategory(n) === selectedNormalized);
       });
     }
     return products.filter(p => matchesSize(p, selectedSize, isWinter));

@@ -160,7 +160,7 @@ function extractCategoryIds(row: CatalogProductRow): { categoryId: string | null
 
 export function adaptCatalogProduct(row: CatalogProductRow): Product {
   const priceNumber = toNumber(row.price);
-  const { categoryId, categoryName } = extractCategoryIds(row);
+  const { categoryId, categoryName, categoryNames } = extractCategoryIds(row);
   const installments = extractInstallments(row.specifications);
   const installmentCount = installments.installmentCount ?? 8;
   const installmentAmount = installments.installmentAmount ?? Math.round(priceNumber / installmentCount);
@@ -177,6 +177,7 @@ export function adaptCatalogProduct(row: CatalogProductRow): Product {
     slug: row.slug,
     categoria: categoryName,
     categoryId: categoryId ?? undefined,
+    categoryNames,
     stock: row.stock,
     destacado: row.featured,
     category: categoryName,

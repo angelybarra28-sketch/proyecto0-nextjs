@@ -24,7 +24,6 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
   const [products, setProducts] = useState<AdminCatalogProduct[]>([]);
   const [categories, setCategories] = useState<AdminCatalogCategory[]>([]);
   const [pagination, setPagination] = useState<AdminPagination | null>(null);
-  const [source, setSource] = useState<'supabase' | 'local-fallback'>('supabase');
   const [selectedProduct, setSelectedProduct] = useState<AdminCatalogProduct | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,19 +38,9 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
 
     try {
       const catalog = await fetchAdminProducts(table.query, signal);
-      
-      // Si estamos en modo local, mezclar con productos guardados en localStorage
-      if (catalog.source === 'local-fallback') {
-        const localProducts = JSON.parse(localStorage.getItem('localProducts') || '[]');
-        const allProducts = [...localProducts, ...catalog.products];
-        setProducts(allProducts);
-      } else {
-        setProducts(catalog.products);
-      }
-      
+      setProducts(catalog.products);
       setCategories(catalog.categories);
       setPagination(catalog.pagination);
-      setSource(catalog.source);
     } catch (loadError) {
       if (isAbortError(loadError)) return;
       console.error('Error loading admin products:', loadError);
@@ -143,18 +132,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     setNotice('');
 
     try {
-      if (isReadOnly) {
-        // Modo local: eliminar de localStorage
-        const localProducts = JSON.parse(localStorage.getItem('localProducts') || '[]');
-        const filtered = localProducts.filter((p: { id: string }) => p.id !== product.id);
-        localStorage.setItem('localProducts', JSON.stringify(filtered));
-      } else {
-        await apiDeleteProduct(product.id);
-        // También limpiar localStorage por si hay datos stale de sesiones anteriores
-        try {
-          localStorage.removeItem('localProducts');
-        } catch { /* ignore */ }
-      }
+      await apiDeleteProduct(product.id);
       await loadProducts();
       setNotice('Producto eliminado correctamente');
     } catch (deleteError) {
@@ -203,48 +181,15 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     setNotice('');
 
     try {
-      if (isReadOnly) {
-        // Modo local: guardar en localStorage
-        const localProducts = JSON.parse(localStorage.getItem('localProducts') || '[]');
-        const newProduct = {
-          id: `local-${Date.now()}`,
-          legacyProductId: null,
-          categoryId: payload.categoryId,
-          categoryName: categories.find(c => c.id === payload.categoryId)?.name || 'Sin categoría',
-          categoryIds: payload.categoryIds ?? [],
-          categoryNames: (payload.categoryIds ?? []).map(id => categories.find(c => c.id === id)?.name || '').filter(Boolean),
-          name: payload.name,
-          slug: payload.slug,
-          description: payload.description,
-          price: payload.price,
-          compareAtPrice: payload.compareAtPrice,
-          discountLabel: payload.discountLabel,
-          referencePrice: payload.referencePrice,
-          installmentCount: payload.installmentCount,
-          installmentAmount: payload.installmentAmount,
-          stock: payload.stock,
-          status: payload.status,
-          featured: payload.featured,
-          imageUrl: payload.imageUrl || '',
-          carouselImages: payload.carouselImages,
-          createdAt: new Date().toISOString(),
-        };
-        localProducts.push(newProduct);
-        localStorage.setItem('localProducts', JSON.stringify(localProducts));
-        setShowCreateForm(false);
-        await loadProducts();
-        setNotice('Producto creado correctamente (modo local)');
+      const created = await createAdminProduct(payload);
+      const result = await migrateProductImagesAction(created.id);
+      if (result.migrated > 0) {
+        setNotice(`Producto creado. ${result.migrated} imágen(es) migrada(s) a almacenamiento local`);
       } else {
-        const created = await createAdminProduct(payload);
-        const result = await migrateProductImagesAction(created.id);
-        if (result.migrated > 0) {
-          setNotice(`Producto creado. ${result.migrated} imágen(es) migrada(s) a almacenamiento local`);
-        } else {
-          setNotice('Producto creado correctamente');
-        }
-        setShowCreateForm(false);
-        await loadProducts();
+        setNotice('Producto creado correctamente');
       }
+      setShowCreateForm(false);
+      await loadProducts();
     } catch (createError) {
       console.error('Error creating product:', createError);
       setError(createError instanceof Error ? createError.message : 'No se pudo crear el producto');
@@ -252,8 +197,6 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
       setIsSaving(false);
     }
   };
-
-  const isReadOnly = source === 'local-fallback';
 
   const handleMigrateImages = async (productId: string) => {
     setError('');
@@ -317,7 +260,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
         categories={categories}
         table={table}
         isLoading={isLoading}
-        isReadOnly={isReadOnly || isSaving}
+        isReadOnly={isSaving}
         onEdit={handleEdit}
         onToggleStatus={handleToggleStatus}
         onDelete={handleDelete}

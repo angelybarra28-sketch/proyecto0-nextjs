@@ -97,6 +97,7 @@ export default async function CategoryPage({ params }: Props) {
     slug: p.slug,
     size: p.specifications?.size,
     categoryName: p.category,
+    categoryNames: p.categoryNames,
     installmentCount: p.installmentCount,
     installmentAmount: p.installmentAmount,
   }));

@@ -218,9 +218,11 @@
 }
 
 .adminActionButton {
+  min-width: 150px;
+  text-align: center;
   border: 1px solid #5a5248;
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 10px 14px;
   background: #4a433a;
   color: #f5f2ec;
   cursor: pointer;
@@ -368,9 +370,54 @@
 
 .actionButtonsRow {
   display: flex;
-  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-top: 24px;
+  margin: 0 auto 32px;
+  max-width: 960px;
+  padding: 0 10px;
+}
+
+.adminPrimaryButton {
+  min-width: 150px;
+  text-align: center;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #059669;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #059669, #047857);
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+.adminPrimaryButton:hover {
+  background: linear-gradient(135deg, #047857, #065f46);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+}
+
+.adminSecondaryButton {
+  min-width: 150px;
+  text-align: center;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #5a5248;
+  border-radius: 8px;
+  background: transparent;
+  color: #b8a89c;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.adminSecondaryButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f5f2ec;
+  transform: translateY(-2px);
 }
 
 @media (max-width: 1400px) {
@@ -394,6 +441,12 @@
   .table th,
   .table td {
     padding: 8px 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  .desktopOnly {
+    display: none;
   }
 }
 
