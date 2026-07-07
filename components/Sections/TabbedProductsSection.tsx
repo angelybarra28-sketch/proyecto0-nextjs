@@ -12,13 +12,6 @@ interface TabbedProductsSectionProps {
   id?: string;
 }
 
-type TabKey = 'blanqueria' | 'hogar';
-
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'blanqueria', label: 'Blanquería' },
-  { key: 'hogar', label: 'Artículos del hogar' },
-];
-
 function getFeaturedByCategory(products: Product[], categories: string[]): Product[] {
   const normalizedSet = new Set(categories.map(normalizeCategory));
   const featured = products.filter(
@@ -32,7 +25,7 @@ function getFeaturedByCategory(products: Product[], categories: string[]): Produ
 }
 
 export default function TabbedProductsSection({ products, id }: TabbedProductsSectionProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>('blanqueria');
+  const [activeTab, setActiveTab] = useState<'blanqueria' | 'hogar'>('blanqueria');
   const [animating, setAnimating] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -82,7 +75,7 @@ export default function TabbedProductsSection({ products, id }: TabbedProductsSe
     };
   }, [startAutoPlay]);
 
-  function handleTabChange(tab: TabKey) {
+  function handleTabChange(tab: 'blanqueria' | 'hogar') {
     if (tab === activeTab) return;
     setAnimating(true);
     setActiveTab(tab);
@@ -98,15 +91,14 @@ export default function TabbedProductsSection({ products, id }: TabbedProductsSe
         <h2 className={styles.title}>Artículos más elegidos</h2>
 
         <div className={styles.tabsContainer}>
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ''}`}
-              onClick={() => handleTabChange(tab.key)}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <label className={styles.switch}>
+            <input
+              type="checkbox"
+              checked={activeTab === 'hogar'}
+              onChange={(e) => handleTabChange(e.target.checked ? 'hogar' : 'blanqueria')}
+            />
+            <span className={styles.switchInner} data-off="Blanquería" data-on="Artículos" />
+          </label>
         </div>
 
         <div className={`${styles.gridContainer} ${animating ? styles.fadeOut : styles.fadeIn}`}>

@@ -30,6 +30,7 @@ interface CategoryAccordionProps {
 
 export default function CategoryAccordion({ products }: CategoryAccordionProps) {
   const [madreGroups, setMadreGroups] = useState<MadreGroup[]>([]);
+  const [activeTab, setActiveTab] = useState<'blanqueria' | 'articulos-del-hogar'>('blanqueria');
 
   useEffect(() => {
     fetch('/api/categories')
@@ -43,9 +44,9 @@ export default function CategoryAccordion({ products }: CategoryAccordionProps) 
   }, []);
 
   const categories = useMemo<CatWithDescIds[]>(() => {
-    const blanqueria = madreGroups.find((m) => m.slug === 'blanqueria');
-    if (blanqueria && blanqueria.categories.length > 0) {
-      return blanqueria.categories.map((c) => ({
+    const group = madreGroups.find((m) => m.slug === activeTab);
+    if (group && group.categories.length > 0) {
+      return group.categories.map((c) => ({
         name: c.name,
         slug: c.slug,
         descendantIds: new Set([
@@ -55,35 +56,55 @@ export default function CategoryAccordion({ products }: CategoryAccordionProps) 
       }));
     }
     return [];
-  }, [madreGroups]);
+  }, [madreGroups, activeTab]);
 
-  if (categories.length === 0) return null;
+  const hasProductsForTab = categories.length > 0;
+  const hasAnyData = madreGroups.length > 0;
+
+  if (!hasAnyData) return null;
 
   return (
     <section className={styles.section}>
-      <div className={styles.card}>
-        <h2 className={styles.title}>Categorías</h2>
-        {categories.map((cat) => {
-          const product = products.find((p) => p.imageUrl && p.categoryId && cat.descendantIds.has(p.categoryId));
-          const imageUrl = product?.imageUrl;
-          return (
-            <Link
-              key={cat.slug}
-              href={`/categoria/${encodeURIComponent(cat.slug)}`}
-              className={styles.categoryStrip}
-              style={
-                imageUrl
-                  ? {
-                      backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${imageUrl})`,
-                    }
-                  : undefined
-              }
-            >
-              <span className={styles.categoryName}>{cat.name}</span>
-            </Link>
-          );
-        })}
+      <div className={styles.switchContainer}>
+        <label className={styles.switch}>
+          <input
+            type="checkbox"
+            checked={activeTab === 'articulos-del-hogar'}
+            onChange={(e) => setActiveTab(e.target.checked ? 'articulos-del-hogar' : 'blanqueria')}
+          />
+          <span className={styles.switchInner} data-off="Blanquería" data-on="Artículos" />
+        </label>
       </div>
+
+      {hasProductsForTab ? (
+        <div className={styles.card}>
+          <h2 className={styles.title}>Categorías</h2>
+          {categories.map((cat) => {
+            const product = products.find((p) => p.imageUrl && p.categoryId && cat.descendantIds.has(p.categoryId));
+            const imageUrl = product?.imageUrl;
+            return (
+              <Link
+                key={cat.slug}
+                href={`/categoria/${encodeURIComponent(cat.slug)}`}
+                className={styles.categoryStrip}
+                style={
+                  imageUrl
+                    ? {
+                        backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${imageUrl})`,
+                      }
+                    : undefined
+                }
+              >
+                <span className={styles.categoryName}>{cat.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <div className={styles.empty}>
+          <p>Próximamente</p>
+        </div>
+      )}
     </section>
   );
 }

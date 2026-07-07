@@ -198,6 +198,17 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     }
   };
 
+  const handleUpdateFeatured = async (productId: string, featured: boolean) => {
+    setError('');
+    setNotice('');
+    try {
+      await updateAdminProduct(productId, { featured });
+      await loadProducts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar featured');
+    }
+  };
+
   const handleMigrateImages = async (productId: string) => {
     setError('');
     setNotice('');
@@ -269,6 +280,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
         onUpdateInstallmentAmount={handleUpdateInstallmentAmount}
         onUpdatePrice={handleUpdatePrice}
         onMigrateImages={handleMigrateImages}
+        onUpdateFeatured={handleUpdateFeatured}
       />
     </>
   );

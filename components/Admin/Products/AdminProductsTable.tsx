@@ -29,6 +29,7 @@ type AdminProductsTableProps = {
   onUpdateInstallmentAmount?: (productId: string, amount: number) => Promise<void>;
   onUpdatePrice?: (productId: string, price: number) => Promise<void>;
   onMigrateImages?: (productId: string) => Promise<void>;
+  onUpdateFeatured?: (productId: string, featured: boolean) => Promise<void>;
 };
 
 function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalogProduct; isReadOnly: boolean; onDelete?: (product: AdminCatalogProduct) => void }) {
@@ -152,7 +153,7 @@ function extractProductSizes(products: AdminCatalogProduct[]): string[] {
   return [...sizeSet].sort();
 }
 
-export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onUpdateInstallmentCount, onUpdateInstallmentAmount, onUpdatePrice, onMigrateImages }: AdminProductsTableProps) {
+export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onUpdateInstallmentCount, onUpdateInstallmentAmount, onUpdatePrice, onMigrateImages, onUpdateFeatured }: AdminProductsTableProps) {
   const [pendingCascade, setPendingCascade] = useState<Record<string, { madre: string; child: string; grandchild: string }>>({});
   const [savingCategory, setSavingCategory] = useState<string | null>(null);
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
@@ -160,6 +161,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
   const [savingInstallment, setSavingInstallment] = useState<string | null>(null);
   const [pendingPrices, setPendingPrices] = useState<Record<string, number>>({});
   const [savingPrice, setSavingPrice] = useState<string | null>(null);
+  const [savingFeatured, setSavingFeatured] = useState<Record<string, boolean>>({});
   const [filterMadre, setFilterMadre] = useState('');
   const [filterChild, setFilterChild] = useState('');
   const [filterGrandchild, setFilterGrandchild] = useState('');
@@ -320,6 +322,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                   <th>Precio de venta</th>
                   <th>Stock</th>
                   <th>Status</th>
+                  <th>Featured</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -554,6 +557,29 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                       <span className={`${styles.status} ${styles[getStatusClass(product.status === 'ACTIVE' ? 'PAID' : 'CANCELLED')]}`}>
                         {product.status}
                       </span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {onUpdateFeatured ? (
+                        <input
+                          type="checkbox"
+                          checked={product.featured}
+                          disabled={isReadOnly || savingFeatured[product.id]}
+                          onChange={async (e) => {
+                            setSavingFeatured(prev => ({ ...prev, [product.id]: true }));
+                            try {
+                              await onUpdateFeatured(product.id, e.target.checked);
+                            } finally {
+                              setSavingFeatured(prev => {
+                                const next = { ...prev };
+                                delete next[product.id];
+                                return next;
+                              });
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span>{product.featured ? 'Sí' : 'No'}</span>
+                      )}
                     </td>
                     <td>
                       <div className={styles.adminRowActions}>
