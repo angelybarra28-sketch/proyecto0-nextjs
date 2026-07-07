@@ -56,7 +56,7 @@ export function ProductUrlImporter({ onImport }: ProductUrlImporterProps) {
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         <input
           type="url"
-          placeholder="https://zafiromayorista.mitiendanube.com/productos/..."
+          placeholder="https://www.fravega.com/p/... o https://zafiromayorista.mitiendanube.com/productos/..."
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           disabled={isLoading}
@@ -74,7 +74,7 @@ export function ProductUrlImporter({ onImport }: ProductUrlImporterProps) {
       </div>
 
       <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>
-        Soportado: MitiendaNube y MercadoLibre. Se extrae: nombre, descripción, imágenes y precio de referencia.
+        Soportado: MitiendaNube, MercadoLibre y Fravega. Se extrae: nombre, descripción, imágenes y precio de referencia.
       </p>
 
       {error && (

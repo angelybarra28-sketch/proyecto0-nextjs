@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory } from '@/lib/services/admin/client';
 import type { AdminCategoryItem } from '@/lib/services/adminCategoryService';
 import styles from '@/styles/Admin.module.css';
@@ -12,6 +12,12 @@ type FormState = {
   parentId: string;
   sortOrder: number;
   isActive: boolean;
+};
+
+type TreeNode = {
+  category: AdminCategoryItem;
+  children: TreeNode[];
+  depth: number;
 };
 
 const emptyForm: FormState = {
@@ -39,9 +45,55 @@ function getCategoryPath(categoryId: string, categories: AdminCategoryItem[]): s
   let current = categories.find(c => c.id === categoryId);
   while (current) {
     parts.unshift(current.name);
-    current = current.parentId ? categories.find(c => c.id === current!.parentId) : undefined;
+    const pid = current.parentId;
+    current = pid ? categories.find(c => c.id === pid) : undefined;
   }
   return parts.join(' → ');
+}
+
+function buildTree(categories: AdminCategoryItem[]): TreeNode[] {
+  const map = new Map<string, TreeNode>();
+  const roots: TreeNode[] = [];
+
+  for (const cat of categories) {
+    map.set(cat.id, { category: cat, children: [], depth: 0 });
+  }
+
+  for (const node of map.values()) {
+    const pid = node.category.parentId;
+    if (pid && map.has(pid)) {
+      map.get(pid)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  function assignDepth(nodes: TreeNode[], depth: number) {
+    for (const node of nodes) {
+      node.depth = depth;
+      assignDepth(node.children, depth + 1);
+    }
+  }
+  assignDepth(roots, 0);
+
+  function sortNodes(nodes: TreeNode[]) {
+    nodes.sort((a, b) => {
+      if (a.category.sortOrder !== b.category.sortOrder) return a.category.sortOrder - b.category.sortOrder;
+      return a.category.name.localeCompare(b.category.name, 'es-AR');
+    });
+    for (const node of nodes) sortNodes(node.children);
+  }
+  sortNodes(roots);
+
+  return roots;
+}
+
+function countDescendants(node: TreeNode): number {
+  let count = 0;
+  for (const child of node.children) {
+    count += 1 + countDescendants(child);
+  }
+  return count;
 }
 
 export function AdminCategoriesSection() {
@@ -54,6 +106,10 @@ export function AdminCategoriesSection() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [initialized, setInitialized] = useState(false);
+
+  const tree = useMemo(() => buildTree(categories), [categories]);
 
   const loadCategories = useCallback(async () => {
     setIsLoading(true);
@@ -72,37 +128,22 @@ export function AdminCategoriesSection() {
     void loadCategories();
   }, [loadCategories]);
 
-  const madreCategories = categories.filter((c) => !c.parentId);
-  const categoryCategories = categories.filter((c) => c.parentId && !categories.some((p) => p.parentId === c.id));
-  const subcategoryCategories = categories.filter((c) => {
-    if (!c.parentId) return false;
-    const parent = categories.find((p) => p.id === c.parentId);
-    return parent && parent.parentId !== null;
-  });
-
-  const getLevel = (cat: AdminCategoryItem): number => {
-    if (!cat.parentId) return 1;
-    const parent = categories.find(c => c.id === cat.parentId);
-    if (!parent || !parent.parentId) return 2;
-    return 3;
-  };
-
-  const getParentName = (cat: AdminCategoryItem): string => {
-    if (!cat.parentId) return '—';
-    const parent = categories.find(c => c.id === cat.parentId);
-    return parent ? parent.name : '—';
-  };
-
-  const getGroupName = (cat: AdminCategoryItem): string => {
-    if (!cat.parentId) return cat.name;
-    let current = cat;
-    while (current.parentId) {
-      const parent = categories.find(c => c.id === current.parentId);
-      if (!parent) break;
-      current = parent;
+  useEffect(() => {
+    if (categories.length > 0 && !initialized) {
+      const rootIds = categories.filter(c => !c.parentId).map(c => c.id);
+      setExpandedIds(new Set(rootIds));
+      setInitialized(true);
     }
-    return current.name;
-  };
+  }, [categories, initialized]);
+
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -186,20 +227,89 @@ export function AdminCategoriesSection() {
   };
 
   const handleNameChange = (value: string) => {
-    setForm((prev) => ({
+    setForm(prev => ({
       ...prev,
       name: value,
       slug: editingId ? prev.slug : slugify(value),
     }));
   };
 
-  const sortedCategories = [...categories].sort((a, b) => {
-    const levelA = getLevel(a);
-    const levelB = getLevel(b);
-    if (levelA !== levelB) return levelA - levelB;
-    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-    return a.name.localeCompare(b.name, 'es-AR');
-  });
+  const parentOptions = useMemo(() => {
+    const options: { value: string; label: string; depth: number }[] = [];
+    function walk(nodes: TreeNode[]) {
+      for (const node of nodes) {
+        if (node.category.id !== editingId) {
+          options.push({
+            value: node.category.id,
+            label: getCategoryPath(node.category.id, categories),
+            depth: node.depth,
+          });
+        }
+        walk(node.children);
+      }
+    }
+    walk(tree);
+    return options;
+  }, [tree, categories, editingId]);
+
+  const selectedParentPath = form.parentId
+    ? getCategoryPath(form.parentId, categories)
+    : null;
+
+  const renderTreeNode = (node: TreeNode): React.ReactNode => {
+    const isExpanded = expandedIds.has(node.category.id);
+    const hasChildren = node.children.length > 0;
+    const descendantCount = hasChildren ? countDescendants(node) : 0;
+
+    return (
+      <React.Fragment key={node.category.id}>
+        <tr style={{ opacity: node.category.isActive ? 1 : 0.5 }}>
+          <td>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: `${node.depth * 24}px` }}>
+              {hasChildren ? (
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(node.category.id)}
+                  style={{ background: 'none', border: 'none', color: '#d3cdc4', cursor: 'pointer', padding: 0, fontSize: '0.65rem', width: 16, textAlign: 'center', flexShrink: 0 }}
+                >
+                  {isExpanded ? '▼' : '▶'}
+                </button>
+              ) : (
+                <span style={{ width: 16, display: 'inline-block', flexShrink: 0 }} />
+              )}
+              <span style={{ fontWeight: node.depth === 0 ? 700 : 400 }}>
+                {node.category.name}
+              </span>
+              {node.depth === 0 && (
+                <span style={{ fontSize: '0.7rem', color: '#888', whiteSpace: 'nowrap' }}>
+                  (madre)
+                </span>
+              )}
+              {hasChildren && (
+                <span style={{ fontSize: '0.7rem', color: '#666', whiteSpace: 'nowrap' }}>
+                  — {descendantCount}
+                </span>
+              )}
+            </div>
+          </td>
+          <td><code style={{ fontSize: '0.85rem' }}>{node.category.slug}</code></td>
+          <td>{node.category.sortOrder}</td>
+          <td>{node.category.isActive ? 'Sí' : 'No'}</td>
+          <td>
+            <div className={styles.adminRowActions}>
+              <button className={styles.adminActionButton} disabled={isSaving} onClick={() => startEdit(node.category)}>
+                Editar
+              </button>
+              <button className={styles.deleteBtn} disabled={isSaving} onClick={() => setDeleteConfirmId(node.category.id)}>
+                Eliminar
+              </button>
+            </div>
+          </td>
+        </tr>
+        {isExpanded && hasChildren && node.children.map(child => renderTreeNode(child))}
+      </React.Fragment>
+    );
+  };
 
   return (
     <section className={styles.section}>
@@ -209,11 +319,7 @@ export function AdminCategoriesSection() {
           <p className={styles.adminTableSummary}>{categories.length} categoría(s) cargada(s)</p>
         </div>
         {!showCreateForm && !editingId && (
-          <button
-            className={styles.deleteBtn}
-            onClick={() => setShowCreateForm(true)}
-            disabled={isSaving}
-          >
+          <button className={styles.deleteBtn} onClick={() => setShowCreateForm(true)} disabled={isSaving}>
             + Nueva categoría
           </button>
         )}
@@ -230,88 +336,49 @@ export function AdminCategoriesSection() {
                 <tr>
                   <td>Nombre</td>
                   <td>
-                    <input
-                      value={form.name}
-                      disabled={isSaving}
-                      onChange={(e) => handleNameChange(e.target.value)}
-                      required
-                      style={{ width: '100%' }}
-                    />
+                    <input value={form.name} disabled={isSaving} onChange={(e) => handleNameChange(e.target.value)} required style={{ width: '100%' }} />
                   </td>
                 </tr>
                 <tr>
                   <td>Slug</td>
                   <td>
-                    <input
-                      value={form.slug}
-                      disabled={isSaving}
-                      onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
-                      required
-                      style={{ width: '100%' }}
-                    />
-                    <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>
-                      Se genera automáticamente desde el nombre.
-                    </small>
+                    <input value={form.slug} disabled={isSaving} onChange={(e) => setForm(prev => ({ ...prev, slug: e.target.value }))} required style={{ width: '100%' }} />
+                    <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>Se genera automáticamente desde el nombre.</small>
                   </td>
                 </tr>
                 <tr>
                   <td>Descripción</td>
                   <td>
-                    <textarea
-                      value={form.description}
-                      disabled={isSaving}
-                      onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                      rows={2}
-                      style={{ width: '100%' }}
-                    />
+                    <textarea value={form.description} disabled={isSaving} onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))} rows={2} style={{ width: '100%' }} />
                   </td>
                 </tr>
                 <tr>
                   <td>Categoría padre</td>
                   <td>
-                    <select
-                      value={form.parentId}
-                      disabled={isSaving}
-                      onChange={(e) => setForm((prev) => ({ ...prev, parentId: e.target.value }))}
-                      style={{ width: '100%' }}
-                    >
+                    <select value={form.parentId} disabled={isSaving} onChange={(e) => setForm(prev => ({ ...prev, parentId: e.target.value }))} style={{ width: '100%' }}>
                       <option value="">Ninguna (categoría raíz)</option>
-                      {categories
-                        .filter((c) => c.id !== editingId)
-                        .map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {'  '.repeat(getLevel(cat) - 1)}{cat.name} ({getGroupName(cat)})
-                          </option>
-                        ))}
+                      {parentOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>
+                          {'  '.repeat(opt.depth)}{opt.label}
+                        </option>
+                      ))}
                     </select>
-                    <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>
-                      Si es una categoría principal, dejá "Ninguna". Si es una subcategoría, seleccioná su categoría padre.
-                    </small>
+                    {selectedParentPath && (
+                      <small style={{ display: 'block', color: '#aaa', marginTop: '0.25rem' }}>Ruta: {selectedParentPath}</small>
+                    )}
+                    <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>Si es una categoría principal, dejá &quot;Ninguna&quot;.</small>
                   </td>
                 </tr>
                 <tr>
                   <td>Orden</td>
                   <td>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={form.sortOrder}
-                      disabled={isSaving}
-                      onChange={(e) => setForm((prev) => ({ ...prev, sortOrder: Number(e.target.value) }))}
-                      style={{ width: '80px' }}
-                    />
+                    <input type="number" min="0" step="1" value={form.sortOrder} disabled={isSaving} onChange={(e) => setForm(prev => ({ ...prev, sortOrder: Number(e.target.value) }))} style={{ width: '80px' }} />
                   </td>
                 </tr>
                 <tr>
                   <td>Activo</td>
                   <td>
-                    <input
-                      type="checkbox"
-                      checked={form.isActive}
-                      disabled={isSaving}
-                      onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
-                    />
+                    <input type="checkbox" checked={form.isActive} disabled={isSaving} onChange={(e) => setForm(prev => ({ ...prev, isActive: e.target.checked }))} />
                   </td>
                 </tr>
               </tbody>
@@ -339,54 +406,13 @@ export function AdminCategoriesSection() {
               <tr>
                 <th>Nombre</th>
                 <th>Slug</th>
-                <th>Categoría padre</th>
-                <th>Grupo madre</th>
                 <th>Orden</th>
                 <th>Activo</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {sortedCategories.map((cat) => {
-                const level = getLevel(cat);
-                return (
-                  <tr key={cat.id} style={{ opacity: cat.isActive ? 1 : 0.5 }}>
-                    <td>
-                      <span style={{ marginLeft: `${(level - 1) * 20}px`, fontWeight: level === 1 ? 700 : 400 }}>
-                        {level > 1 && '↳ '}{cat.name}
-                      </span>
-                      {level === 1 && (
-                        <span style={{ marginLeft: 8, fontSize: '0.75rem', color: '#888' }}>
-                          (madre)
-                        </span>
-                      )}
-                    </td>
-                    <td><code>{cat.slug}</code></td>
-                    <td>{getParentName(cat)}</td>
-                    <td>{getGroupName(cat)}</td>
-                    <td>{cat.sortOrder}</td>
-                    <td>{cat.isActive ? 'Sí' : 'No'}</td>
-                    <td>
-                      <div className={styles.adminRowActions}>
-                        <button
-                          className={styles.adminActionButton}
-                          disabled={isSaving}
-                          onClick={() => startEdit(cat)}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          className={styles.deleteBtn}
-                          disabled={isSaving}
-                          onClick={() => setDeleteConfirmId(cat.id)}
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {tree.map(node => renderTreeNode(node))}
             </tbody>
           </table>
         </div>
@@ -424,16 +450,10 @@ export function AdminCategoriesSection() {
               {categories.find(c => c.id === deleteConfirmId)?.name}
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-              <button
-                className={styles.deleteBtn}
-                onClick={() => void handleDelete(deleteConfirmId)}
-              >
+              <button className={styles.deleteBtn} onClick={() => void handleDelete(deleteConfirmId)}>
                 Sí, eliminar
               </button>
-              <button
-                className={styles.adminActionButton}
-                onClick={() => setDeleteConfirmId(null)}
-              >
+              <button className={styles.adminActionButton} onClick={() => setDeleteConfirmId(null)}>
                 No, cancelar
               </button>
             </div>

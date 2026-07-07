@@ -5,14 +5,15 @@ export type ImportedProductData = {
   description: string;
   images: string[];
   referencePrice: number | null;
-  source: 'mitiendanube' | 'mercadolibre' | 'unknown';
+  source: 'mitiendanube' | 'mercadolibre' | 'fravega' | 'unknown';
   rawData?: unknown;
   categoryName?: string;
 };
 
-function detectSource(url: string): 'mitiendanube' | 'mercadolibre' | 'unknown' {
+function detectSource(url: string): 'mitiendanube' | 'mercadolibre' | 'fravega' | 'unknown' {
   if (url.includes('mitiendanube.com')) return 'mitiendanube';
   if (url.includes('mercadolibre.com')) return 'mercadolibre';
+  if (url.includes('fravega.com')) return 'fravega';
   return 'unknown';
 }
 
@@ -459,11 +460,94 @@ async function parseMercadoLibre(url: string): Promise<ImportedProductData> {
   );
 }
 
+function extractFravegaImages(html: string): string[] {
+  const jsonLd = extractJsonLd(html);
+
+  if (jsonLd?.image && Array.isArray(jsonLd.image)) {
+    const imageArray = jsonLd.image[0];
+    if (Array.isArray(imageArray) && imageArray.length > 0) {
+      const images = imageArray.filter(
+        (url: unknown): url is string => typeof url === 'string' && url.startsWith('http')
+      );
+      if (images.length > 0) return images;
+    }
+  }
+
+  const ogImage = extractMetaTag(html, 'og:image');
+  if (ogImage) return [ogImage];
+
+  return [];
+}
+
+function extractFravegaPrice(html: string): number | null {
+  const jsonLd = extractJsonLd(html);
+  if (jsonLd?.offers && Array.isArray(jsonLd.offers) && jsonLd.offers.length > 0) {
+    const offer = jsonLd.offers[0] as Record<string, unknown> | undefined;
+    if (offer?.price && typeof offer.price === 'number') {
+      return offer.price;
+    }
+  }
+  return null;
+}
+
+function extractFravegaCategory(html: string): string | null {
+  const breadcrumbMatch = html.match(
+    /background-color:\s*rgb\(241,\s*241,\s*241\)[^>]*>([\s\S]*?)<\/div>\s*<(?:div|section)/i
+  );
+  if (!breadcrumbMatch) return null;
+
+  const section = breadcrumbMatch[1];
+  const linkRegex = /<a[^>]*href="(\/l\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  const categories: string[] = [];
+  let match;
+  while ((match = linkRegex.exec(section)) !== null) {
+    const text = match[2].replace(/<[^>]*>/g, '').trim();
+    if (text && text !== 'Inicio') {
+      categories.push(text);
+    }
+  }
+
+  return categories.length > 0 ? categories[categories.length - 1] : null;
+}
+
+async function parseFravega(url: string): Promise<ImportedProductData> {
+  const html = await fetchHtml(url);
+
+  let name = extractMetaTag(html, 'og:title') || '';
+  if (!name) {
+    const jsonLd = extractJsonLd(html);
+    if (jsonLd?.name && typeof jsonLd.name === 'string') {
+      name = jsonLd.name;
+    }
+  }
+
+  let description = extractMetaTag(html, 'og:description') || '';
+  if (!description) {
+    const jsonLd = extractJsonLd(html);
+    if (jsonLd?.description && typeof jsonLd.description === 'string') {
+      description = jsonLd.description;
+    }
+  }
+
+  const images = extractFravegaImages(html);
+  const referencePrice = extractFravegaPrice(html);
+  const categoryName = extractFravegaCategory(html);
+
+  return {
+    name,
+    description,
+    images,
+    referencePrice,
+    source: 'fravega',
+    categoryName: categoryName ?? undefined,
+  };
+}
+
 export async function importProductFromUrl(url: string): Promise<ImportedProductData> {
   const source = detectSource(url);
 
   if (source === 'unknown') {
-    throw new Error('URL no reconocida. Solo se soportan MitiendaNube y MercadoLibre.');
+    throw new Error('URL no reconocida. Solo se soportan MitiendaNube, MercadoLibre y Fravega.');
   }
 
   if (source === 'mitiendanube') {
@@ -472,6 +556,10 @@ export async function importProductFromUrl(url: string): Promise<ImportedProduct
 
   if (source === 'mercadolibre') {
     return parseMercadoLibre(url);
+  }
+
+  if (source === 'fravega') {
+    return parseFravega(url);
   }
 
   throw new Error('Fuente no soportada');

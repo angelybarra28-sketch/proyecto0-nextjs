@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'dcdn-us.mitiendanube.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.fravega.com',
+      },
     ],
   },
 };
