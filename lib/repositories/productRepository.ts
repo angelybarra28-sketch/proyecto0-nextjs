@@ -23,6 +23,7 @@ export type ProductCreateInput = {
   stock: number;
   status: ProductStatus;
   featured: boolean;
+  tendencias: boolean;
   imageUrl: string | null;
   carouselImages: string[];
 };
@@ -69,6 +70,7 @@ const productColumns = `
   stock,
   status,
   featured,
+  tendencias,
   image_url,
   carousel_images,
   specifications,
@@ -95,6 +97,7 @@ const publicProductColumns = `
   stock,
   status,
   featured,
+  tendencias,
   image_url,
   carousel_images,
   specifications,
@@ -264,6 +267,7 @@ export async function createProduct(
       stock: input.stock,
       status: input.status,
       featured: input.featured,
+      tendencias: input.tendencias,
       image_url: input.imageUrl,
       carousel_images: input.carouselImages,
       specifications: newSpecs,
@@ -314,6 +318,7 @@ export async function updateProduct(
   if (input.stock !== undefined) payload.stock = input.stock;
   if (input.status !== undefined) payload.status = input.status;
   if (input.featured !== undefined) payload.featured = input.featured;
+  if (input.tendencias !== undefined) payload.tendencias = input.tendencias;
   if (input.imageUrl !== undefined) payload.image_url = input.imageUrl;
   if (input.carouselImages !== undefined) payload.carousel_images = input.carouselImages;
   if (specs) payload.specifications = specs;

@@ -86,6 +86,7 @@ export function AdminProductEditForm({
   const [referencePrice, setReferencePrice] = useState(product.referencePrice?.toString() ?? '');
   const [stock, setStock] = useState(product.stock.toString());
   const [featured, setFeatured] = useState(product.featured);
+  const [tendencias, setTendencias] = useState(product.tendencias);
 
   const initialCascade = useMemo(() => initCascadeFromProduct(product, categories), [product, categories]);
   const [cascadeMadre, setCascadeMadre] = useState<string>(initialCascade.cascadeMadre);
@@ -264,6 +265,7 @@ export function AdminProductEditForm({
             stock: Number(stock),
             status,
             featured,
+            tendencias,
             imageUrl,
             carouselImages: currentCarouselImages,
           });
@@ -491,6 +493,10 @@ export function AdminProductEditForm({
               <tr>
                 <td>Featured</td>
                 <td><input type="checkbox" checked={featured} disabled={controlsDisabled} onChange={(event) => setFeatured(event.target.checked)} /></td>
+              </tr>
+              <tr>
+                <td>Tendencias</td>
+                <td><input type="checkbox" checked={tendencias} disabled={controlsDisabled} onChange={(event) => setTendencias(event.target.checked)} /></td>
               </tr>
               <tr>
                 <td>Status</td>

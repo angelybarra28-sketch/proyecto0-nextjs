@@ -72,6 +72,7 @@ export type AdminProductPayload = {
   stock: number;
   status: ProductStatus;
   featured: boolean;
+  tendencias: boolean;
   imageUrl: string;
   carouselImages: string[];
 };
@@ -185,6 +186,7 @@ function validateProductPayload(payload: Partial<AdminProductPayload>, requireBa
     stock: payload.stock === undefined ? undefined : normalizeStock(payload.stock),
     status: payload.status === undefined ? undefined : normalizeStatus(payload.status),
     featured: payload.featured,
+    tendencias: payload.tendencias,
     imageUrl: payload.imageUrl === undefined ? undefined : normalizeNullableText(payload.imageUrl),
     carouselImages: payload.carouselImages === undefined ? undefined : normalizeStringArray(payload.carouselImages),
   };

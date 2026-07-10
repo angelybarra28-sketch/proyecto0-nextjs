@@ -13,6 +13,7 @@ export interface Product {
   categoryNames?: string[];
   stock: number;
   destacado: boolean;
+  tendencias: boolean;
   category?: string;
   referencePrice?: number;
   installmentCount?: number;

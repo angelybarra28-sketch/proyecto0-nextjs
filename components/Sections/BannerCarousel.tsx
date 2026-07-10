@@ -1,73 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
-import Image from 'next/image';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
 import styles from '@/styles/BannerCarousel.module.css';
 import CategoryNavBar from '@/components/Layout/CategoryNavBar';
 
-function scrollDown() {
-  const target = document.getElementById('productos-destacados');
-  if (target) {
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-}
-
 export default function BannerCarousel() {
-  useEffect(() => {
-    AOS.init({
-      duration: 900,
-      once: true,
-      easing: 'ease-out-cubic',
-    });
-  }, []);
-
   return (
     <section className={styles.bannerCarousel}>
-      <div className={styles.carouselContainer}>
-        <div className={styles.categoryOverlay}>
-          <CategoryNavBar floating />
-        </div>
-        <div className={styles.carouselImage}>
-          <Image
-            src="/assets/fondo-hero.webp"
-            alt="Fondo Principal"
-            fill
-            className={styles.image}
-            priority
-          />
-        </div>
-
-        {/* OFERTAS DESTACADAS */}
-        <div className={styles.offersSection}>
-          <div className={styles.offersContainer}>
-            <div
-              className={styles.offerCard}
-              data-aos="zoom-in-right"
-              data-aos-delay="100"
-            >
-              <h3>En 8 y 10 cuotas</h3>
-              <p>mensuales o semanales, sin interés</p>
-            </div>
-            <div
-              className={styles.offerCard}
-              data-aos="zoom-in-left"
-              data-aos-delay="250"
-            >
-              <h3>Envío a domicilio o punto de encuentro</h3>
-            </div>
-          </div>
-        </div>
-
-        <button
-          className={styles.scrollDown}
-          onClick={scrollDown}
-          aria-label="Ver productos"
-        >
-          <span className={styles.scrollText}>Ver productos</span>
-          <span className={styles.scrollArrow} />
-        </button>
+      <div className={styles.categoryOverlay}>
+        <CategoryNavBar floating />
       </div>
     </section>
   );

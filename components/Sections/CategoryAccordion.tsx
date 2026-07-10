@@ -65,15 +65,19 @@ export default function CategoryAccordion({ products }: CategoryAccordionProps) 
 
   return (
     <section className={styles.section}>
-      <div className={styles.switchContainer}>
-        <label className={styles.switch}>
-          <input
-            type="checkbox"
-            checked={activeTab === 'articulos-del-hogar'}
-            onChange={(e) => setActiveTab(e.target.checked ? 'articulos-del-hogar' : 'blanqueria')}
-          />
-          <span className={styles.switchInner} data-off="Blanquería" data-on="Artículos" />
-        </label>
+      <div className={styles.tabsContainer}>
+        <button
+          className={`${styles.tab} ${activeTab === 'blanqueria' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('blanqueria')}
+        >
+          🛏️ BLANQUERÍA
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'articulos-del-hogar' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('articulos-del-hogar')}
+        >
+          🏠 ARTÍCULOS DEL HOGAR
+        </button>
       </div>
 
       {hasProductsForTab ? (

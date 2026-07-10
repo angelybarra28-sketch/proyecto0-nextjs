@@ -1,16 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/lib/cartContext';
-import { useAuth } from '@/lib/authContext';
+import type { Product } from '@/lib/types';
 import styles from '@/styles/Header.module.css';
+import MobileMenu from '@/components/Layout/MobileMenu';
 
-export default function Header() {
+interface HeaderProps {
+  products?: Product[];
+}
+
+export default function Header({ products }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const { items } = useCart();
-  const { user, isAuthenticated, logout } = useAuth();
+
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   useEffect(() => {
     const sentinel = document.createElement('div');
@@ -38,26 +45,17 @@ export default function Header() {
   }, []);
 
   return (
-    <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}>
+    <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''} ${menuOpen ? styles.headerMenuOpen : ''}`}>
       <div className={styles.headerContainer}>
-        {/* Botón Ingresar - Izquierda */}
-        <div className={styles.authButtons}>
-          {isAuthenticated ? (
-            <>
-              <span className={styles.userName}>Hola, {user?.nombreApellido}</span>
-              <Link href="/admin" className={styles.adminLink}>
-                Panel Admin
-              </Link>
-              <button onClick={logout} className={styles.logoutBtn}>
-                Cerrar Sesión
-              </button>
-            </>
-          ) : (
-            <Link href="/auth" className={styles.loginBtn}>
-              Ingresar
-            </Link>
-          )}
-        </div>
+        <button
+          className={`${styles.burgerBtn} ${menuOpen ? styles.burgerBtnOpen : ''}`}
+          onClick={() => setMenuOpen((prev) => !prev)}
+          aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
 
         {/* Logo - Centro */}
         <div className={styles.headerTop}>
@@ -83,6 +81,8 @@ export default function Header() {
           </div>
         </Link>
       </div>
+
+      <MobileMenu isOpen={menuOpen} onClose={closeMenu} products={products} />
     </header>
   );
 }

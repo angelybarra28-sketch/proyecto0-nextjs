@@ -89,16 +89,21 @@ export default function TabbedProductsSection({ products, id }: TabbedProductsSe
     <section id={id} className={styles.section}>
       <div className={styles.wrapper}>
         <h2 className={styles.title}>Artículos más elegidos</h2>
+        <p className={styles.subtitle}>Descubrí nuestros productos más destacados</p>
 
         <div className={styles.tabsContainer}>
-          <label className={styles.switch}>
-            <input
-              type="checkbox"
-              checked={activeTab === 'hogar'}
-              onChange={(e) => handleTabChange(e.target.checked ? 'hogar' : 'blanqueria')}
-            />
-            <span className={styles.switchInner} data-off="Blanquería" data-on="Artículos" />
-          </label>
+          <button
+            className={`${styles.tab} ${activeTab === 'blanqueria' ? styles.tabActive : ''}`}
+            onClick={() => handleTabChange('blanqueria')}
+          >
+            🛏️ BLANQUERÍA
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'hogar' ? styles.tabActive : ''}`}
+            onClick={() => handleTabChange('hogar')}
+          >
+            🏠 ARTÍCULOS DEL HOGAR
+          </button>
         </div>
 
         <div className={`${styles.gridContainer} ${animating ? styles.fadeOut : styles.fadeIn}`}>

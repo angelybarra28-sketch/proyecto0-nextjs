@@ -30,6 +30,7 @@ type AdminProductsTableProps = {
   onUpdatePrice?: (productId: string, price: number) => Promise<void>;
   onMigrateImages?: (productId: string) => Promise<void>;
   onUpdateFeatured?: (productId: string, featured: boolean) => Promise<void>;
+  onUpdateTendencias?: (productId: string, tendencias: boolean) => Promise<void>;
 };
 
 function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalogProduct; isReadOnly: boolean; onDelete?: (product: AdminCatalogProduct) => void }) {
@@ -153,7 +154,7 @@ function extractProductSizes(products: AdminCatalogProduct[]): string[] {
   return [...sizeSet].sort();
 }
 
-export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onUpdateInstallmentCount, onUpdateInstallmentAmount, onUpdatePrice, onMigrateImages, onUpdateFeatured }: AdminProductsTableProps) {
+export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onUpdateInstallmentCount, onUpdateInstallmentAmount, onUpdatePrice, onMigrateImages, onUpdateFeatured, onUpdateTendencias }: AdminProductsTableProps) {
   const [pendingCascade, setPendingCascade] = useState<Record<string, { madre: string; child: string; grandchild: string }>>({});
   const [savingCategory, setSavingCategory] = useState<string | null>(null);
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
@@ -162,6 +163,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
   const [pendingPrices, setPendingPrices] = useState<Record<string, number>>({});
   const [savingPrice, setSavingPrice] = useState<string | null>(null);
   const [savingFeatured, setSavingFeatured] = useState<Record<string, boolean>>({});
+  const [savingTendencias, setSavingTendencias] = useState<Record<string, boolean>>({});
   const [filterMadre, setFilterMadre] = useState('');
   const [filterChild, setFilterChild] = useState('');
   const [filterGrandchild, setFilterGrandchild] = useState('');
@@ -323,6 +325,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                   <th>Stock</th>
                   <th>Status</th>
                   <th>Featured</th>
+                  <th>Tendencias</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -579,6 +582,29 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                         />
                       ) : (
                         <span>{product.featured ? 'Sí' : 'No'}</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {onUpdateTendencias ? (
+                        <input
+                          type="checkbox"
+                          checked={product.tendencias}
+                          disabled={isReadOnly || savingTendencias[product.id]}
+                          onChange={async (e) => {
+                            setSavingTendencias(prev => ({ ...prev, [product.id]: true }));
+                            try {
+                              await onUpdateTendencias(product.id, e.target.checked);
+                            } finally {
+                              setSavingTendencias(prev => {
+                                const next = { ...prev };
+                                delete next[product.id];
+                                return next;
+                              });
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span>{product.tendencias ? 'Sí' : 'No'}</span>
                       )}
                     </td>
                     <td>

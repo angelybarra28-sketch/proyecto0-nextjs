@@ -53,6 +53,7 @@ export function AdminProductCreateForm({
   const [cascadeGrandchild2, setCascadeGrandchild2] = useState<string>('');
   const [showSecondCascade, setShowSecondCascade] = useState(false);
   const [featured, setFeatured] = useState(false);
+  const [tendencias, setTendencias] = useState(false);
   const [status, setStatus] = useState<AdminProductPayload['status']>('ACTIVE');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -193,6 +194,7 @@ export function AdminProductCreateForm({
       stock: Number(stock),
       status,
       featured,
+      tendencias,
       imageUrl,
       carouselImages: fromImagesText(carouselImages),
     });
@@ -520,6 +522,17 @@ export function AdminProductCreateForm({
                     checked={featured}
                     disabled={isSaving}
                     onChange={(e) => setFeatured(e.target.checked)}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>Tendencias</td>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={tendencias}
+                    disabled={isSaving}
+                    onChange={(e) => setTendencias(e.target.checked)}
                   />
                 </td>
               </tr>

@@ -90,7 +90,7 @@ export async function getCatalogCategories(): Promise<string[]> {
 export async function getProductSections(): Promise<{ section1: ProductSection; section2: ProductSection }> {
   const products = await getProducts();
   const featured = products.filter((product) => product.destacado);
-  const regular = products.filter((product) => !product.destacado);
+  const tendencias = products.filter((product) => product.tendencias);
 
   return {
     section1: {
@@ -99,7 +99,7 @@ export async function getProductSections(): Promise<{ section1: ProductSection; 
     },
     section2: {
       title: 'Tendencias',
-      products: regular.length > 0 ? regular : products.slice(6),
+      products: tendencias.length > 0 ? tendencias : products.filter((p) => !p.destacado).slice(0, 6),
     },
   };
 }

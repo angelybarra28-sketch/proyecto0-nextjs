@@ -25,6 +25,7 @@ export type CatalogProductRow = {
   stock: number;
   status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'ARCHIVED';
   featured: boolean;
+  tendencias: boolean;
   image_url: string | null;
   carousel_images: unknown;
   specifications: unknown;
@@ -53,6 +54,7 @@ export type AdminCatalogProduct = {
   stock: number;
   status: CatalogProductRow['status'];
   featured: boolean;
+  tendencias: boolean;
   imageUrl: string;
   carouselImages: string[];
   createdAt: string | null;
@@ -180,6 +182,7 @@ export function adaptCatalogProduct(row: CatalogProductRow): Product {
     categoryNames,
     stock: row.stock,
     destacado: row.featured,
+    tendencias: row.tendencias ?? false,
     category: categoryName,
     referencePrice: row.reference_price ?? undefined,
     installmentCount,
@@ -213,6 +216,7 @@ export function adaptAdminCatalogProduct(row: CatalogProductRow): AdminCatalogPr
     stock: row.stock,
     status: row.status,
     featured: row.featured,
+    tendencias: row.tendencias ?? false,
     imageUrl: row.image_url ?? '',
     carouselImages: toStringArray(row.carousel_images),
     createdAt: row.created_at ?? null,
