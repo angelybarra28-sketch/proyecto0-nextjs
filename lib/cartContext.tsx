@@ -10,6 +10,8 @@ export interface CartItem {
   discount?: string;
   imageUrl: string;
   quantity: number;
+  installmentCount?: number;
+  installmentAmount?: number;
 }
 
 interface CartContextType {

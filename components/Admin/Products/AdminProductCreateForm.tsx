@@ -124,9 +124,15 @@ export function AdminProductCreateForm({
     setCarouselImages(data.images.join('\n'));
     if (data.referencePrice) {
       setReferencePrice(data.referencePrice.toString());
-      const nuevoPrecio = (data.referencePrice * 3).toString();
-      setPrice(nuevoPrecio);
-      recalculateValorCuota(nuevoPrecio, installmentCount);
+      if (data.source === 'enova') {
+        const precioDirecto = data.referencePrice.toString();
+        setPrice(precioDirecto);
+        recalculateValorCuota(precioDirecto, installmentCount);
+      } else {
+        const nuevoPrecio = (data.referencePrice * 3).toString();
+        setPrice(nuevoPrecio);
+        recalculateValorCuota(nuevoPrecio, installmentCount);
+      }
     }
     if (data.categoryName) {
       const match = findCategoryByName(data.categoryName);
@@ -526,7 +532,7 @@ export function AdminProductCreateForm({
                 </td>
               </tr>
               <tr>
-                <td>Tendencias</td>
+                <td>OFERTAS</td>
                 <td>
                   <input
                     type="checkbox"

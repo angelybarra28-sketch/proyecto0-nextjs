@@ -369,6 +369,88 @@
   background-color: #1d4ed8;
 }
 
+/* VERTICAL CART ITEM CARD */
+.cartItemCard {
+  background-color: #262422;
+  border: 1px solid #363330;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  position: relative;
+}
+
+.cardCheckbox {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #c8a87c;
+}
+
+.cardImage {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #1e1d1b;
+}
+
+.cardImageInner {
+  object-fit: cover;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+  width: 100%;
+}
+
+.cardName {
+  font-size: 0.9rem;
+  color: #f5f2ec;
+  font-weight: 500;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.cardPrice {
+  font-size: 1.05rem;
+  color: #f5f2ec;
+  font-weight: 700;
+}
+
+.cardInstallments {
+  font-size: 0.78rem;
+  color: #c8a87c;
+  font-weight: 500;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.cardFooter .quantityControl {
+  transform: scale(0.9);
+}
+
+.cardFooter .removeBtn {
+  padding: 0.3rem;
+  font-size: 1.1rem;
+}
+
 /* RESPONSIVE */
 @media (max-width: 768px) {
   .cartItem {
@@ -407,5 +489,33 @@
 
   .currentPrice {
     font-size: 1rem;
+  }
+
+  .cartItemCard {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .cardImage {
+    width: 90px;
+    height: 90px;
+    flex-shrink: 0;
+  }
+
+  .cardBody {
+    flex: 1;
+    align-items: flex-start;
+    text-align: left;
+    min-width: 0;
+  }
+
+  .cardFooter {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+    border-top: 1px solid #363330;
   }
 }

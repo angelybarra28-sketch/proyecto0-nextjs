@@ -495,7 +495,7 @@ export function AdminProductEditForm({
                 <td><input type="checkbox" checked={featured} disabled={controlsDisabled} onChange={(event) => setFeatured(event.target.checked)} /></td>
               </tr>
               <tr>
-                <td>Tendencias</td>
+                <td>OFERTAS</td>
                 <td><input type="checkbox" checked={tendencias} disabled={controlsDisabled} onChange={(event) => setTendencias(event.target.checked)} /></td>
               </tr>
               <tr>

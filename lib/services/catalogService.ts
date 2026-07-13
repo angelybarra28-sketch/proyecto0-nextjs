@@ -98,7 +98,7 @@ export async function getProductSections(): Promise<{ section1: ProductSection; 
       products: featured.length > 0 ? featured : products.slice(0, 6),
     },
     section2: {
-      title: 'Tendencias',
+      title: 'Ofertas y Novedades',
       products: tendencias.length > 0 ? tendencias : products.filter((p) => !p.destacado).slice(0, 6),
     },
   };

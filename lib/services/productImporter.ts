@@ -5,15 +5,16 @@ export type ImportedProductData = {
   description: string;
   images: string[];
   referencePrice: number | null;
-  source: 'mitiendanube' | 'mercadolibre' | 'fravega' | 'unknown';
+  source: 'mitiendanube' | 'mercadolibre' | 'fravega' | 'enova' | 'unknown';
   rawData?: unknown;
   categoryName?: string;
 };
 
-function detectSource(url: string): 'mitiendanube' | 'mercadolibre' | 'fravega' | 'unknown' {
+function detectSource(url: string): 'mitiendanube' | 'mercadolibre' | 'fravega' | 'enova' | 'unknown' {
   if (url.includes('mitiendanube.com')) return 'mitiendanube';
   if (url.includes('mercadolibre.com')) return 'mercadolibre';
   if (url.includes('fravega.com')) return 'fravega';
+  if (url.includes('tiendaenova.com.ar') || url.includes('enovastore.com.ar')) return 'enova';
   return 'unknown';
 }
 
@@ -543,11 +544,152 @@ async function parseFravega(url: string): Promise<ImportedProductData> {
   };
 }
 
+const ENOVA_API_BASE = 'https://api.enovastore.com.ar';
+const ENOVA_CLOUDINARY_BASE = 'https://res.cloudinary.com/phinx-lab/image/upload';
+
+interface EnovaPublication {
+  id: string;
+  product: string;
+  description: string;
+  old_price: string | null;
+  price: Array<{ promotion_id: number; price: number }> | null;
+  has_stock: boolean;
+  state: string;
+  type: string;
+  attributes: {
+    title: string;
+    images: string[];
+    features: Array<{
+      name: string;
+      features: Array<{
+        name: string;
+        value?: string;
+        category_id?: string;
+        searchable?: boolean;
+      }>;
+    }>;
+  };
+}
+
+function extractEnovaId(url: string): string | null {
+  const match = url.match(
+    /tiendaenova\.com\.ar\/(?:product|categories)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
+  );
+  return match ? match[1] : null;
+}
+
+function isEnovaCategoryUrl(url: string): boolean {
+  return /tiendaenova\.com\.ar\/categories\//i.test(url);
+}
+
+function buildEnovaCloudinaryUrl(productId: string, imageRef: string): string {
+  const ref = imageRef.split('?')[0];
+  return `${ENOVA_CLOUDINARY_BASE}/${productId}/${ref}`;
+}
+
+function extractEnovaCategoryName(features: EnovaPublication['attributes']['features']): string | null {
+  const categoriesFeature = features.find(f => f.name === 'Categories');
+  if (!categoriesFeature) return null;
+
+  const cats = categoriesFeature.features;
+  if (!cats || cats.length === 0) return null;
+
+  const last = cats[cats.length - 1];
+  return last.name || null;
+}
+
+function mapEnovaPublicationToImported(pub: EnovaPublication): ImportedProductData {
+  const images = (pub.attributes.images || []).map(ref =>
+    buildEnovaCloudinaryUrl(pub.id, ref)
+  );
+
+  let referencePrice: number | null = null;
+  if (pub.price && pub.price.length > 0) {
+    referencePrice = pub.price[0].price;
+  } else if (pub.old_price) {
+    referencePrice = Number(pub.old_price);
+  }
+
+  const categoryName = extractEnovaCategoryName(pub.attributes.features) ?? undefined;
+
+  return {
+    name: pub.product || '',
+    description: pub.description || '',
+    images,
+    referencePrice,
+    source: 'enova',
+    rawData: pub,
+    categoryName,
+  };
+}
+
+async function fetchEnovaJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error al obtener datos de Enova: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+async function parseEnovaProduct(url: string): Promise<ImportedProductData> {
+  const productId = extractEnovaId(url);
+  if (!productId) {
+    throw new Error('No se pudo extraer el ID del producto de la URL de Enova.');
+  }
+
+  const pubs = await fetchEnovaJson<EnovaPublication[]>(
+    `${ENOVA_API_BASE}/publication/${productId}`
+  );
+
+  if (!pubs || pubs.length === 0) {
+    throw new Error('No se encontró el producto en Enova.');
+  }
+
+  return mapEnovaPublicationToImported(pubs[0]);
+}
+
+async function parseEnovaCategoryProducts(url: string): Promise<ImportedProductData[]> {
+  const categoryId = extractEnovaId(url);
+  if (!categoryId) {
+    throw new Error('No se pudo extraer el ID de la categoría de la URL de Enova.');
+  }
+
+  const pubs = await fetchEnovaJson<EnovaPublication[]>(
+    `${ENOVA_API_BASE}/category/${categoryId}`
+  );
+
+  if (!pubs || pubs.length === 0) {
+    throw new Error('No se encontraron productos en esta categoría de Enova.');
+  }
+
+  return pubs
+    .filter(pub => pub.type === '2' || pub.has_stock)
+    .map(mapEnovaPublicationToImported);
+}
+
 export async function importProductFromUrl(url: string): Promise<ImportedProductData> {
   const source = detectSource(url);
 
   if (source === 'unknown') {
-    throw new Error('URL no reconocida. Solo se soportan MitiendaNube, MercadoLibre y Fravega.');
+    throw new Error('URL no reconocida. Soportados: MitiendaNube, MercadoLibre, Fravega y Enova.');
+  }
+
+  if (source === 'enova') {
+    if (isEnovaCategoryUrl(url)) {
+      const products = await parseEnovaCategoryProducts(url);
+      if (products.length === 0) {
+        throw new Error('No se encontraron productos publicados en esta categoría.');
+      }
+      return products[0];
+    }
+    return parseEnovaProduct(url);
   }
 
   if (source === 'mitiendanube') {
@@ -563,6 +705,13 @@ export async function importProductFromUrl(url: string): Promise<ImportedProduct
   }
 
   throw new Error('Fuente no soportada');
+}
+
+export async function importEnovaCategory(url: string): Promise<ImportedProductData[]> {
+  if (!detectSource(url) || !isEnovaCategoryUrl(url)) {
+    throw new Error('URL de categoría de Enova inválida.');
+  }
+  return parseEnovaCategoryProducts(url);
 }
 
 export function slugify(name: string): string {

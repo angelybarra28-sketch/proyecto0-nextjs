@@ -49,7 +49,9 @@ export default function ProductInfo({
         price: priceNum,
         originalPrice: originalPriceNum,
         discount,
-        imageUrl
+        imageUrl,
+        installmentCount,
+        installmentAmount
       });
     }
 
@@ -69,7 +71,9 @@ export default function ProductInfo({
         price: priceNum,
         originalPrice: originalPriceNum,
         discount,
-        imageUrl
+        imageUrl,
+        installmentCount,
+        installmentAmount
       });
     }
 

@@ -325,7 +325,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                   <th>Stock</th>
                   <th>Status</th>
                   <th>Featured</th>
-                  <th>Tendencias</th>
+                  <th>OFERTAS</th>
                   <th>Acciones</th>
                 </tr>
               </thead>

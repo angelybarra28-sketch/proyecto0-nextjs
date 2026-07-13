@@ -27,33 +27,45 @@ export default function CartItemComponent({
     }
   };
 
+  const hasCuotas = item.installmentCount && item.installmentAmount;
+  const priceFormatted = `$${item.price.toLocaleString('es-AR')}`;
+  const cuotaText = hasCuotas
+    ? `${item.installmentCount} cuotas de $${item.installmentAmount!.toLocaleString('es-AR')}`
+    : null;
+
   return (
-    <div className={styles.cartItemContainer}>
-      <div className={styles.cartItem}>
-        {/* Checkbox */}
-        {isSelected !== undefined && onSelect && (
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={() => onSelect(item.id)}
-            className={styles.checkbox}
-          />
+    <div className={styles.cartItemCard}>
+      {/* Checkbox */}
+      {isSelected !== undefined && onSelect && (
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onSelect(item.id)}
+          className={styles.cardCheckbox}
+        />
+      )}
+
+      {/* Imagen */}
+      <div className={styles.cardImage}>
+        <Image
+          src={item.imageUrl}
+          alt={item.name}
+          fill
+          className={styles.cardImageInner}
+        />
+      </div>
+
+      {/* Datos del producto */}
+      <div className={styles.cardBody}>
+        <h3 className={styles.cardName}>{item.name}</h3>
+        <div className={styles.cardPrice}>{priceFormatted}</div>
+        {cuotaText && (
+          <div className={styles.cardInstallments}>{cuotaText}</div>
         )}
+      </div>
 
-        {/* Información */}
-        <div className={styles.itemInfo}>
-          <h3 className={styles.itemName}>{item.name}</h3>
-          <div className={styles.itemImage}>
-            <Image
-              src={item.imageUrl}
-              alt={item.name}
-              fill
-              className={styles.image}
-            />
-          </div>
-        </div>
-
-        {/* Cantidad */}
+      {/* Controles inferiores */}
+      <div className={styles.cardFooter}>
         <div className={styles.quantityControl}>
           <button onClick={handleDecrement} className={styles.qtyBtn}>−</button>
           <input
@@ -64,8 +76,6 @@ export default function CartItemComponent({
           />
           <button onClick={handleIncrement} className={styles.qtyBtn}>+</button>
         </div>
-
-        {/* Eliminar */}
         <button
           onClick={() => removeFromCart(item.id)}
           className={styles.removeBtn}

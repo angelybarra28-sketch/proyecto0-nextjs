@@ -448,15 +448,15 @@
     height: 63px;
   }
 
-  .header.scrolled .cartIconLink {
-    position: static;
-    top: auto;
-    right: auto;
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
-    z-index: 4;
-  }
+.header.scrolled .cartIconLink {
+  position: static;
+  top: auto;
+  right: auto;
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  z-index: 4;
+}
 
   .cartIconLink {
     position: static;
