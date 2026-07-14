@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { useCart } from '@/lib/cartContext';
 import styles from '@/styles/Cart.module.css';
 
-export default function CartSummary() {
+interface CartSummaryProps {
+  onWhatsApp: () => void;
+}
+
+export default function CartSummary({ onWhatsApp }: CartSummaryProps) {
   const { getTotalPrice, getSubtotal, getDiscountTotal, items } = useCart();
 
   const subtotal = getSubtotal();
@@ -69,11 +73,26 @@ export default function CartSummary() {
         </div>
       </div>
 
+      {/* Cuotas */}
+      {items.length > 0 && (
+        <div className={styles.summaryInstallments}>
+          <span className={styles.summaryInstallment}>
+            8 cuotas de ${Math.round(total / 8).toLocaleString('es-AR')}
+          </span>
+          <span className={styles.summaryInstallment}>
+            10 cuotas de ${Math.round(total / 10).toLocaleString('es-AR')}
+          </span>
+          <span className={styles.summaryInstallment + ' ' + styles.summaryInstallmentHighlight}>
+            12 cuotas de ${Math.round(total / 12).toLocaleString('es-AR')}
+          </span>
+        </div>
+      )}
+
       {/* CTA Button */}
       {items.length > 0 ? (
-        <Link href="/checkout" className={styles.checkoutButton}>
+        <button onClick={onWhatsApp} className={styles.checkoutButton}>
           Continuar compra
-        </Link>
+        </button>
       ) : (
         <button className={styles.checkoutButton + ' ' + styles.disabled} disabled>
           Carrito vacío

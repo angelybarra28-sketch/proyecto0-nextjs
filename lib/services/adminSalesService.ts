@@ -5,6 +5,8 @@ export {
   listAdminSalesPaginated,
   listRecentAdminSales,
   refreshAdminFinancialStatuses,
+  updateAdminSale,
+  replaceAdminSaleItems,
   type AdminSaleListInput,
   type AdminSalesPayload,
   type AdminSaleSorting,

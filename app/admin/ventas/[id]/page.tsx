@@ -43,10 +43,43 @@ export default function AdminSaleDetailPage() {
         paymentError={saleDetail.paymentError}
         isRegisteringPayment={saleDetail.isRegisteringPayment}
         onRegisterPayment={saleDetail.registerPayment}
+        editDelivery={saleDetail.editDelivery}
+        onEditDeliveryChange={(field, value) =>
+          saleDetail.setEditDelivery((prev) => ({ ...prev, [field]: value }))
+        }
+        editSaleNumber={saleDetail.editSaleNumber}
+        onEditSaleNumberChange={saleDetail.setEditSaleNumber}
+        isEditingDelivery={saleDetail.isEditingDelivery}
+        deliveryMessage={saleDetail.deliveryMessage}
+        onSaveDelivery={saleDetail.handleSaveDelivery}
+        editStatus={saleDetail.editStatus}
+        onEditStatusChange={saleDetail.setEditStatus}
+        isEditingStatus={saleDetail.isEditingStatus}
+        statusMessage={saleDetail.statusMessage}
+        onSaveStatus={saleDetail.handleSaveStatus}
+        editItems={saleDetail.editItems}
+        editDiscount={saleDetail.editDiscount}
+        onEditDiscountChange={saleDetail.setEditDiscount}
+        isEditingItems={saleDetail.isEditingItems}
+        itemsMessage={saleDetail.itemsMessage}
+        onItemNameChange={saleDetail.handleItemNameChange}
+        onItemPriceChange={saleDetail.handleItemPriceChange}
+        onItemQuantityChange={saleDetail.handleItemQuantityChange}
+        onItemInstallmentCountChange={saleDetail.handleItemInstallmentCountChange}
+        onItemInstallmentAmountChange={saleDetail.handleItemInstallmentAmountChange}
+        onRemoveItem={saleDetail.handleRemoveItem}
+        onSaveItems={saleDetail.handleSaveItems}
+        productSearchQuery={saleDetail.productSearchQuery}
+        productSearchResults={saleDetail.productSearchResults}
+        isSearchingProducts={saleDetail.isSearchingProducts}
+        showProductSearch={saleDetail.showProductSearch}
+        onShowProductSearchChange={saleDetail.setShowProductSearch}
+        onProductSearchChange={saleDetail.handleSearchProducts}
+        onAddProduct={saleDetail.handleAddProduct}
       />
 
       <div className={styles.backLink}>
-        <Link href="/admin">Volver al panel</Link>
+        <Link href="/admin/ventas">Volver a ventas</Link>
       </div>
     </div>
   );

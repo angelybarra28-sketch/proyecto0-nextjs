@@ -6,10 +6,13 @@ import {
   getSalesPaginated,
   getSalesWithCustomer,
   refreshFinancialStatuses,
+  updateSaleFields,
+  replaceSaleItems,
   type AdminSaleFilters,
   type AdminSaleSortKey,
+  type SaleUpdateFields,
 } from '@/lib/repositories/saleRepository';
-import type { AdminSaleDetail, AdminSaleSummary, CollectionStatus, SaleStatus, CollectionSummary } from '@/lib/supabase/types';
+import type { AdminSaleDetail, AdminSaleSummary, CollectionStatus, SaleStatus, CollectionSummary, SaleItemInsert } from '@/lib/supabase/types';
 import {
   createPagination,
   normalizeLimit,
@@ -175,4 +178,24 @@ export async function getAdminCollectionSummary(): Promise<CollectionSummary> {
   }
 
   return getCollectionSummary(supabase);
+}
+
+export async function updateAdminSale(saleId: string, fields: SaleUpdateFields): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+
+  if (!supabase) {
+    throw new Error('Supabase client not available');
+  }
+
+  await updateSaleFields(supabase, saleId, fields);
+}
+
+export async function replaceAdminSaleItems(saleId: string, items: SaleItemInsert[]): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+
+  if (!supabase) {
+    throw new Error('Supabase client not available');
+  }
+
+  await replaceSaleItems(supabase, saleId, items);
 }

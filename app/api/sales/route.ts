@@ -9,8 +9,6 @@ import type { CheckoutSaleInput } from '@/lib/supabase/types';
 function isValidCheckoutSaleInput(input: CheckoutSaleInput): boolean {
   return Boolean(
     input.customer?.fullName &&
-    input.customer?.address &&
-    input.customer?.city &&
     input.checkoutRequestId &&
     Array.isArray(input.items) &&
     input.items.length > 0

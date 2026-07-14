@@ -34,5 +34,8 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
     role: profile?.role ?? 'CUSTOMER',
     fullName: profile?.full_name ?? user.email ?? null,
     isActive: profile?.is_active ?? true,
+    telefono: user.user_metadata?.phone ?? null,
+    domicilio: user.user_metadata?.address ?? null,
+    email: user.email ?? null,
   };
 }

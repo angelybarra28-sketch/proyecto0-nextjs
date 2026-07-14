@@ -408,6 +408,62 @@ export async function updateSaleStatus(
   }
 }
 
+export type SaleUpdateFields = {
+  sale_number?: string;
+  delivery_full_name?: string;
+  delivery_phone?: string;
+  delivery_address?: string;
+  delivery_city?: string;
+  notes?: string;
+  sale_status?: SaleStatus;
+  subtotal_amount?: number;
+  discount_amount?: number;
+  total_amount?: number;
+  remaining_amount?: number;
+  installments_count?: number;
+  item_count?: number;
+};
+
+export async function updateSaleFields(
+  supabase: SupabaseClient,
+  saleId: string,
+  fields: SaleUpdateFields
+): Promise<void> {
+  const { error } = await supabase
+    .from('sales')
+    .update(fields)
+    .eq('id', saleId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function replaceSaleItems(
+  supabase: SupabaseClient,
+  saleId: string,
+  items: SaleItemInsert[]
+): Promise<void> {
+  const { error: deleteError } = await supabase
+    .from('sale_items')
+    .delete()
+    .eq('sale_id', saleId);
+
+  if (deleteError) {
+    throw deleteError;
+  }
+
+  if (items.length > 0) {
+    const { error: insertError } = await supabase
+      .from('sale_items')
+      .insert(items);
+
+    if (insertError) {
+      throw insertError;
+    }
+  }
+}
+
 export async function getSales(
   supabase: SupabaseClient,
   limit = 50

@@ -27,11 +27,11 @@ export default function CartItemComponent({
     }
   };
 
-  const hasCuotas = item.installmentCount && item.installmentAmount;
-  const priceFormatted = `$${item.price.toLocaleString('es-AR')}`;
-  const cuotaText = hasCuotas
-    ? `${item.installmentCount} cuotas de $${item.installmentAmount!.toLocaleString('es-AR')}`
-    : null;
+  const totalPrice = item.price * item.quantity;
+  const installmentCount = item.installmentCount ?? 8;
+  const installmentAmount = Math.round(totalPrice / installmentCount);
+  const priceFormatted = `$${totalPrice.toLocaleString('es-AR')}`;
+  const cuotaText = `${installmentCount} cuotas de $${installmentAmount.toLocaleString('es-AR')}`;
 
   return (
     <div className={styles.cartItemCard}>
@@ -58,10 +58,8 @@ export default function CartItemComponent({
       {/* Datos del producto */}
       <div className={styles.cardBody}>
         <h3 className={styles.cardName}>{item.name}</h3>
+        <div className={styles.cardInstallments}>{cuotaText}</div>
         <div className={styles.cardPrice}>{priceFormatted}</div>
-        {cuotaText && (
-          <div className={styles.cardInstallments}>{cuotaText}</div>
-        )}
       </div>
 
       {/* Controles inferiores */}

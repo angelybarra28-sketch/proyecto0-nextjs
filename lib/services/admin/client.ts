@@ -1,4 +1,4 @@
-import type { AdminDashboardStats, AdminSaleDetail, CollectionSummary, RegisterPaymentInput, RegisterPaymentResult } from '@/lib/supabase/types';
+import type { AdminDashboardStats, AdminSaleDetail, CollectionSummary, RegisterPaymentInput, RegisterPaymentResult, SaleItemInsert, SaleStatus } from '@/lib/supabase/types';
 import type { AdminCatalogPayload, AdminProductListInput, AdminProductPayload } from '@/lib/services/adminCatalogService';
 import type { AdminSaleListInput, AdminSalesPayload } from '@/lib/services/adminSalesService';
 import type { AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
@@ -85,6 +85,36 @@ export async function registerAdminSalePayment(
 
   const payload = await response.json() as { payment: RegisterPaymentResult };
   return payload.payment;
+}
+
+export type SaleUpdateFields = {
+  sale_number?: string;
+  delivery_full_name?: string;
+  delivery_phone?: string;
+  delivery_address?: string;
+  delivery_city?: string;
+  notes?: string;
+  sale_status?: SaleStatus;
+  subtotal_amount?: number;
+  discount_amount?: number;
+  total_amount?: number;
+  remaining_amount?: number;
+  installments_count?: number;
+  item_count?: number;
+  items?: SaleItemInsert[];
+};
+
+export async function updateAdminSale(saleId: string, fields: SaleUpdateFields): Promise<void> {
+  const response = await fetch(`/api/admin/sales/${saleId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(fields),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { error?: string };
+    throw new Error(payload.error ?? 'No se pudo actualizar la venta');
+  }
 }
 
 export async function fetchAdminCategories(signal?: AbortSignal): Promise<import('@/lib/services/adminCategoryService').AdminCategoryPayload> {

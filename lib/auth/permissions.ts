@@ -5,6 +5,9 @@ export interface AuthProfile {
   role: AppRole;
   fullName: string | null;
   isActive: boolean;
+  telefono: string | null;
+  domicilio: string | null;
+  email: string | null;
 }
 
 export function canAccessAdmin(role: AppRole | null | undefined): boolean {

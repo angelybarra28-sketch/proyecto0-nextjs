@@ -88,6 +88,12 @@ export function AdminOverviewPage() {
           </button>
         </Link>
 
+        <Link href="/admin/ventas">
+          <button className={styles.adminActionButton}>
+            Ventas
+          </button>
+        </Link>
+
         <Link href="/admin/ventas/nueva">
           <button className={styles.adminPrimaryButton}>
             <span className={styles.desktopOnly}>+ CARGAR </span>VENTA MANUAL

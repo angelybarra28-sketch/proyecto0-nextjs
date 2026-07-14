@@ -14,14 +14,14 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function toAppUser(profile: { userId: string; role: AppRole; fullName: string | null }): User {
+function toAppUser(profile: { userId: string; role: AppRole; fullName: string | null; telefono: string | null; domicilio: string | null; email: string | null }): User {
   return {
     id: profile.userId,
     dni: '',
     nombreApellido: profile.fullName ?? 'Usuario',
-    telefono: '',
-    email: '',
-    domicilio: '',
+    telefono: profile.telefono ?? '',
+    email: profile.email ?? '',
+    domicilio: profile.domicilio ?? '',
     password: '',
     role: canAccessAdmin(profile.role) ? 'admin' : 'user',
     createdAt: new Date().toISOString(),
