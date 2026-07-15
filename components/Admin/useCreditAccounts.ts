@@ -30,8 +30,11 @@ export function useCreditAccounts(
   const [dashboard, setDashboard] = useState<CreditDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 15;
 
-const load = useCallback(async (signal?: AbortSignal) => {
+  const load = useCallback(async (signal?: AbortSignal, currentPage?: number) => {
     setIsLoading(true);
     setError('');
 
@@ -39,10 +42,13 @@ const load = useCallback(async (signal?: AbortSignal) => {
       const data = await fetchCreditAccounts(signal, {
         search,
         statusFilter,
+        page: currentPage ?? 1,
+        pageSize: PAGE_SIZE,
       });
 
       setAccounts(data.accounts);
       setDashboard(data.dashboard);
+      if (data.totalCount !== undefined) setTotalCount(data.totalCount);
     } catch (err) {
       if (isAbortError(err) || signal?.aborted) return;
       console.error('Error loading credit accounts:', err);
@@ -50,14 +56,19 @@ const load = useCallback(async (signal?: AbortSignal) => {
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter]);
+  }, [search, statusFilter, PAGE_SIZE]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    setPage(1);
+  }, [enabled, search, statusFilter]);
 
   useEffect(() => {
     if (!enabled) return;
     const controller = new AbortController();
-    load(controller.signal);
+    load(controller.signal, page);
     return () => controller.abort();
-  }, [enabled, load]);
+  }, [enabled, load, page]);
 
   const reload = useCallback(async () => {
     setIsLoading(true);
@@ -66,16 +77,19 @@ const load = useCallback(async (signal?: AbortSignal) => {
       const data = await fetchCreditAccounts(undefined, {
         search,
         statusFilter,
+        page,
+        pageSize: PAGE_SIZE,
       });
       setAccounts(data.accounts);
       setDashboard(data.dashboard);
+      if (data.totalCount !== undefined) setTotalCount(data.totalCount);
     } catch (err) {
       console.error('Error reloading credit accounts:', err);
       setError('No se pudieron cargar las cuentas corrientes');
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter]);
+  }, [search, statusFilter, page, PAGE_SIZE]);
 
   const createAccount = useCallback(async (input: CreateCreditAccountInput) => {
     try {
@@ -103,7 +117,7 @@ const load = useCallback(async (signal?: AbortSignal) => {
     await load();
   }, [load]);
 
-  return { accounts, dashboard, isLoading, error, reload, createAccount, addPaymentInline, fixInstallments };
+  return { accounts, dashboard, isLoading, error, reload, createAccount, addPaymentInline, fixInstallments, page, setPage, totalCount, pageSize: PAGE_SIZE };
 }
 
 export function useCreditAccountDetail(accountId: string | null) {

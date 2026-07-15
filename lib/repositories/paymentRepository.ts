@@ -29,7 +29,12 @@ export async function registerSalePayment(
     .single();
 
   if (error) {
-    throw error;
+    const message = error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error !== null && 'message' in error
+        ? String((error as Record<string, unknown>).message)
+        : 'Error desconocido de Supabase';
+    throw new Error(message, { cause: error });
   }
 
   const row = data as RegisterPaymentRpcRow;

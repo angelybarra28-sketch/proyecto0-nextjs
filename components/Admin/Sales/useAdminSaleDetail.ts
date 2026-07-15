@@ -39,17 +39,14 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
 
   const [editSaleNumber, setEditSaleNumber] = useState('');
   const [editDelivery, setEditDelivery] = useState({ fullName: '', phone: '', address: '', city: '', notes: '' });
-  const [isEditingDelivery, setIsEditingDelivery] = useState(false);
-  const [deliveryMessage, setDeliveryMessage] = useState('');
 
   const [editStatus, setEditStatus] = useState<SaleStatus>('PENDING');
-  const [isEditingStatus, setIsEditingStatus] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
 
   const [editItems, setEditItems] = useState<EditItem[]>([]);
   const [editDiscount, setEditDiscount] = useState('0');
-  const [isEditingItems, setIsEditingItems] = useState(false);
-  const [itemsMessage, setItemsMessage] = useState('');
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [productSearchResults, setProductSearchResults] = useState<AdminCatalogProduct[]>([]);
@@ -120,40 +117,57 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
     }
   }, [saleId]);
 
-  const handleSaveDelivery = async () => {
-    if (!sale) return;
-    setIsEditingDelivery(true);
-    setDeliveryMessage('');
+  const handleSaveAll = async () => {
+    if (!sale || isSaving) return;
+    setIsSaving(true);
+    setSaveMessage('');
     try {
-      await updateAdminSale(sale.id, {
+      const items: SaleItemInsert[] = editItems.map((item) => ({
+        sale_id: sale.id,
+        product_name_snapshot: item.name,
+        product_slug_snapshot: item.slug || null,
+        category_name_snapshot: item.categoryName || null,
+        legacy_product_id: item.legacyProductId,
+        unit_price_snapshot: item.unitPrice,
+        quantity: item.quantity,
+        line_subtotal: item.unitPrice * item.quantity,
+        line_discount_amount: 0,
+        line_total: item.unitPrice * item.quantity,
+      }));
+
+      const newSubtotal = items.reduce((sum, item) => sum + item.line_total, 0);
+      const discount = Number(editDiscount) || 0;
+      const newTotal = newSubtotal - discount;
+      const firstInstallmentCount = editItems[0]?.installmentCount ?? 8;
+
+      const wasPending = sale.saleStatus === 'PENDING';
+      const result = await updateAdminSale(sale.id, {
         sale_number: editSaleNumber,
+        sale_status: editStatus,
         delivery_full_name: editDelivery.fullName,
         delivery_phone: editDelivery.phone,
         delivery_address: editDelivery.address,
         delivery_city: editDelivery.city,
         notes: editDelivery.notes,
+        subtotal_amount: newSubtotal,
+        discount_amount: discount,
+        total_amount: newTotal,
+        remaining_amount: newTotal - sale.paidAmount,
+        item_count: items.length,
+        installments_count: firstInstallmentCount,
+        items,
       });
       await refreshSale();
-      setDeliveryMessage('Guardado');
-    } catch {
-      setDeliveryMessage('Error');
-    } finally {
-      setIsEditingDelivery(false);
-    }
-  };
 
-  const handleSaveStatus = async () => {
-    if (!sale) return;
-    setIsEditingStatus(true);
-    setStatusMessage('');
-    try {
-      await updateAdminSale(sale.id, { sale_status: editStatus });
-      await refreshSale();
-      setStatusMessage('Actualizado');
+      if (wasPending && editStatus === 'CONFIRMED' && result.creditAccountId) {
+        setSaveMessage('Venta confirmada y cuenta corriente creada');
+      } else {
+        setSaveMessage('Guardado');
+      }
     } catch {
-      setStatusMessage('Error');
+      setSaveMessage('Error');
     } finally {
-      setIsEditingStatus(false);
+      setIsSaving(false);
     }
   };
 
@@ -250,48 +264,6 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
     setShowProductSearch(false);
   }, []);
 
-  const handleSaveItems = async () => {
-    if (!sale) return;
-    setIsEditingItems(true);
-    setItemsMessage('');
-    try {
-      const items: SaleItemInsert[] = editItems.map((item) => ({
-        sale_id: sale.id,
-        product_name_snapshot: item.name,
-        product_slug_snapshot: item.slug || null,
-        category_name_snapshot: item.categoryName || null,
-        legacy_product_id: item.legacyProductId,
-        unit_price_snapshot: item.unitPrice,
-        quantity: item.quantity,
-        line_subtotal: item.unitPrice * item.quantity,
-        line_discount_amount: 0,
-        line_total: item.unitPrice * item.quantity,
-      }));
-
-      const newSubtotal = items.reduce((sum, item) => sum + item.line_total, 0);
-      const discount = Number(editDiscount) || 0;
-      const newTotal = newSubtotal - discount;
-
-      const firstInstallmentCount = editItems[0]?.installmentCount ?? 8;
-
-      await updateAdminSale(sale.id, {
-        subtotal_amount: newSubtotal,
-        discount_amount: discount,
-        total_amount: newTotal,
-        remaining_amount: newTotal - sale.paidAmount,
-        item_count: items.length,
-        installments_count: firstInstallmentCount,
-        items,
-      });
-      await refreshSale();
-      setItemsMessage('Guardado');
-    } catch {
-      setItemsMessage('Error');
-    } finally {
-      setIsEditingItems(false);
-    }
-  };
-
   const registerPayment = async () => {
     if (!sale || isRegisteringPayment) return;
 
@@ -302,10 +274,7 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
       return;
     }
 
-    if (amount > sale.remainingAmount) {
-      setPaymentError('El monto no puede superar el saldo pendiente');
-      return;
-    }
+    const cappedAmount = Math.min(amount, sale.remainingAmount);
 
     const parsedPaymentDate = new Date(paymentDate);
     const maxPaymentDate = new Date();
@@ -325,7 +294,7 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
       await registerAdminSalePayment({
         saleId: sale.id,
         paymentRequestId: requestId,
-        amount,
+        amount: cappedAmount,
         paymentMethod,
         paymentDate,
         notes: paymentNotes || undefined,
@@ -363,26 +332,20 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
     setEditSaleNumber,
     editDelivery,
     setEditDelivery,
-    isEditingDelivery,
-    deliveryMessage,
-    handleSaveDelivery,
     editStatus,
     setEditStatus,
-    isEditingStatus,
-    statusMessage,
-    handleSaveStatus,
     editItems,
     editDiscount,
     setEditDiscount,
-    isEditingItems,
-    itemsMessage,
+    isSaving,
+    saveMessage,
+    handleSaveAll,
     handleItemNameChange,
     handleItemPriceChange,
     handleItemQuantityChange,
     handleItemInstallmentCountChange,
     handleItemInstallmentAmountChange,
     handleRemoveItem,
-    handleSaveItems,
     productSearchQuery,
     productSearchResults,
     isSearchingProducts,

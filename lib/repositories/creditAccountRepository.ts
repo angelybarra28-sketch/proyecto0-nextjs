@@ -154,6 +154,64 @@ export async function getCreditAccounts(
   return { accounts: accounts ?? [], installments, payments, items };
 }
 
+export async function getCreditAccountsPaginated(
+  supabase: SupabaseClient,
+  options: { page: number; pageSize: number; statusFilter?: 'active' | 'finished' | 'all'; search?: string }
+): Promise<{ accounts: DbCreditAccount[]; installments: DbCreditInstallment[]; payments: DbCreditPayment[]; items: DbCreditAccountItem[]; totalCount: number }> {
+  const { page, pageSize, statusFilter = 'active', search } = options;
+
+  let baseQuery = supabase
+    .from('credit_accounts')
+    .select('*')
+    .eq('is_active', true)
+    .order('sale_date', { ascending: false });
+
+  if (search) {
+    const q = search.trim().toLowerCase();
+    baseQuery = baseQuery.or(`operation_number.ilike.%${q}%,product_name.ilike.%${q}%`);
+  }
+
+  const { data: allAccounts, error: accError } = await baseQuery;
+
+  if (accError) {
+    throw accError;
+  }
+
+  const allAccountIds = (allAccounts ?? []).map((a) => a.id);
+
+  const allInstallments = await batchedInQuery<{ credit_account_id: string; original_amount: number; paid_amount: number }>(
+    supabase, 'credit_installments', 'credit_account_id', allAccountIds, { column: 'installment_number', ascending: true }
+  );
+
+  const instByAccount = new Map<string, { original_amount: number; paid_amount: number }[]>();
+  for (const inst of allInstallments) {
+    const list = instByAccount.get(inst.credit_account_id) ?? [];
+    list.push(inst);
+    instByAccount.set(inst.credit_account_id, list);
+  }
+
+  let filteredAccounts = (allAccounts ?? []).filter((account) => {
+    if (statusFilter === 'all') return true;
+    const accInst = instByAccount.get(account.id) ?? [];
+    const total = accInst.reduce((sum, i) => sum + Number(i.original_amount), 0);
+    const paid = accInst.reduce((sum, i) => sum + Number(i.paid_amount), 0);
+    const remaining = total - paid;
+    return statusFilter === 'active' ? remaining > 0 : remaining <= 0;
+  });
+
+  const totalCount = filteredAccounts.length;
+
+  const from = (page - 1) * pageSize;
+  const pagedAccounts = filteredAccounts.slice(from, from + pageSize);
+  const pagedIds = pagedAccounts.map((a) => a.id);
+
+  const installments = await batchedInQuery<DbCreditInstallment>(supabase, 'credit_installments', 'credit_account_id', pagedIds, { column: 'installment_number', ascending: true });
+  const payments = await batchedInQuery<DbCreditPayment>(supabase, 'credit_payments', 'credit_account_id', pagedIds, { column: 'payment_date', ascending: false });
+  const items = await batchedInQuery<DbCreditAccountItem>(supabase, 'credit_account_items', 'credit_account_id', pagedIds, { column: 'created_at', ascending: true });
+
+  return { accounts: pagedAccounts, installments, payments, items, totalCount };
+}
+
 export async function getCreditAccountById(
   supabase: SupabaseClient,
   accountId: string
@@ -225,6 +283,21 @@ export async function getCustomerForCredit(
     throw error;
   }
 
+  return data;
+}
+
+export async function findCreditAccountByOperationNumber(
+  supabase: SupabaseClient,
+  saleNumber: string
+): Promise<DbCreditAccount | null> {
+  const { data, error } = await supabase
+    .from('credit_accounts')
+    .select('*')
+    .eq('operation_number', saleNumber)
+    .is('is_active', true)
+    .maybeSingle();
+
+  if (error) throw error;
   return data;
 }
 

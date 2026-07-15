@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminSaleDetail, updateAdminSale, replaceAdminSaleItems } from '@/lib/services/adminSalesService';
+import { createCreditAccountFromSale } from '@/lib/services/saleToCreditService';
 import { requireAdminUser } from '@/lib/auth/server';
 import type { SaleStatus, SaleItemInsert } from '@/lib/supabase/types';
 
@@ -76,7 +77,16 @@ export async function PATCH(request: Request, { params }: Props) {
       await replaceAdminSaleItems(id, body.items);
     }
 
-    return NextResponse.json({ success: true });
+    let creditAccountId: string | null = null;
+    if (body.sale_status === 'CONFIRMED') {
+      try {
+        creditAccountId = await createCreditAccountFromSale(id);
+      } catch (creditError) {
+        console.error('[PATCH sale] Error creating credit account:', creditError);
+      }
+    }
+
+    return NextResponse.json({ success: true, creditAccountId });
   } catch (error) {
     console.error('Error updating sale:', error);
     return NextResponse.json({ error: 'No se pudo actualizar la venta' }, { status: 500 });

@@ -25,7 +25,11 @@ export function classifyError(error: unknown): ApiErrorCode {
 }
 
 export function errorResponse(error: unknown, requestId: string, status = 400) {
-  const message = error instanceof Error ? error.message : 'Error interno';
+  const message = error instanceof Error
+    ? error.message
+    : typeof error === 'object' && error !== null && 'message' in error
+      ? String((error as Record<string, unknown>).message)
+      : 'Error interno';
 
   return NextResponse.json({
     success: false,

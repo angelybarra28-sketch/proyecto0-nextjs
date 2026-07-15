@@ -79,8 +79,8 @@ export async function registerAdminSalePayment(
   });
 
   if (!response.ok) {
-    const payload = await response.json() as { message?: string };
-    throw new Error(payload.message ?? 'No se pudo registrar el pago');
+    const message = await parseApiError(response);
+    throw new Error(message || 'No se pudo registrar el pago');
   }
 
   const payload = await response.json() as { payment: RegisterPaymentResult };
@@ -104,7 +104,7 @@ export type SaleUpdateFields = {
   items?: SaleItemInsert[];
 };
 
-export async function updateAdminSale(saleId: string, fields: SaleUpdateFields): Promise<void> {
+export async function updateAdminSale(saleId: string, fields: SaleUpdateFields): Promise<{ creditAccountId?: string | null }> {
   const response = await fetch(`/api/admin/sales/${saleId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -115,6 +115,8 @@ export async function updateAdminSale(saleId: string, fields: SaleUpdateFields):
     const payload = await response.json() as { error?: string };
     throw new Error(payload.error ?? 'No se pudo actualizar la venta');
   }
+
+  return await response.json() as { success: boolean; creditAccountId?: string | null };
 }
 
 export async function fetchAdminCategories(signal?: AbortSignal): Promise<import('@/lib/services/adminCategoryService').AdminCategoryPayload> {
@@ -362,8 +364,8 @@ export async function toggleAdminUser(userId: string, isActive: boolean, signal?
   });
 
   if (!response.ok) {
-    const payload = await response.json() as { message?: string };
-    throw new Error(payload.message ?? 'No se pudo actualizar el estado del usuario');
+    const payload = await response.json() as { error?: { message?: string }; message?: string };
+    throw new Error(payload.error?.message ?? payload.message ?? 'No se pudo registrar el pago');
   }
 
   const payload = await response.json() as { previousIsActive: boolean; newIsActive: boolean };
@@ -372,19 +374,21 @@ export async function toggleAdminUser(userId: string, isActive: boolean, signal?
 
 export async function fetchCreditAccounts(
   signal?: AbortSignal,
-  options?: { search?: string; statusFilter?: 'active' | 'finished' | 'all' }
-): Promise<{ accounts: import('@/lib/types').CreditAccountSummary[]; dashboard: import('@/lib/types').CreditDashboard | null }> {
+  options?: { search?: string; statusFilter?: 'active' | 'finished' | 'all'; page?: number; pageSize?: number }
+): Promise<{ accounts: import('@/lib/types').CreditAccountSummary[]; dashboard: import('@/lib/types').CreditDashboard | null; totalCount?: number; page?: number; pageSize?: number }> {
   const searchParams = new URLSearchParams();
   searchParams.set('dashboard', 'true');
   if (options?.search) searchParams.set('search', options.search);
   if (options?.statusFilter) searchParams.set('statusFilter', options.statusFilter);
+  if (options?.page) searchParams.set('page', String(options.page));
+  if (options?.pageSize) searchParams.set('pageSize', String(options.pageSize));
   const response = await fetch(`/api/admin/credit-accounts?${searchParams.toString()}`, { signal });
 
   if (!response.ok) {
     throw new Error('No se pudieron cargar las cuentas corrientes');
   }
 
-  return await response.json() as { accounts: import('@/lib/types').CreditAccountSummary[]; dashboard: import('@/lib/types').CreditDashboard | null };
+  return await response.json() as { accounts: import('@/lib/types').CreditAccountSummary[]; dashboard: import('@/lib/types').CreditDashboard | null; totalCount?: number; page?: number; pageSize?: number };
 }
 
 export async function createCreditAccount(
@@ -399,8 +403,8 @@ export async function createCreditAccount(
   });
 
   if (!response.ok) {
-    const payload = await response.json() as { message?: string };
-    throw new Error(payload.message ?? 'No se pudo crear la cuenta corriente');
+    const message = await parseApiError(response);
+    throw new Error(message || 'No se pudo registrar el pago');
   }
 
   const payload = await response.json() as { account: import('@/lib/types').CreditAccountSummary };

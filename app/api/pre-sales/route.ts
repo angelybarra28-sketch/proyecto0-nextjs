@@ -105,7 +105,8 @@ export async function POST(request: Request) {
       .insert(installmentRows);
 
     if (installmentError) {
-      console.error('[pre-sales] Error creating installments:', installmentError);
+      await supabase.from('sales').delete().eq('id', sale.id);
+      throw new Error(`Error al crear las cuotas: ${installmentError.message}`);
     }
 
     return NextResponse.json({

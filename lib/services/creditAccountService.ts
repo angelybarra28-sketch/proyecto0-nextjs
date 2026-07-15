@@ -1,5 +1,6 @@
 import {
   getCreditAccounts,
+  getCreditAccountsPaginated,
   getCreditAccountById,
   getCustomerForCredit,
   insertCreditAccount,
@@ -234,6 +235,82 @@ export async function listCreditAccountSummaries(options?: {
   }
 
   return summaries;
+}
+
+export async function listCreditAccountSummariesPaginated(options?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  statusFilter?: 'active' | 'finished' | 'all';
+}): Promise<{ accounts: CreditAccountSummary[]; totalCount: number; page: number; pageSize: number }> {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    throw new Error('Supabase no está configurado');
+  }
+
+  const page = options?.page ?? 1;
+  const pageSize = options?.pageSize ?? 15;
+
+  const { accounts, installments, payments, items, totalCount } = await getCreditAccountsPaginated(supabase, {
+    page,
+    pageSize,
+    statusFilter: options?.statusFilter ?? 'active',
+    search: options?.search,
+  });
+
+  const installmentsByAccount = new Map<string, { original_amount: number; paid_amount: number; remaining_amount: number; status: string }[]>();
+  for (const inst of installments) {
+    const list = installmentsByAccount.get(inst.credit_account_id) ?? [];
+    list.push(inst);
+    installmentsByAccount.set(inst.credit_account_id, list);
+  }
+
+  const paymentsByAccount = new Map<string, { payment_date: string }[]>();
+  for (const payment of payments) {
+    const list = paymentsByAccount.get(payment.credit_account_id) ?? [];
+    list.push({ payment_date: payment.payment_date });
+    paymentsByAccount.set(payment.credit_account_id, list);
+  }
+
+  const itemsByAccount = new Map<string, import('@/lib/repositories/creditAccountRepository').DbCreditAccountItem[]>();
+  for (const item of items) {
+    const list = itemsByAccount.get(item.credit_account_id) ?? [];
+    list.push(item);
+    itemsByAccount.set(item.credit_account_id, list);
+  }
+
+  const summaries = accounts.map((account) => {
+    const summary = calculateSummary(
+      account,
+      installmentsByAccount.get(account.id) ?? [],
+      paymentsByAccount.get(account.id) ?? []
+    );
+    const accountItems = itemsByAccount.get(account.id) ?? [];
+    if (accountItems.length > 0) {
+      summary.items = accountItems.map((item) => ({
+        id: item.id,
+        creditAccountId: item.credit_account_id,
+        productName: item.product_name,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        createdAt: item.created_at,
+      }));
+    }
+    return summary;
+  });
+
+  const customerIds = [...new Set(summaries.map((s) => s.customerId))];
+  const customers = await batchedCustomerQuery(supabase, customerIds);
+  const customerMap = new Map<string, { id: string; full_name: string; phone: string | null }>(
+    customers.map((c) => [c.id, c])
+  );
+
+  const enriched = summaries.map((s) => ({
+    ...s,
+    customerName: customerMap.get(s.customerId)?.full_name ?? 'Cliente desconocido',
+  }));
+
+  return { accounts: enriched, totalCount, page, pageSize };
 }
 
 export async function getCreditAccountDetail(accountId: string): Promise<CreditAccountDetail> {

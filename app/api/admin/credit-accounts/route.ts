@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireStrictAdminUser } from '@/lib/auth/server';
 import {
   listCreditAccountSummaries,
+  listCreditAccountSummariesPaginated,
   createCreditAccount,
   getCreditDashboard,
 } from '@/lib/services/creditAccountService';
@@ -19,6 +20,35 @@ export async function GET(request: Request) {
     const withDashboard = url.searchParams.get('dashboard') === 'true';
     const search = url.searchParams.get('search') ?? undefined;
     const statusFilter = url.searchParams.get('statusFilter') as 'active' | 'finished' | 'all' | undefined;
+    const pageParam = url.searchParams.get('page');
+    const pageSizeParam = url.searchParams.get('pageSize');
+
+    const usePagination = pageParam !== null || pageSizeParam !== null;
+
+    if (usePagination) {
+      const page = Math.max(1, Number(pageParam) || 1);
+      const pageSize = Math.min(100, Math.max(1, Number(pageSizeParam) || 15));
+
+      const result = await listCreditAccountSummariesPaginated({
+        page,
+        pageSize,
+        search,
+        statusFilter: statusFilter ?? 'active',
+      });
+
+      if (withDashboard) {
+        const dashboard = await getCreditDashboard();
+        return NextResponse.json(
+          { accounts: result.accounts, dashboard, totalCount: result.totalCount, page: result.page, pageSize: result.pageSize },
+          { headers: { 'x-request-id': context.requestId } }
+        );
+      }
+
+      return NextResponse.json(
+        { accounts: result.accounts, totalCount: result.totalCount, page: result.page, pageSize: result.pageSize },
+        { headers: { 'x-request-id': context.requestId } }
+      );
+    }
 
     const accounts = await listCreditAccountSummaries({ search, statusFilter });
 

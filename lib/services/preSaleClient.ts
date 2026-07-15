@@ -28,6 +28,7 @@ export async function persistPreSale(
           price: item.price,
           quantity: item.quantity,
           imageUrl: item.imageUrl,
+          installmentCount: item.installmentCount,
         })),
       }),
     });

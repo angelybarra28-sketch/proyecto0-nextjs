@@ -35,26 +35,20 @@ type AdminSaleDetailViewProps = {
   onEditDeliveryChange: (field: string, value: string) => void;
   editSaleNumber: string;
   onEditSaleNumberChange: (value: string) => void;
-  isEditingDelivery: boolean;
-  deliveryMessage: string;
-  onSaveDelivery: () => void;
   editStatus: SaleStatus;
   onEditStatusChange: (value: SaleStatus) => void;
-  isEditingStatus: boolean;
-  statusMessage: string;
-  onSaveStatus: () => void;
   editItems: EditItem[];
   editDiscount: string;
   onEditDiscountChange: (value: string) => void;
-  isEditingItems: boolean;
-  itemsMessage: string;
+  isSaving: boolean;
+  saveMessage: string;
+  onSaveAll: () => void;
   onItemNameChange: (key: string, name: string) => void;
   onItemPriceChange: (key: string, price: number) => void;
   onItemQuantityChange: (key: string, quantity: number) => void;
   onItemInstallmentCountChange: (key: string, count: number) => void;
   onItemInstallmentAmountChange: (key: string, amount: number) => void;
   onRemoveItem: (key: string) => void;
-  onSaveItems: () => void;
   productSearchQuery: string;
   productSearchResults: AdminCatalogProduct[];
   isSearchingProducts: boolean;
@@ -110,26 +104,20 @@ export function AdminSaleDetailView({
   onEditDeliveryChange,
   editSaleNumber,
   onEditSaleNumberChange,
-  isEditingDelivery,
-  deliveryMessage,
-  onSaveDelivery,
   editStatus,
   onEditStatusChange,
-  isEditingStatus,
-  statusMessage,
-  onSaveStatus,
   editItems,
   editDiscount,
   onEditDiscountChange,
-  isEditingItems,
-  itemsMessage,
+  isSaving,
+  saveMessage,
+  onSaveAll,
   onItemNameChange,
   onItemPriceChange,
   onItemQuantityChange,
   onItemInstallmentCountChange,
   onItemInstallmentAmountChange,
   onRemoveItem,
-  onSaveItems,
   productSearchQuery,
   productSearchResults,
   isSearchingProducts,
@@ -170,7 +158,7 @@ export function AdminSaleDetailView({
                 <select
                   value={editStatus}
                   onChange={(e) => onEditStatusChange(e.target.value as SaleStatus)}
-                  disabled={isEditingStatus}
+                  disabled={isSaving}
                   style={getInputStyle({ width: 130 })}
                 >
                   {STATUS_OPTIONS.map((s) => (
@@ -178,20 +166,6 @@ export function AdminSaleDetailView({
                   ))}
                 </select>
               </div>
-              <div style={{ flex: '0 0 auto', paddingTop: 12 }}>
-                <button
-                  className={styles.compactBtn}
-                  onClick={onSaveStatus}
-                  disabled={isEditingStatus || editStatus === sale.saleStatus}
-                >
-                  {isEditingStatus ? '...' : 'Estado'}
-                </button>
-              </div>
-              {statusMessage && (
-                <span className={`${styles.editFormMessage} ${statusMessage === 'Error' ? styles.error : styles.success}`}>
-                  {statusMessage}
-                </span>
-              )}
             </div>
 
             <div className={styles.editFormGrid}>
@@ -241,20 +215,6 @@ export function AdminSaleDetailView({
                   style={getInputStyle()}
                 />
               </div>
-            </div>
-            <div className={styles.editFormActions}>
-              <button
-                className={styles.compactBtn}
-                onClick={onSaveDelivery}
-                disabled={isEditingDelivery}
-              >
-                {isEditingDelivery ? '...' : 'Guardar'}
-              </button>
-              {deliveryMessage && (
-                <span className={`${styles.editFormMessage} ${deliveryMessage === 'Error' ? styles.error : styles.success}`}>
-                  {deliveryMessage}
-                </span>
-              )}
             </div>
           </section>
 
@@ -398,22 +358,19 @@ export function AdminSaleDetailView({
                 <label style={getLabelStyle()}>Total</label>
                 <span style={{ color: '#c8a87c', fontSize: 13, fontWeight: 700 }}>{formatCurrency(total)}</span>
               </div>
-              <div style={{ marginLeft: 'auto', paddingTop: 12 }}>
-                <button
-                  className={styles.compactBtn}
-                  onClick={onSaveItems}
-                  disabled={isEditingItems}
-                >
-                  {isEditingItems ? '...' : 'Guardar'}
-                </button>
-                {itemsMessage && (
-                  <span className={`${styles.editFormMessage} ${itemsMessage === 'Error' ? styles.error : styles.success}`} style={{ marginLeft: 6 }}>
-                    {itemsMessage}
-                  </span>
-                )}
-              </div>
             </div>
           </section>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
+            <button className={styles.compactBtn} onClick={onSaveAll} disabled={isSaving}>
+              {isSaving ? '...' : 'Cargar'}
+            </button>
+            {saveMessage && (
+              <span className={`${styles.editFormMessage} ${saveMessage.startsWith('Error') ? styles.error : styles.success}`}>
+                {saveMessage}
+              </span>
+            )}
+          </div>
 
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Pagos ({sale.payments.length})</h2>
@@ -426,6 +383,7 @@ export function AdminSaleDetailView({
                     <input
                       type="number"
                       min="1"
+                      max={sale.remainingAmount}
                       step="0.01"
                       value={paymentAmount}
                       onChange={(event) => onPaymentAmountChange(event.target.value)}
@@ -474,46 +432,117 @@ export function AdminSaleDetailView({
               </form>
             )}
 
-            {sale.installments.length === 0 && (
-              <p className={styles.empty}>Sin cuotas</p>
-            )}
-            {sale.remainingAmount <= 0 && sale.installments.length > 0 && (
-              <p className={styles.empty}>Pago completo</p>
-            )}
+            {(() => {
+              const instToPayments = new Map<string, Array<{ date: string; amount: number }>>();
+              for (const payment of sale.payments) {
+                for (const alloc of payment.allocations.filter((a) => a.status === 'ACTIVE')) {
+                  const list = instToPayments.get(alloc.installmentId) ?? [];
+                  list.push({ date: payment.paymentDate, amount: alloc.amount });
+                  instToPayments.set(alloc.installmentId, list);
+                }
+              }
 
-            {sale.payments.length > 0 && (
-              <div className={styles.tableContainer}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Monto</th>
-                      <th>Método</th>
-                      <th>Estado</th>
-                      <th>Notas</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sale.payments.map((payment) => (
-                      <tr key={payment.id}>
-                        <td>{new Date(payment.paymentDate).toLocaleDateString('es-AR')}</td>
-                        <td>{formatCurrency(payment.amount)}</td>
-                        <td>{payment.paymentMethod}</td>
-                        <td>
-                          <span className={`${styles.status} ${styles[getStatusClass(payment.status === 'CONFIRMED' ? 'PAID' : payment.status === 'VOIDED' ? 'CANCELLED' : 'PENDING')]}`}>
-                            {payment.status}
-                          </span>
-                        </td>
-                        <td>{payment.notes ?? '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {sale.payments.length === 0 && (
-              <p className={styles.empty}>No hay pagos registrados</p>
-            )}
+              if (sale.installments.length === 0 && sale.payments.length === 0) {
+                return <p className={styles.empty}>Sin cuotas ni pagos</p>;
+              }
+
+              return (
+                <>
+                  {sale.remainingAmount <= 0 && sale.installments.length > 0 && (
+                    <p className={styles.empty} style={{ color: '#7cb07a', marginBottom: 8 }}>Pago completo</p>
+                  )}
+
+                  {sale.installments.length > 0 && (
+                    <div className={styles.tableContainer} style={{ marginBottom: 12 }}>
+                      <table className={styles.table}>
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Vencimiento</th>
+                            <th>Monto</th>
+                            <th>Pagado</th>
+                            <th>Restante</th>
+                            <th>Estado</th>
+                            <th>Pago(s)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sale.installments.map((inst) => {
+                            const allocs = instToPayments.get(inst.id);
+                            return (
+                              <tr key={inst.id}>
+                                <td>{inst.installmentNumber}</td>
+                                <td>{new Date(inst.dueDate).toLocaleDateString('es-AR')}</td>
+                                <td>{formatCurrency(inst.originalAmount)}</td>
+                                <td>{formatCurrency(inst.paidAmount)}</td>
+                                <td>{formatCurrency(inst.remainingAmount)}</td>
+                                <td>
+                                  <span className={`${styles.status} ${styles[getStatusClass(inst.status === 'PAID' ? 'PAID' : inst.status === 'PARTIALLY_PAID' ? 'PENDING' : inst.status === 'OVERDUE' ? 'CANCELLED' : 'PENDING')]}`}>
+                                    {inst.status}
+                                  </span>
+                                </td>
+                                <td style={{ fontSize: 11, lineHeight: 1.4 }}>
+                                  {allocs && allocs.length > 0
+                                    ? allocs.map((a, i) => (
+                                        <span key={i}>
+                                          {i > 0 && <br />}
+                                          {new Date(a.date).toLocaleDateString('es-AR')} · {formatCurrency(a.amount)}
+                                        </span>
+                                      ))
+                                    : <span style={{ color: '#555' }}>-</span>
+                                  }
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {sale.payments.length > 0 && (
+                    <div style={{ borderTop: '1px solid #363330', paddingTop: 8 }}>
+                      <div style={{ fontSize: 10, color: '#8a7e72', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>
+                        Pagos ({sale.payments.length})
+                      </div>
+                      {sale.payments.map((payment) => {
+                        const activeAllocs = payment.allocations.filter((a) => a.status === 'ACTIVE');
+                        const instMap = new Map(sale.installments.map((i) => [i.id, i]));
+                        return (
+                          <div key={payment.id} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #2a2826' }}>
+                            <div style={{ display: 'flex', gap: 10, alignItems: 'center', fontSize: 12, flexWrap: 'wrap' }}>
+                              <span>{new Date(payment.paymentDate).toLocaleDateString('es-AR')}</span>
+                              <span style={{ color: '#c8a87c', fontWeight: 600 }}>{formatCurrency(payment.amount)}</span>
+                              <span style={{ color: '#8a7e72' }}>{payment.paymentMethod}</span>
+                              <span className={`${styles.status} ${styles[getStatusClass(payment.status === 'CONFIRMED' ? 'PAID' : payment.status === 'VOIDED' ? 'CANCELLED' : 'PENDING')]}`} style={{ fontSize: 10 }}>
+                                {payment.status}
+                              </span>
+                              {payment.notes && <span style={{ color: '#8a7e72', fontSize: 11 }}>({payment.notes})</span>}
+                            </div>
+                            {activeAllocs.length > 0 && (
+                              <div style={{ marginTop: 4, paddingLeft: 12, fontSize: 11, color: '#8a7e72', lineHeight: 1.5 }}>
+                                {activeAllocs.map((alloc) => {
+                                  const inst = instMap.get(alloc.installmentId);
+                                  return (
+                                    <span key={alloc.id}>
+                                      → Cuota {inst?.installmentNumber ?? '?'}: {formatCurrency(alloc.amount)}
+                                      {inst && alloc.amount < inst.originalAmount && (
+                                        <span style={{ color: '#555' }}> / {formatCurrency(inst.originalAmount)}</span>
+                                      )}
+                                      {'  '}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </section>
         </>
       )}
