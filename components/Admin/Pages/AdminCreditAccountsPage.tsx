@@ -15,7 +15,7 @@ export function AdminCreditAccountsPage() {
   const { isAdmin } = useAdminAccess();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'active' | 'finished' | 'all'>('active');
-  const { accounts, dashboard, isLoading, error, reload, addPaymentInline, fixInstallments, page, setPage, totalCount, pageSize } = useCreditAccounts(isAdmin, search, statusFilter);
+  const { accounts, dashboard, isLoading, error, reload, addPaymentInline, processBatchPayments, fixInstallments, page, setPage, totalCount, showAll, setShowAll, pageSize } = useCreditAccounts(isAdmin, search, statusFilter);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
   const [showCleanModal, setShowCleanModal] = useState(false);
@@ -157,7 +157,9 @@ export function AdminCreditAccountsPage() {
                 <h2 className={styles.sectionTitle}>Cuentas Corrientes</h2>
                 <p className={styles.adminTableSummary}>
                   {totalCount > 0
-                    ? `Mostrando ${((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, totalCount)} de ${totalCount} cuenta(s)`
+                    ? showAll
+                      ? `Mostrando las ${totalCount} cuenta(s)`
+                      : `Mostrando ${((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, totalCount)} de ${totalCount} cuenta(s)`
                     : `${accounts.length} cuenta(s)`}
                 </p>
               </div>
@@ -203,11 +205,12 @@ export function AdminCreditAccountsPage() {
               </label>
             </div>
 
-            <CreditAccountsTable accounts={accounts} onSelectAccount={setSelectedAccountId} onPayment={addPaymentInline} onFixInstallments={fixInstallments} />
+            <CreditAccountsTable accounts={accounts} onSelectAccount={setSelectedAccountId} onPayment={addPaymentInline} onBatchSubmit={processBatchPayments} onFixInstallments={fixInstallments} />
 
             {totalCount > pageSize && (
               <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <button
+                  type="button"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
                   style={{
@@ -223,27 +226,30 @@ export function AdminCreditAccountsPage() {
                   ← Anterior
                 </button>
 
-                {Array.from({ length: Math.ceil(totalCount / pageSize) }, (_, i) => i + 1)
-                  .filter((p) => {
-                    const total = Math.ceil(totalCount / pageSize);
-                    if (total <= 7) return true;
-                    if (p === 1 || p === total) return true;
-                    if (Math.abs(p - page) <= 1) return true;
-                    if (page <= 3 && p <= 5) return true;
-                    if (page >= total - 2 && p >= total - 4) return true;
-                    return false;
-                  })
-                  .reduce<(number | '...')[]>((acc, p, i, arr) => {
-                    if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...');
-                    acc.push(p);
-                    return acc;
-                  }, [])
-                  .map((p, i) =>
+                {(() => {
+                  const totalPages = Math.ceil(totalCount / pageSize);
+                  const pages: (number | '...')[] = [];
+                  for (let p = 1; p <= totalPages; p++) {
+                    if (totalPages <= 7) {
+                      pages.push(p);
+                    } else if (p === 1 || p === totalPages) {
+                      if (pages[pages.length - 1] !== '...') pages.push('...');
+                      pages.push(p);
+                    } else if (Math.abs(p - page) <= 1) {
+                      pages.push(p);
+                    } else if (page <= 3 && p <= 5) {
+                      pages.push(p);
+                    } else if (page >= totalPages - 2 && p >= totalPages - 4) {
+                      pages.push(p);
+                    }
+                  }
+                  return pages.map((p, i) =>
                     p === '...' ? (
                       <span key={`ellipsis-${i}`} style={{ color: '#555', fontSize: 12, padding: '0 4px' }}>...</span>
                     ) : (
                       <button
                         key={p}
+                        type="button"
                         onClick={() => setPage(p)}
                         style={{
                           padding: '6px 10px',
@@ -260,9 +266,11 @@ export function AdminCreditAccountsPage() {
                         {p}
                       </button>
                     )
-                  )}
+                  );
+                })()}
 
                 <button
+                  type="button"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page >= Math.ceil(totalCount / pageSize)}
                   style={{
@@ -276,6 +284,25 @@ export function AdminCreditAccountsPage() {
                   }}
                 >
                   Siguiente →
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAll(!showAll)}
+                  style={{
+                    padding: '6px 12px',
+                    border: '1px solid',
+                    borderColor: showAll ? '#c8a87c' : '#363330',
+                    borderRadius: 4,
+                    background: showAll ? '#c8a87c' : '#2a2826',
+                    color: showAll ? '#1e1d1b' : '#f5f2ec',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    marginLeft: 8,
+                  }}
+                >
+                  {showAll ? '← Volver a paginación' : 'Mostrar todos'}
                 </button>
               </div>
             )}

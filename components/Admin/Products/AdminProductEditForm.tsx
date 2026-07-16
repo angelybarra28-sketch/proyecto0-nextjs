@@ -25,7 +25,7 @@ function fromImagesText(value: string): string[] {
     .filter(Boolean);
 }
 
-const CUOTA_OPTIONS = [4, 8, 10, 12];
+const CUOTA_OPTIONS = [4, 8, 9, 10, 12];
 
 function calculateValorCuota(precio: number, cuotas: number): string {
   if (cuotas > 0 && precio > 0) {

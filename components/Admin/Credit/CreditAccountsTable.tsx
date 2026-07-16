@@ -24,13 +24,14 @@ type CreditAccountsTableProps = {
   accounts: CreditAccountSummary[];
   onSelectAccount?: (id: string) => void;
   onPayment?: (accountId: string, amount: number, paymentMethod: string, paymentDate: string) => Promise<void>;
+  onBatchSubmit?: (payments: { accountId: string; amount: number; paymentDate: string }[]) => Promise<{ accountId: string; success: boolean; error?: string }[]>;
   onFixInstallments?: (accountId: string) => Promise<void>;
 };
 
-export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFixInstallments }: CreditAccountsTableProps) {
+export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFixInstallments, onBatchSubmit }: CreditAccountsTableProps) {
   const [tarjetaSort, setTarjetaSort] = useState<SortDirection>(null);
   const [paymentInputs, setPaymentInputs] = useState<Record<string, { amount: string; month: number; year: number }>>({});
-  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
 
   const now = new Date();
   const defaultMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
@@ -72,26 +73,45 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
     }));
   };
 
-  const handleSubmitPayment = async (accountId: string) => {
-    const state = getPaymentState(accountId);
-    const amount = Number(state.amount);
-    if (!amount || amount <= 0 || !onPayment) return;
+  const handleBatchSubmit = async () => {
+    if (!onBatchSubmit) return;
 
-    const paymentDate = `${state.year}-${String(state.month + 1).padStart(2, '0')}-01`;
-    setSubmittingId(accountId);
+    const pending = Object.entries(paymentInputs).filter(
+      ([, v]) => Number(v.amount) > 0
+    );
+    if (pending.length === 0) return;
+
+    const payments = pending.map(([accountId, v]) => ({
+      accountId,
+      amount: Number(v.amount),
+      paymentDate: `${v.year}-${String(v.month + 1).padStart(2, '0')}-01`,
+    }));
+
+    setIsBatchSubmitting(true);
     try {
-      await onPayment(accountId, amount, 'EFECTIVO', paymentDate);
+      const results = await onBatchSubmit(payments);
       setPaymentInputs((prev) => {
         const next = { ...prev };
-        delete next[accountId];
+        for (const r of results) {
+          if (r.success) delete next[r.accountId];
+        }
         return next;
       });
+      const errors = results.filter((r) => !r.success);
+      if (errors.length > 0) {
+        console.error('Errores en pagos batch:', errors);
+      }
     } catch (err) {
-      console.error('Error registering inline payment:', err);
+      console.error('Error en envío batch:', err);
     } finally {
-      setSubmittingId(null);
+      setIsBatchSubmitting(false);
     }
   };
+
+  const pendingCount = useMemo(
+    () => Object.values(paymentInputs).filter((v) => Number(v.amount) > 0).length,
+    [paymentInputs]
+  );
 
   if (accounts.length === 0) {
     return <p className={styles.empty}>No hay cuentas corrientes registradas</p>;
@@ -124,7 +144,7 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
             </th>
             <th>Cuota</th>
             {onPayment && <th>Cobrar $</th>}
-            {onPayment && <th>✓</th>}
+            {onPayment && <th>Pend.</th>}
             {onPayment && <th>Mes cobro</th>}
             {onPayment && <th>Año</th>}
             <th>Pagado</th>
@@ -137,7 +157,6 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
         <tbody>
           {sortedAccounts.map((acc) => {
             const payState = getPaymentState(acc.id);
-            const isSubmitting = submittingId === acc.id;
             const canPay = acc.remaining > 0 && onPayment;
             const paidInstallments = acc.installmentAmount > 0
               ? Math.floor(acc.paid / acc.installmentAmount)
@@ -162,7 +181,7 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
                         value={payState.amount}
                         onChange={(e) => updatePaymentState(acc.id, { amount: e.target.value })}
                         style={inputStyle}
-                        disabled={isSubmitting}
+                        disabled={isBatchSubmitting}
                       />
                     ) : (
                       <span style={{ fontSize: 11, color: '#6b7280' }}>—</span>
@@ -170,17 +189,11 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
                   </td>
                 )}
                 {onPayment && (
-                  <td>
-                    {canPay ? (
-                      <button
-                        onClick={() => handleSubmitPayment(acc.id)}
-                        disabled={isSubmitting || !payState.amount || Number(payState.amount) <= 0 || Number(payState.amount) > acc.remaining}
-                        className={styles.adminActionButton}
-                        style={{ padding: '4px 10px', fontSize: 14, minWidth: 0, fontWeight: 700 }}
-                        title="Cargar pago"
-                      >
-                        {isSubmitting ? '...' : '✓'}
-                      </button>
+                  <td style={{ textAlign: 'center' }}>
+                    {canPay && Number(payState.amount) > 0 ? (
+                      <span style={{ color: isBatchSubmitting ? '#555' : '#e68a2e', fontSize: 18, lineHeight: 1 }} title="Pago pendiente">
+                        {isBatchSubmitting ? '◌' : '🟡'}
+                      </span>
                     ) : (
                       <span style={{ fontSize: 11, color: '#6b7280' }}>—</span>
                     )}
@@ -193,7 +206,7 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
                         value={payState.month}
                         onChange={(e) => updatePaymentState(acc.id, { month: Number(e.target.value) })}
                         style={selectStyle}
-                        disabled={isSubmitting}
+                        disabled={isBatchSubmitting}
                       >
                         {MONTH_NAMES.map((name, idx) => (
                           <option key={idx + 1} value={idx}>{name.slice(0, 3)}</option>
@@ -211,7 +224,7 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
                         value={payState.year}
                         onChange={(e) => updatePaymentState(acc.id, { year: Number(e.target.value) })}
                         style={selectStyle}
-                        disabled={isSubmitting}
+                        disabled={isBatchSubmitting}
                       >
                         {yearOptions.map((y) => (
                           <option key={y} value={y}>{y}</option>
@@ -239,6 +252,18 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
           })}
         </tbody>
       </table>
+      {onBatchSubmit && (
+        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={handleBatchSubmit}
+            disabled={pendingCount === 0 || isBatchSubmitting}
+            className={styles.adminActionButton}
+            style={{ padding: '10px 24px', fontSize: 16, fontWeight: 700 }}
+          >
+            {isBatchSubmitting ? 'Enviando...' : `Confirmar pagos (${pendingCount})`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

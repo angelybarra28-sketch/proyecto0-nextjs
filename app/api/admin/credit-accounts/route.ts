@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
     if (usePagination) {
       const page = Math.max(1, Number(pageParam) || 1);
-      const pageSize = Math.min(100, Math.max(1, Number(pageSizeParam) || 15));
+      const pageSize = Math.min(100000, Math.max(1, Number(pageSizeParam) || 15));
 
       const result = await listCreditAccountSummariesPaginated({
         page,

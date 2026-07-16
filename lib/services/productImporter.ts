@@ -461,87 +461,107 @@ async function parseMercadoLibre(url: string): Promise<ImportedProductData> {
   );
 }
 
-function extractFravegaImages(html: string): string[] {
-  const jsonLd = extractJsonLd(html);
+const FRAVEGA_API_BASE = 'https://www.fravega.com/api/v1/products';
+const FRAVEGA_IMAGE_BASE = 'https://images.fravega.com/f300';
 
-  if (jsonLd?.image && Array.isArray(jsonLd.image)) {
-    const imageArray = jsonLd.image[0];
-    if (Array.isArray(imageArray) && imageArray.length > 0) {
-      const images = imageArray.filter(
-        (url: unknown): url is string => typeof url === 'string' && url.startsWith('http')
-      );
-      if (images.length > 0) return images;
-    }
-  }
+function extractFravegaId(url: string): string | null {
+  const slug = url.match(/\/p\/(.+?)\/?$/);
+  if (!slug) return null;
 
-  const ogImage = extractMetaTag(html, 'og:image');
-  if (ogImage) return [ogImage];
-
-  return [];
+  const segments = slug[1].split('-');
+  const last = segments[segments.length - 1];
+  return /^\d+$/.test(last) ? last : null;
 }
 
-function extractFravegaPrice(html: string): number | null {
-  const jsonLd = extractJsonLd(html);
-  if (jsonLd?.offers && Array.isArray(jsonLd.offers) && jsonLd.offers.length > 0) {
-    const offer = jsonLd.offers[0] as Record<string, unknown> | undefined;
-    if (offer?.price && typeof offer.price === 'number') {
-      return offer.price;
-    }
-  }
-  return null;
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&[a-z]+;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-function extractFravegaCategory(html: string): string | null {
-  const breadcrumbMatch = html.match(
-    /background-color:\s*rgb\(241,\s*241,\s*241\)[^>]*>([\s\S]*?)<\/div>\s*<(?:div|section)/i
-  );
-  if (!breadcrumbMatch) return null;
-
-  const section = breadcrumbMatch[1];
-  const linkRegex = /<a[^>]*href="(\/l\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-  const categories: string[] = [];
-  let match;
-  while ((match = linkRegex.exec(section)) !== null) {
-    const text = match[2].replace(/<[^>]*>/g, '').trim();
-    if (text && text !== 'Inicio') {
-      categories.push(text);
+async function fetchFravegaGraphQL(skuId: string): Promise<Record<string, unknown> | null> {
+  const query = `{
+    sku(code: ${skuId}) {
+      images
+      item {
+        title
+        brand { name }
+        seoDescription
+      }
+      pricing { listPrice }
+      attributes { name value }
     }
-  }
+  }`;
 
-  return categories.length > 0 ? categories[categories.length - 1] : null;
+  const response = await fetch(`${FRAVEGA_API_BASE}/${skuId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  });
+
+  if (!response.ok) return null;
+
+  const json = await response.json() as { data?: { sku?: Record<string, unknown> } };
+  return json?.data?.sku ?? null;
 }
 
 async function parseFravega(url: string): Promise<ImportedProductData> {
+  const skuId = extractFravegaId(url);
+
+  if (skuId) {
+    try {
+      const data = await fetchFravegaGraphQL(skuId);
+      if (data) {
+        const item = data.item as Record<string, unknown> | undefined;
+        const pricing = data.pricing as Array<{ listPrice: number }> | undefined;
+        const attributes = data.attributes as Array<{ name: string; value: string | number | boolean }> | undefined;
+        const rawImages = data.images as string[] | undefined;
+
+        const name = (item?.title as string) ?? '';
+        const images = (rawImages ?? []).map((f) => `${FRAVEGA_IMAGE_BASE}/${f}`);
+
+        let referencePrice: number | null = null;
+        if (pricing && pricing.length > 0 && typeof pricing[0].listPrice === 'number') {
+          referencePrice = pricing[0].listPrice;
+        }
+
+        let description = '';
+        if (attributes) {
+          for (const attr of attributes) {
+            if (attr.name === 'Descripción' && typeof attr.value === 'string') {
+              description = stripHtml(attr.value);
+              break;
+            }
+          }
+        }
+        if (!description && item?.seoDescription && typeof item.seoDescription === 'string') {
+          description = stripHtml(item.seoDescription);
+          // El primer párrafo del seoDescription suele repetir el nombre del producto
+          const nameLine = (item.title as string) ?? '';
+          if (nameLine && description.startsWith(nameLine)) {
+            description = description.slice(nameLine.length).trim();
+          }
+        }
+
+        return { name, description, images, referencePrice, source: 'fravega' };
+      }
+    } catch {
+      // Fallback al HTML si falla la API
+    }
+  }
+
+  // Fallback: HTML scraping original (parcial, solo obtiene datos genéricos)
   const html = await fetchHtml(url);
+  const name = extractMetaTag(html, 'og:title') || '';
+  const description = extractMetaTag(html, 'og:description') || '';
+  const ogImage = extractMetaTag(html, 'og:image');
+  const images = ogImage ? [ogImage] : [];
 
-  let name = extractMetaTag(html, 'og:title') || '';
-  if (!name) {
-    const jsonLd = extractJsonLd(html);
-    if (jsonLd?.name && typeof jsonLd.name === 'string') {
-      name = jsonLd.name;
-    }
-  }
-
-  let description = extractMetaTag(html, 'og:description') || '';
-  if (!description) {
-    const jsonLd = extractJsonLd(html);
-    if (jsonLd?.description && typeof jsonLd.description === 'string') {
-      description = jsonLd.description;
-    }
-  }
-
-  const images = extractFravegaImages(html);
-  const referencePrice = extractFravegaPrice(html);
-  const categoryName = extractFravegaCategory(html);
-
-  return {
-    name,
-    description,
-    images,
-    referencePrice,
-    source: 'fravega',
-    categoryName: categoryName ?? undefined,
-  };
+  return { name, description, images, referencePrice: null, source: 'fravega' };
 }
 
 const ENOVA_API_BASE = 'https://api.enovastore.com.ar';
@@ -582,9 +602,17 @@ function isEnovaCategoryUrl(url: string): boolean {
   return /tiendaenova\.com\.ar\/categories\//i.test(url);
 }
 
-function buildEnovaCloudinaryUrl(productId: string, imageRef: string): string {
+function extractEnovaSku(features: EnovaPublication['attributes']['features']): string | null {
+  const generals = features.find(f => f.name === 'Generales');
+  if (!generals) return null;
+  const skuFeature = generals.features.find(f => f.name === 'SKU');
+  if (!skuFeature?.value) return null;
+  return skuFeature.value.replace(/\//g, '');
+}
+
+function buildEnovaCloudinaryUrl(sku: string, imageRef: string): string {
   const ref = imageRef.split('?')[0];
-  return `${ENOVA_CLOUDINARY_BASE}/${productId}/${ref}`;
+  return `${ENOVA_CLOUDINARY_BASE}/f_auto,q_auto,w_auto/Ster/Products/${sku}/${ref}`;
 }
 
 function extractEnovaCategoryName(features: EnovaPublication['attributes']['features']): string | null {
@@ -599,8 +627,9 @@ function extractEnovaCategoryName(features: EnovaPublication['attributes']['feat
 }
 
 function mapEnovaPublicationToImported(pub: EnovaPublication): ImportedProductData {
+  const sku = extractEnovaSku(pub.attributes.features) ?? pub.id;
   const images = (pub.attributes.images || []).map(ref =>
-    buildEnovaCloudinaryUrl(pub.id, ref)
+    buildEnovaCloudinaryUrl(sku, ref)
   );
 
   let referencePrice: number | null = null;

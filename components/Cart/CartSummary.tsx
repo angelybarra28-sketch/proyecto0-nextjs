@@ -80,6 +80,9 @@ export default function CartSummary({ onWhatsApp }: CartSummaryProps) {
             8 cuotas de ${Math.round(total / 8).toLocaleString('es-AR')}
           </span>
           <span className={styles.summaryInstallment}>
+            9 cuotas de ${Math.round(total / 9).toLocaleString('es-AR')}
+          </span>
+          <span className={styles.summaryInstallment}>
             10 cuotas de ${Math.round(total / 10).toLocaleString('es-AR')}
           </span>
           <span className={styles.summaryInstallment + ' ' + styles.summaryInstallmentHighlight}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   fetchCreditAccounts,
   createCreditAccount,
@@ -17,6 +17,9 @@ import type {
   CreateCreditAccountInput,
 } from '@/lib/types';
 
+const NORMAL_PAGE_SIZE = 15;
+const ALL_PAGE_SIZE = 100000;
+
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
@@ -31,8 +34,16 @@ export function useCreditAccounts(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(NORMAL_PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
-  const PAGE_SIZE = 15;
+  const abortRef = useRef<AbortController | null>(null);
+
+  const showAll = pageSize !== NORMAL_PAGE_SIZE;
+
+  const setShowAll = useCallback((value: boolean) => {
+    setPage(1);
+    setPageSize(value ? ALL_PAGE_SIZE : NORMAL_PAGE_SIZE);
+  }, []);
 
   const load = useCallback(async (signal?: AbortSignal, currentPage?: number) => {
     setIsLoading(true);
@@ -43,7 +54,7 @@ export function useCreditAccounts(
         search,
         statusFilter,
         page: currentPage ?? 1,
-        pageSize: PAGE_SIZE,
+        pageSize,
       });
 
       setAccounts(data.accounts);
@@ -56,18 +67,30 @@ export function useCreditAccounts(
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter, PAGE_SIZE]);
+  }, [search, statusFilter, pageSize]);
 
   useEffect(() => {
     if (!enabled) return;
     setPage(1);
+    setPageSize(NORMAL_PAGE_SIZE);
   }, [enabled, search, statusFilter]);
 
   useEffect(() => {
     if (!enabled) return;
+
+    abortRef.current?.abort();
+
     const controller = new AbortController();
+    abortRef.current = controller;
+
     load(controller.signal, page);
-    return () => controller.abort();
+
+    return () => {
+      controller.abort();
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+      }
+    };
   }, [enabled, load, page]);
 
   const reload = useCallback(async () => {
@@ -78,7 +101,7 @@ export function useCreditAccounts(
         search,
         statusFilter,
         page,
-        pageSize: PAGE_SIZE,
+        pageSize,
       });
       setAccounts(data.accounts);
       setDashboard(data.dashboard);
@@ -89,7 +112,7 @@ export function useCreditAccounts(
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter, page, PAGE_SIZE]);
+  }, [search, statusFilter, page, pageSize]);
 
   const createAccount = useCallback(async (input: CreateCreditAccountInput) => {
     try {
@@ -108,6 +131,23 @@ export function useCreditAccounts(
     await load();
   }, [load]);
 
+  const processBatchPayments = useCallback(async (
+    payments: { accountId: string; amount: number; paymentDate: string }[]
+  ): Promise<{ accountId: string; success: boolean; error?: string }[]> => {
+    const results: { accountId: string; success: boolean; error?: string }[] = [];
+    for (const p of payments) {
+      try {
+        await registerCreditPayment(p.accountId, { amount: p.amount, paymentMethod: 'EFECTIVO', paymentDate: p.paymentDate });
+        results.push({ accountId: p.accountId, success: true });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error desconocido';
+        results.push({ accountId: p.accountId, success: false, error: message });
+      }
+    }
+    await load();
+    return results;
+  }, [load]);
+
   const fixInstallments = useCallback(async (accountId: string) => {
     const res = await fetch(`/api/admin/credit-accounts/${accountId}/fix-installments`, { method: 'POST' });
     if (!res.ok) {
@@ -117,7 +157,7 @@ export function useCreditAccounts(
     await load();
   }, [load]);
 
-  return { accounts, dashboard, isLoading, error, reload, createAccount, addPaymentInline, fixInstallments, page, setPage, totalCount, pageSize: PAGE_SIZE };
+  return { accounts, dashboard, isLoading, error, reload, createAccount, addPaymentInline, processBatchPayments, fixInstallments, page, setPage, totalCount, showAll, setShowAll, pageSize };
 }
 
 export function useCreditAccountDetail(accountId: string | null) {

@@ -78,6 +78,7 @@ export default function CheckoutPage() {
     }
 
     message += `\n\n8 cuotas de $${Math.round(total / 8).toLocaleString('es-AR')}`;
+    message += `\n9 cuotas de $${Math.round(total / 9).toLocaleString('es-AR')}`;
     message += `\n10 cuotas de $${Math.round(total / 10).toLocaleString('es-AR')}`;
     message += `\n12 cuotas de $${Math.round(total / 12).toLocaleString('es-AR')}`;
     message += `\n\nTotal: $${total.toLocaleString('es-AR')}`;

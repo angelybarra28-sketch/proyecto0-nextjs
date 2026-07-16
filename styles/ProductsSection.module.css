@@ -27,16 +27,17 @@
   top: 50%;
   transform: translateY(-50%);
   z-index: 15;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #c8a87c;
-  font-size: 1.8rem;
+  font-size: 2.4rem;
   cursor: pointer;
   transition: all 0.3s ease;
   user-select: none;
+  text-shadow: 0 0 8px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.8);
 }
 
 .arrow:first-of-type {

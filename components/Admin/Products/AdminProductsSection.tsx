@@ -10,6 +10,7 @@ import { deleteAdminProduct as apiDeleteProduct, fetchAdminProducts, updateAdmin
 import type { AdminPagination } from '@/lib/services/admin/types';
 import { useAdminProductTable } from '@/hooks/useAdminProductTable';
 import { migrateProductImagesAction } from '@/app/actions/migrateProductImages';
+import { migrateEnovaUrlsAction } from '@/app/actions/migrateEnovaUrls';
 import styles from '@/styles/Admin.module.css';
 
 type AdminProductsSectionProps = {
@@ -54,6 +55,19 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     if (!enabled) return;
     const controller = new AbortController();
     void loadProducts(controller.signal);
+
+    migrateEnovaUrlsAction().then((result) => {
+      if (controller.signal.aborted) return;
+      if (result.success && result.result && !result.result.alreadyDone) {
+        const r = result.result;
+        setNotice(
+          `Imágenes de Enova actualizadas: ${r.downloadedImages} descargada(s) a almacenamiento local.` +
+          (r.failedDownloads > 0 ? ` ${r.failedDownloads} fallida(s).` : '') +
+          (r.missingSkus.length > 0 ? ` ${r.missingSkus.length} UUID(s) sin SKU.` : '')
+        );
+        void loadProducts();
+      }
+    }).catch(() => { /* silent */ });
 
     return () => controller.abort();
   }, [enabled, loadProducts]);
