@@ -8,7 +8,6 @@ import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { PARENT_CATEGORIES } from '@/lib/categoryGroups';
 import ParentCategoryGrid from '@/components/CategoryGrid/ParentCategoryGrid';
 import type { CatalogCategoryRow } from '@/lib/adapters/catalogAdapter';
-import Link from 'next/link';
 
 interface Props {
   params: Promise<{
@@ -45,20 +44,8 @@ export default async function CategoryPage({ params }: Props) {
 
     return (
       <>
-        <Header />
+        <Header backUrl="/" />
         <main style={{ minHeight: '100vh', backgroundColor: '#1e1d1b' }}>
-          <div style={{
-            padding: '1rem 20px',
-            borderBottom: '1px solid #363330'
-          }}>
-            <Link href="/" style={{
-              color: '#b8a89c',
-              textDecoration: 'none',
-              fontSize: '0.9rem'
-            }}>
-              ← Volver al catálogo
-            </Link>
-          </div>
           <ParentCategoryGrid title={parentConfig.title} subcategories={subcategoryGroups} />
         </main>
         <Footer />
@@ -104,24 +91,9 @@ export default async function CategoryPage({ params }: Props) {
 
   return (
     <>
-      <Header />
+      <Header backUrl="/" />
 
       <main style={{ minHeight: '100vh', backgroundColor: '#1e1d1b' }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          padding: '1rem 20px',
-          borderBottom: '1px solid #363330'
-        }}>
-          <Link href="/" style={{ 
-            color: '#b8a89c', 
-            textDecoration: 'none',
-            fontSize: '0.9rem'
-          }}>
-            ← Volver al catálogo
-          </Link>
-        </div>
-
         <CategoryFilters
           title={`Categoría: ${decodeURIComponent(categoria)}`}
           id={categoria}

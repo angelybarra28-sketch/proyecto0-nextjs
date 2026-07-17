@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
 import ProductCarousel from '@/components/Product/ProductCarousel';
@@ -19,24 +18,9 @@ export default async function ProductDetailBySlugPage({ params }: Props) {
 
   return (
     <>
-      <Header />
+      <Header backUrl="/" />
 
       <main style={{ minHeight: '100vh', backgroundColor: '#1e1d1b' }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          padding: '1rem 20px',
-          borderBottom: '1px solid #363330'
-        }}>
-          <Link href="/" style={{ 
-            color: '#b8a89c', 
-            textDecoration: 'none',
-            fontSize: '0.9rem'
-          }}>
-            ← Volver al catálogo
-          </Link>
-        </div>
-
         {serverProduct ? (
           <div className={styles.detailContainer}>
             <div className={styles.detailGrid}>

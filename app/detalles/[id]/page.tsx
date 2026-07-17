@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
 import FloatingElements from '@/components/FloatingElements';
@@ -24,25 +23,9 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <>
-      <Header />
+      <Header backUrl="/" />
 
       <main style={{ minHeight: '100vh', backgroundColor: '#1e1d1b' }}>
-        {/* Breadcrumb */}
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          padding: '1rem 20px',
-          borderBottom: '1px solid #363330'
-        }}>
-          <Link href="/" style={{ 
-            color: '#b8a89c', 
-            textDecoration: 'none',
-            fontSize: '0.9rem'
-          }}>
-            ← Volver al catálogo
-          </Link>
-        </div>
-
         {/* Product Detail */}
         <div className={styles.detailContainer}>
           <div className={styles.detailGrid}>

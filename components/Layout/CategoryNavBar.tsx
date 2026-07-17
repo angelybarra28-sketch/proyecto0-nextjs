@@ -53,7 +53,12 @@ export default function CategoryNavBar({ floating }: { floating?: boolean }) {
 
   useEffect(() => {
     fetch('/api/categories')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error(`Expected JSON, got ${ct}`);
+        return res.json();
+      })
       .then((data) => {
         if (data.madreGroups) {
           setMadreGroups(data.madreGroups);

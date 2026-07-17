@@ -10,9 +10,10 @@ import MobileMenu from '@/components/Layout/MobileMenu';
 
 interface HeaderProps {
   products?: Product[];
+  backUrl?: string;
 }
 
-export default function Header({ products }: HeaderProps) {
+export default function Header({ products, backUrl }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { items } = useCart();
@@ -47,15 +48,22 @@ export default function Header({ products }: HeaderProps) {
   return (
     <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''} ${menuOpen ? styles.headerMenuOpen : ''}`}>
       <div className={styles.headerContainer}>
-        <button
-          className={`${styles.burgerBtn} ${menuOpen ? styles.burgerBtnOpen : ''}`}
-          onClick={() => setMenuOpen((prev) => !prev)}
-          aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+        <div className={styles.leftGroup}>
+          <button
+            className={`${styles.burgerBtn} ${menuOpen ? styles.burgerBtnOpen : ''}`}
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+          {backUrl && (
+            <Link href={backUrl} className={styles.backLink}>
+              ← Volver al catálogo
+            </Link>
+          )}
+        </div>
 
         {/* Logo - Centro */}
         <div className={styles.headerTop}>

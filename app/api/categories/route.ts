@@ -71,7 +71,10 @@ export async function GET() {
 
     return NextResponse.json({ madreGroups });
   } catch (error) {
-    console.error('Error fetching public categories:', error);
+    console.error('Error fetching public categories:', error instanceof Error ? error.message : error);
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('Supabase error code:', (error as { code: unknown }).code);
+    }
     return NextResponse.json({ madreGroups: [] });
   }
 }

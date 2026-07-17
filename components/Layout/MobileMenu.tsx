@@ -62,7 +62,12 @@ export default function MobileMenu({ isOpen, onClose, products }: MobileMenuProp
 
   useEffect(() => {
     fetch('/api/categories')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error(`Expected JSON, got ${ct}`);
+        return res.json();
+      })
       .then((data) => {
         if (data.madreGroups) {
           setMadreGroups(data.madreGroups);
@@ -227,31 +232,41 @@ export default function MobileMenu({ isOpen, onClose, products }: MobileMenuProp
                   <ul className={styles.subList}>
                     {madre.categories.map((cat) => (
                       <li key={cat.slug}>
-                        <button
-                          className={styles.catToggle}
-                          onClick={() => toggleCat(cat.slug)}
-                        >
-                          <span>{cat.name}</span>
-                          {cat.subcategories.length > 0 && (
-                            <span className={`${styles.catArrow} ${expandedCat === cat.slug ? styles.catArrowUp : ''}`}>
-                              ▾
-                            </span>
-                          )}
-                        </button>
-                        {expandedCat === cat.slug && cat.subcategories.length > 0 && (
-                          <ul className={styles.nestedList}>
-                            {cat.subcategories.map((sub) => (
-                              <li key={sub.slug}>
-                                <Link
-                                  href={`/categoria/${encodeURIComponent(sub.slug)}`}
-                                  className={styles.nestedLink}
-                                  onClick={onClose}
-                                >
-                                  {sub.name}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
+                        {cat.subcategories.length > 0 ? (
+                          <>
+                            <button
+                              className={styles.catToggle}
+                              onClick={() => toggleCat(cat.slug)}
+                            >
+                              <span>{cat.name}</span>
+                              <span className={`${styles.catArrow} ${expandedCat === cat.slug ? styles.catArrowUp : ''}`}>
+                                ▾
+                              </span>
+                            </button>
+                            {expandedCat === cat.slug && (
+                              <ul className={styles.nestedList}>
+                                {cat.subcategories.map((sub) => (
+                                  <li key={sub.slug}>
+                                    <Link
+                                      href={`/categoria/${encodeURIComponent(sub.slug)}`}
+                                      className={styles.nestedLink}
+                                      onClick={onClose}
+                                    >
+                                      {sub.name}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </>
+                        ) : (
+                          <Link
+                            href={`/categoria/${encodeURIComponent(cat.slug)}`}
+                            className={styles.catToggle}
+                            onClick={onClose}
+                          >
+                            <span>{cat.name}</span>
+                          </Link>
                         )}
                       </li>
                     ))}

@@ -306,6 +306,30 @@
   }
 
 
+.leftGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  z-index: 5;
+  min-width: 0;
+}
+
+.backLink {
+  color: #b8a89c;
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+  line-height: 1;
+}
+
+.backLink:hover {
+  color: #f5f2ec;
+}
+
 .burgerBtn {
   display: flex;
   position: relative;
@@ -318,9 +342,6 @@
   border: none;
   cursor: pointer;
   padding: 3px;
-  grid-column: 1;
-  grid-row: 1;
-  justify-self: start;
   z-index: 5;
   transition: left 0.3s ease, top 0.3s ease;
 }

@@ -41,6 +41,25 @@ export function AdminProductCreateForm({
 }: AdminProductCreateFormProps) {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+
+  function slugifyName(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .substring(0, 100);
+  }
+
+  const handleNameChange = (value: string) => {
+    setName(value);
+    if (!slugManuallyEdited) {
+      setSlug(slugifyName(value));
+    }
+  };
   const [installmentCount, setInstallmentCount] = useState('8');
   const [installmentAmount, setInstallmentAmount] = useState('');
   const [price, setPrice] = useState('');
@@ -110,15 +129,8 @@ export function AdminProductCreateForm({
 
   const handleImport = (data: ImportedProductData) => {
     setName(data.name);
-    setSlug(data.name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, '-')
-      .substring(0, 100)
-    );
+    setSlug(slugifyName(data.name));
+    setSlugManuallyEdited(false);
     setDescription(data.description);
     setImageUrl(data.images[0] || '');
     setCarouselImages(data.images.join('\n'));
@@ -253,7 +265,7 @@ export function AdminProductCreateForm({
                   <input
                     value={name}
                     disabled={isSaving}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => handleNameChange(e.target.value)}
                     required
                   />
                 </td>
@@ -264,7 +276,10 @@ export function AdminProductCreateForm({
                   <input
                     value={slug}
                     disabled={isSaving}
-                    onChange={(e) => setSlug(e.target.value)}
+                    onChange={(e) => {
+                      setSlug(e.target.value);
+                      setSlugManuallyEdited(true);
+                    }}
                     required
                   />
                 </td>

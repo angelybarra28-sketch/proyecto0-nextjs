@@ -11,7 +11,17 @@ export const BLANQUERIA_CATEGORIES = [
   'Batas',
 ];
 
-export const HOGAR_CATEGORIES: string[] = [];
+export const HOGAR_CATEGORIES = [
+  'Bicicletas',
+  'TV',
+  'Celulares',
+  'Climatizacion',
+  'Electrodomésticos',
+  'Herramientas',
+  'Lavado',
+  'Jardin',
+  'Otros',
+];
 
 export const PARENT_CATEGORIES: Record<string, { title: string; subcategories: string[] }> = {
   blanqueria: {

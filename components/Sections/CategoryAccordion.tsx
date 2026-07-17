@@ -34,7 +34,12 @@ export default function CategoryAccordion({ products }: CategoryAccordionProps) 
 
   useEffect(() => {
     fetch('/api/categories')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error(`Expected JSON, got ${ct}`);
+        return res.json();
+      })
       .then((data) => {
         if (data.madreGroups) {
           setMadreGroups(data.madreGroups);
@@ -43,20 +48,27 @@ export default function CategoryAccordion({ products }: CategoryAccordionProps) 
       .catch((err) => console.error('Error loading categories for accordion:', err));
   }, []);
 
+  function categoryHasProduct(c: MadreGroup['categories'][number]): boolean {
+    const descendantIds = new Set([c.id, ...c.subcategories.map((s) => s.id)]);
+    return products.some((p) => p.imageUrl && p.categoryId && descendantIds.has(p.categoryId));
+  }
+
   const categories = useMemo<CatWithDescIds[]>(() => {
     const group = madreGroups.find((m) => m.slug === activeTab);
     if (group && group.categories.length > 0) {
-      return group.categories.map((c) => ({
-        name: c.name,
-        slug: c.slug,
-        descendantIds: new Set([
-          c.id,
-          ...c.subcategories.map((s) => s.id),
-        ]),
-      }));
+      return group.categories
+        .filter((c) => categoryHasProduct(c))
+        .map((c) => ({
+          name: c.name,
+          slug: c.slug,
+          descendantIds: new Set([
+            c.id,
+            ...c.subcategories.map((s) => s.id),
+          ]),
+        }));
     }
     return [];
-  }, [madreGroups, activeTab]);
+  }, [madreGroups, activeTab, products]);
 
   const hasProductsForTab = categories.length > 0;
   const hasAnyData = madreGroups.length > 0;

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import ProductCarousel from '@/components/Product/ProductCarousel';
 import ProductInfo from '@/components/Product/ProductInfo';
 import { formatCurrency } from '@/components/Admin/shared/formatters';
@@ -83,7 +82,6 @@ export default function ProductDetailClient({ slug, serverProduct }: ProductDeta
     return (
       <main style={{ minHeight: '100vh', backgroundColor: '#1e1d1b', padding: '2rem', textAlign: 'center', color: '#b8a89c' }}>
         <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Producto no encontrado</h2>
-        <Link href="/" style={{ color: '#b8a89c' }}>← Volver al catálogo</Link>
       </main>
     );
   }
