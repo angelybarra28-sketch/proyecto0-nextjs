@@ -8,11 +8,13 @@
 }
 
 .sectionTitle {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   text-align: center;
   margin: 0.2rem 0 0.8rem 0;
   color: #f5f2ec;
   padding: 0 20px;
+  font-weight: 300;
+  letter-spacing: 0.05em;
   animation: revealLeft 1.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
@@ -56,12 +58,17 @@
   flex: 1;
   display: flex;
   gap: 0;
+  justify-content: center;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 30px 0;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+.carouselOverflow {
+  justify-content: flex-start;
 }
 
 .carousel::-webkit-scrollbar {
@@ -115,6 +122,7 @@
   }
 
   .carousel {
+    justify-content: flex-start;
     gap: 0;
   }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import ProductCard from '@/components/Product/ProductCard';
 import styles from '@/styles/ProductsSection.module.css';
 
@@ -23,12 +23,37 @@ interface ProductsSectionProps {
 
 export default function ProductsSection({ title, products, id }: ProductsSectionProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [contentFits, setContentFits] = useState(true);
+
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const check = () => setContentFits(el.scrollWidth <= el.clientWidth);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [products]);
 
   const scrollCarousel = useCallback((direction: 'left' | 'right') => {
     if (!carouselRef.current) return;
     const card = carouselRef.current.querySelector('*');
     if (!card) return;
     const cardWidth = card.clientWidth + 24;
+    const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+
+    if (direction === 'right') {
+      if (scrollLeft + clientWidth >= scrollWidth - 2) {
+        carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        return;
+      }
+    } else {
+      if (scrollLeft <= 0) {
+        carouselRef.current.scrollTo({ left: scrollWidth - clientWidth, behavior: 'smooth' });
+        return;
+      }
+    }
+
     carouselRef.current.scrollBy({
       left: direction === 'left' ? -cardWidth : cardWidth,
       behavior: 'smooth',
@@ -66,11 +91,13 @@ export default function ProductsSection({ title, products, id }: ProductsSection
       <div className={styles.productsWrapper}>
         <h2 className={styles.sectionTitle}>{title}</h2>
         <div className={styles.carouselWrapper}>
-          <button className={styles.arrow} onClick={() => scrollCarousel('left')} aria-label="Anterior">
-            ‹
-          </button>
+          {!contentFits && (
+            <button className={styles.arrow} onClick={() => scrollCarousel('left')} aria-label="Anterior">
+              ‹
+            </button>
+          )}
           <div
-            className={styles.carousel}
+            className={`${styles.carousel} ${!contentFits ? styles.carouselOverflow : ''}`}
             ref={carouselRef}
             onMouseEnter={stopAutoPlay}
             onMouseLeave={startAutoPlay}
@@ -91,9 +118,11 @@ export default function ProductsSection({ title, products, id }: ProductsSection
               </div>
             ))}
           </div>
-          <button className={styles.arrow} onClick={() => scrollCarousel('right')} aria-label="Siguiente">
-            ›
-          </button>
+          {!contentFits && (
+            <button className={styles.arrow} onClick={() => scrollCarousel('right')} aria-label="Siguiente">
+              ›
+            </button>
+          )}
         </div>
       </div>
     </section>

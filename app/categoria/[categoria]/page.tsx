@@ -56,6 +56,7 @@ export default async function CategoryPage({ params }: Props) {
   const products = await getProductsByCategory(categoryForQuery);
 
   let subcategories: CatalogCategoryRow[] = [];
+  let categoryName: string | null = null;
   try {
     const supabase = getSupabaseAdminClient();
     if (supabase) {
@@ -69,6 +70,7 @@ export default async function CategoryPage({ params }: Props) {
       );
       if (target) {
         subcategories = allCats.filter(c => c.parent_id === target.id);
+        categoryName = target.name;
       }
     }
   } catch {
@@ -95,7 +97,7 @@ export default async function CategoryPage({ params }: Props) {
 
       <main style={{ minHeight: '100vh', backgroundColor: '#1e1d1b' }}>
         <CategoryFilters
-          title={`Categoría: ${decodeURIComponent(categoria)}`}
+          title={categoryName ?? decodeURIComponent(categoria)}
           id={categoria}
           products={adapted}
           subcategories={subcategories}
@@ -123,9 +125,28 @@ export async function generateMetadata({ params }: Props) {
   }
 
   const products = await getProductsByCategory(categoryForQuery);
+  let categoryName: string | null = null;
+  try {
+    const supabase = getSupabaseAdminClient();
+    if (supabase) {
+      const allCats = await listActiveCategories(supabase);
+      const normalizedInput = normalizeCategory(categoryForQuery);
+      const slugTarget = allCats.find(
+        c => normalizeCategory(c.slug ?? '') === normalizedInput
+      );
+      const target = slugTarget ?? allCats.find(
+        c => normalizeCategory(c.name) === normalizedInput
+      );
+      if (target) {
+        categoryName = target.name;
+      }
+    }
+  } catch {
+    // silencioso
+  }
   return {
-    title: `Categoría: ${decodedCategory} | ElectroBlancos`,
-    description: `Explora nuestros productos de la categoría ${decodedCategory}. ${products.length} productos disponibles.`
+    title: `${categoryName ?? decodedCategory} | ElectroBlancos`,
+    description: `Explora nuestros productos de la categoría ${categoryName ?? decodedCategory}. ${products.length} productos disponibles.`
   };
 }
 

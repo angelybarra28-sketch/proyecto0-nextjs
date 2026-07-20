@@ -229,7 +229,7 @@ export default function CategoryFilters({ title, id, products, subcategories }: 
         </div>
       )}
       <ProductsSection
-        title={`${title}${selectedSize ? ` - ${selectedSize}` : ''} (${filtered.length} producto(s))`}
+        title={`${title.charAt(0).toUpperCase() + title.slice(1)}${selectedSize ? ` - ${selectedSize}` : ''} (${filtered.length})`}
         products={filtered}
         id={id}
       />

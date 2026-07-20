@@ -35,6 +35,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.electrooutlet.com.ar',
       },
+      {
+        protocol: 'https',
+        hostname: 'cetrogar.vtexassets.com',
+      },
     ],
   },
 };

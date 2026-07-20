@@ -45,6 +45,20 @@ export default function TabbedProductsSection({ products, id }: TabbedProductsSe
     const card = carouselRef.current.querySelector('*');
     if (!card) return;
     const cardWidth = card.clientWidth + 24;
+    const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+
+    if (direction === 'right') {
+      if (scrollLeft + clientWidth >= scrollWidth - 2) {
+        carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        return;
+      }
+    } else {
+      if (scrollLeft <= 0) {
+        carouselRef.current.scrollTo({ left: scrollWidth - clientWidth, behavior: 'smooth' });
+        return;
+      }
+    }
+
     carouselRef.current.scrollBy({
       left: direction === 'left' ? -cardWidth : cardWidth,
       behavior: 'smooth',
