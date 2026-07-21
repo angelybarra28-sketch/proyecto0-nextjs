@@ -234,6 +234,17 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     }
   };
 
+  const handleUpdateStock = async (productId: string, stock: number) => {
+    setError('');
+    setNotice('');
+    try {
+      await updateAdminProduct(productId, { stock });
+      await loadProducts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar stock');
+    }
+  };
+
   const handleMigrateImages = async (productId: string) => {
     setError('');
     setNotice('');
@@ -307,6 +318,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
         onMigrateImages={handleMigrateImages}
         onUpdateFeatured={handleUpdateFeatured}
         onUpdateTendencias={handleUpdateTendencias}
+        onUpdateStock={handleUpdateStock}
       />
     </>
   );

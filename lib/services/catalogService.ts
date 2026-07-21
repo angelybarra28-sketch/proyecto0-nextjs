@@ -10,6 +10,8 @@ import {
   listProductsByCategory,
 } from '@/lib/repositories/productRepository';
 import { listActiveCategories } from '@/lib/repositories/categoryRepository';
+import { BLANQUERIA_CATEGORIES, HOGAR_CATEGORIES } from '@/lib/categoryGroups';
+import { normalizeCategory } from '@/lib/categoryUtils';
 
 async function safelyLoadSupabaseProducts(loader: () => Promise<Product[]>): Promise<Product[]> {
   const supabase = getSupabaseAdminClient();
@@ -87,19 +89,42 @@ export async function getCatalogCategories(): Promise<string[]> {
   }
 }
 
-export async function getProductSections(): Promise<{ section1: ProductSection; section2: ProductSection }> {
+function isInCategoryGroup(product: Product, categoryList: string[]): boolean {
+  const normalizedProduct = normalizeCategory(product.categoria);
+  return categoryList.some((cat) => normalizeCategory(cat) === normalizedProduct);
+}
+
+function filterByCategoryGroup(products: Product[], categoryList: string[]): Product[] {
+  return products.filter((p) => isInCategoryGroup(p, categoryList));
+}
+
+export async function getProductSections(): Promise<{
+  section1: ProductSection;
+  section2Hogar: ProductSection;
+  section2Blanqueria: ProductSection;
+}> {
   const products = await getProducts();
   const featured = products.filter((product) => product.destacado);
   const tendencias = products.filter((product) => product.tendencias);
+
+  const tendenciasHogar = filterByCategoryGroup(tendencias, HOGAR_CATEGORIES);
+  const tendenciasBlanqueria = filterByCategoryGroup(tendencias, BLANQUERIA_CATEGORIES);
+
+  const fallbackHogar = filterByCategoryGroup(products, HOGAR_CATEGORIES);
+  const fallbackBlanqueria = filterByCategoryGroup(products, BLANQUERIA_CATEGORIES);
 
   return {
     section1: {
       title: 'Articulos mas elegidos',
       products: featured.length > 0 ? featured : products.slice(0, 6),
     },
-    section2: {
-      title: 'Ofertas y Novedades',
-      products: tendencias.length > 0 ? tendencias : products.filter((p) => !p.destacado).slice(0, 6),
+    section2Hogar: {
+      title: 'Artículos del Hogar',
+      products: tendenciasHogar.length > 0 ? tendenciasHogar : fallbackHogar.slice(0, 6),
+    },
+    section2Blanqueria: {
+      title: 'Blanquería',
+      products: tendenciasBlanqueria.length > 0 ? tendenciasBlanqueria : fallbackBlanqueria.slice(0, 6),
     },
   };
 }

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { CartProvider } from "@/lib/cartContext";
 import { AuthProvider } from "@/lib/authContext";
 import { getMetadataBaseUrl } from "@/env/client";
+import AOSInit from "@/components/AOSInit";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <CartProvider>
+            <AOSInit />
             {children}
           </CartProvider>
         </AuthProvider>

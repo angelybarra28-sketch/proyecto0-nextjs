@@ -121,8 +121,23 @@ export function AdminCreditAccountsPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Cuenta Corriente de Clientes</h1>
-      <p className={styles.subtitle}>Gestión de ventas a crédito y pagos</p>
+      <div className={styles.headerCompact}>
+        <div>
+          <h1 className={styles.title} style={{ margin: 0, textAlign: 'left' }}>
+            Cuenta Corriente de Clientes
+          </h1>
+          <p className={styles.subtitle} style={{ margin: '2px 0 0 0', textAlign: 'left', fontSize: 14, color: '#d3cdc4' }}>
+            Gestión de ventas a crédito y pagos
+          </p>
+        </div>
+        <button
+          onClick={() => document.getElementById('cuentas-table')?.scrollIntoView({ behavior: 'smooth' })}
+          className={styles.adminActionButton}
+          style={{ fontSize: 14, padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          Clientes ↓
+        </button>
+      </div>
 
       {error && <div className={styles.adminAlertError}>{error}</div>}
       {detailError && <div className={styles.adminAlertError}>{detailError}</div>}
@@ -151,7 +166,7 @@ export function AdminCreditAccountsPage() {
         <div className={styles.sections}>
           <CreditDashboardSection dashboard={dashboard} />
 
-          <section className={styles.section}>
+          <section className={styles.section} id="cuentas-table">
             <div className={styles.adminTableHeader}>
               <div>
                 <h2 className={styles.sectionTitle}>Cuentas Corrientes</h2>

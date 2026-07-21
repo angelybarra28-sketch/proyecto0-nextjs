@@ -286,7 +286,7 @@ export function AdminProductEditForm({
                 <td>Precio de referencia</td>
                 <td>
                   <input type="number" min="0" step="0.01" value={referencePrice} disabled={controlsDisabled} onChange={(event) => setReferencePrice(event.target.value)} />
-                  <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>
+                  <small style={{ display: 'block', color: '#888', marginTop: '0.1rem' }}>
                     Precio original del proveedor. Solo visible en el admin.
                   </small>
                 </td>
@@ -307,7 +307,7 @@ export function AdminProductEditForm({
                   </select>
                   <span style={{ color: '#888' }}>cuotas de $</span>
                   <input type="number" min="0" step="0.01" value={installmentAmount} disabled={controlsDisabled} onChange={(event) => handleInstallmentAmountChange(event.target.value)} style={{ width: '120px', marginLeft: '0.5rem' }} />
-                  <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>
+                  <small style={{ display: 'block', color: '#888', marginTop: '0.1rem' }}>
                     Precio = cuotas × valor cuota. Podés editar cualquiera de los dos.
                   </small>
                 </td>
@@ -319,9 +319,9 @@ export function AdminProductEditForm({
               <tr>
                 <td style={{ verticalAlign: 'top' }}>Categorías</td>
                 <td>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.1rem', color: '#b8a89c', fontSize: '0.85rem' }}>
                         Categoría principal
                       </label>
                       <select
@@ -338,7 +338,7 @@ export function AdminProductEditForm({
                     </div>
                     {childCategories.length > 0 && (
                       <div>
-                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.1rem', color: '#b8a89c', fontSize: '0.85rem' }}>
                           Subcategoría
                         </label>
                         <select
@@ -356,7 +356,7 @@ export function AdminProductEditForm({
                     )}
                     {grandchildCategories.length > 0 && (
                       <div>
-                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.1rem', color: '#b8a89c', fontSize: '0.85rem' }}>
                           Subcategoría específica
                         </label>
                         <select
@@ -373,7 +373,7 @@ export function AdminProductEditForm({
                       </div>
                     )}
                     {resolvedPrimary && (
-                      <div style={{ fontSize: '0.85rem', color: '#c8a87c', marginTop: '0.25rem' }}>
+                      <div style={{ fontSize: '0.85rem', color: '#c8a87c', marginTop: '0.1rem' }}>
                         ✓ Seleccionado: {categories.find(c => c.id === resolvedPrimary)?.name ?? resolvedPrimary}
                       </div>
                     )}
@@ -387,11 +387,11 @@ export function AdminProductEditForm({
                           background: 'none',
                           border: '1px dashed #b8a89c',
                           borderRadius: '4px',
-                          padding: '0.5rem',
+                          padding: '0.3rem',
                           cursor: 'pointer',
                           color: '#b8a89c',
                           fontSize: '0.85rem',
-                          marginTop: '0.25rem',
+                          marginTop: '0.1rem',
                         }}
                       >
                         + Agregar otra categoría
@@ -400,9 +400,9 @@ export function AdminProductEditForm({
 
                     {showSecondCascade && (
                       <>
-                        <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '0.25rem 0' }} />
+                        <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '0.15rem 0' }} />
                         <div>
-                          <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                          <label style={{ display: 'block', marginBottom: '0.1rem', color: '#b8a89c', fontSize: '0.85rem' }}>
                             Categoría secundaria (opcional)
                           </label>
                           <select
@@ -423,7 +423,7 @@ export function AdminProductEditForm({
                             : [];
                           return childCats2.length > 0 && (
                             <div>
-                              <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                              <label style={{ display: 'block', marginBottom: '0.1rem', color: '#b8a89c', fontSize: '0.85rem' }}>
                                 Subcategoría
                               </label>
                               <select
@@ -446,7 +446,7 @@ export function AdminProductEditForm({
                             : [];
                           return grandchildCats2.length > 0 && (
                             <div>
-                              <label style={{ display: 'block', marginBottom: '0.25rem', color: '#b8a89c', fontSize: '0.85rem' }}>
+                              <label style={{ display: 'block', marginBottom: '0.1rem', color: '#b8a89c', fontSize: '0.85rem' }}>
                                 Subcategoría específica
                               </label>
                               <select
@@ -464,7 +464,7 @@ export function AdminProductEditForm({
                           );
                         })()}
                         {resolvedSecondary && (
-                          <div style={{ fontSize: '0.85rem', color: '#c8a87c', marginTop: '0.25rem' }}>
+                          <div style={{ fontSize: '0.85rem', color: '#c8a87c', marginTop: '0.1rem' }}>
                             ✓ Seleccionado: {categories.find(c => c.id === resolvedSecondary)?.name ?? resolvedSecondary}
                           </div>
                         )}
@@ -476,11 +476,11 @@ export function AdminProductEditForm({
                             background: 'none',
                             border: '1px solid #555',
                             borderRadius: '4px',
-                            padding: '0.4rem',
+                            padding: '0.25rem',
                             cursor: 'pointer',
                             color: '#e07070',
                             fontSize: '0.85rem',
-                            marginTop: '0.25rem',
+                            marginTop: '0.1rem',
                           }}
                         >
                           − Quitar categoría secundaria

@@ -93,7 +93,7 @@ export default function CategoryAccordion({ products }: CategoryAccordionProps) 
       </div>
 
       {hasProductsForTab ? (
-        <div className={styles.card}>
+        <div className={styles.card} data-aos="fade-up">
           <h2 className={styles.title}>Categorías</h2>
           {categories.map((cat) => {
             const product = products.find((p) => p.imageUrl && p.categoryId && cat.descendantIds.has(p.categoryId));

@@ -12,7 +12,6 @@ export function AdminProductsPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Productos</h1>
       <div className={styles.sections}>
         <AdminProductsSection enabled={isAdmin} />
       </div>

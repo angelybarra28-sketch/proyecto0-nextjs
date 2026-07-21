@@ -130,7 +130,7 @@ function extractInstallments(specs: unknown): { installmentCount?: number; insta
 
 function extractCategoryIds(row: CatalogProductRow): { categoryId: string | null; categoryName: string; categoryIds: string[]; categoryNames: string[] } {
   const fromJoin = Array.isArray(row.categories) ? row.categories[0] : row.categories;
-  const fallbackName = fromJoin?.name ?? 'Sin categorÃ­a';
+  const fallbackName = fromJoin?.name ?? 'Sin categoría';
 
   if (row.product_categories && row.product_categories.length > 0) {
     const ids = row.product_categories.map(pc => pc.category_id);

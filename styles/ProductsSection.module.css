@@ -18,6 +18,16 @@
   animation: revealLeft 1.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+.subtitle {
+  font-size: 1.1rem;
+  text-align: center;
+  margin: 0 0 0.4rem 0;
+  color: #c8a87c;
+  padding: 0 20px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
 .carouselWrapper {
   position: relative;
   display: flex;

@@ -27,10 +27,16 @@ export default async function Home() {
         <SearchBar products={products} />
       </Suspense>
       <CategoryAccordion products={products} />
-      <ProductsSection 
-        title={productData.section2.title} 
-        products={productData.section2.products}
-        id="tendencia"
+      <ProductsSection
+        title="Ofertas y Novedades"
+        subtitle="Artículos del Hogar"
+        products={productData.section2Hogar.products}
+        id="ofertas-hogar"
+      />
+      <ProductsSection
+        subtitle="Blanquería"
+        products={productData.section2Blanqueria.products}
+        id="ofertas-blanqueria"
       />
       <About />
       <Footer />

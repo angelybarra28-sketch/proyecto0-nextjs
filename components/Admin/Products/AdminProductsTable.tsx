@@ -31,6 +31,7 @@ type AdminProductsTableProps = {
   onMigrateImages?: (productId: string) => Promise<void>;
   onUpdateFeatured?: (productId: string, featured: boolean) => Promise<void>;
   onUpdateTendencias?: (productId: string, tendencias: boolean) => Promise<void>;
+  onUpdateStock?: (productId: string, stock: number) => Promise<void>;
 };
 
 function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalogProduct; isReadOnly: boolean; onDelete?: (product: AdminCatalogProduct) => void }) {
@@ -74,7 +75,7 @@ function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalog
             onClick={(e) => e.stopPropagation()}
           >
             <p style={{ color: '#e74c3c', fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.75rem' }}>
-              Â¿EstÃ¡s seguro que deseas eliminar este producto?
+              ¿Estás seguro que deseas eliminar este producto?
             </p>
             <p style={{ color: '#b8a89c', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
               {product.name}
@@ -87,7 +88,7 @@ function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalog
                   onDelete(product);
                 }}
               >
-                SÃ­, eliminar
+                Sí, eliminar
               </button>
               <button
                 className={styles.adminTableActionButton}
@@ -154,7 +155,7 @@ function extractProductSizes(products: AdminCatalogProduct[]): string[] {
   return [...sizeSet].sort();
 }
 
-export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onUpdateInstallmentCount, onUpdateInstallmentAmount, onUpdatePrice, onMigrateImages, onUpdateFeatured, onUpdateTendencias }: AdminProductsTableProps) {
+export function AdminProductsTable({ products, categories, table, isLoading, isReadOnly, onEdit, onToggleStatus, onDelete, onUpdateCategory, onUpdateInstallmentCount, onUpdateInstallmentAmount, onUpdatePrice, onMigrateImages, onUpdateFeatured, onUpdateTendencias, onUpdateStock }: AdminProductsTableProps) {
   const [pendingCascade, setPendingCascade] = useState<Record<string, { madre: string; child: string; grandchild: string }>>({});
   const [savingCategory, setSavingCategory] = useState<string | null>(null);
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
@@ -164,6 +165,8 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
   const [savingPrice, setSavingPrice] = useState<string | null>(null);
   const [savingFeatured, setSavingFeatured] = useState<Record<string, boolean>>({});
   const [savingTendencias, setSavingTendencias] = useState<Record<string, boolean>>({});
+  const [pendingStock, setPendingStock] = useState<Record<string, number>>({});
+  const [savingStock, setSavingStock] = useState<string | null>(null);
   const [filterMadre, setFilterMadre] = useState('');
   const [filterChild, setFilterChild] = useState('');
   const [filterGrandchild, setFilterGrandchild] = useState('');
@@ -173,7 +176,6 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
     <section className={styles.section}>
       <div className={styles.adminTableHeader}>
         <div>
-          <h2 className={styles.sectionTitle}>Productos</h2>
           <p className={styles.adminTableSummary}>
             Mostrando {table.pageStart}-{table.pageEnd} de {table.filteredCount} resultados ({table.totalCount} cargados)
           </p>
@@ -216,7 +218,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                 setFilterGrandchild('');
                 table.setCategoryId(v);
               }}
-              style={{ minWidth: 100 }}
+              style={{ minWidth: 80 }}
             >
               <option value="">Todas</option>
               {madreCategories.map((cat) => (
@@ -234,7 +236,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                     setFilterGrandchild('');
                     table.setCategoryId(v);
                   }}
-                  style={{ minWidth: 100 }}
+                  style={{ minWidth: 80 }}
                 >
                   <option value="">Todas</option>
                   {childCats.map((cat) => (
@@ -253,7 +255,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                     setFilterGrandchild(v);
                     table.setCategoryId(v);
                   }}
-                  style={{ minWidth: 100 }}
+                  style={{ minWidth: 80 }}
                 >
                   <option value="">Todas</option>
                   {grandchildCats.map((cat) => (
@@ -288,7 +290,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           </select>
         </label>
         <label>
-          DirecciÃ³n
+          Dirección
           <select
             value={table.sortDirection}
             onChange={(event) => table.setSortDirection(event.target.value as AdminProductSortDirection)}
@@ -298,7 +300,7 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
           </select>
         </label>
         <label>
-          Por pÃ¡gina
+          Por página
           <select value={table.pageSize} onChange={(event) => table.setPageSize(Number(event.target.value))}>
             <option value="10">10</option>
             <option value="25">25</option>
@@ -552,9 +554,50 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                       )}
                     </td>
                     <td>
-                      {product.stock}{' '}
-                      {product.stock === 0 && <span className={styles.adminReadonlyBadge}>Sin stock</span>}
-                      {product.stock > 0 && product.stock <= 5 && <span className={styles.adminReadonlyBadge}>Bajo stock</span>}
+                      {!isReadOnly && onUpdateStock ? (
+                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={pendingStock[product.id] ?? product.stock}
+                            disabled={savingStock === product.id}
+                            onChange={(e) => setPendingStock(prev => ({ ...prev, [product.id]: Number(e.target.value) }))}
+                            style={{ width: 60 }}
+                          />
+                          <button
+                            className={styles.adminTableActionButton}
+                            disabled={savingStock === product.id}
+                            onClick={async () => {
+                              if (!onUpdateStock) return;
+                              const newStock = pendingStock[product.id] ?? product.stock;
+                              if (newStock < 0) return;
+                              setSavingStock(product.id);
+                              try {
+                                await onUpdateStock(product.id, newStock);
+                              } finally {
+                                setSavingStock(null);
+                                setPendingStock(prev => {
+                                  const next = { ...prev };
+                                  delete next[product.id];
+                                  return next;
+                                });
+                              }
+                            }}
+                            style={{ fontSize: '0.75rem', padding: '2px 6px', whiteSpace: 'nowrap' }}
+                          >
+                            {savingStock === product.id ? '...' : '✓'}
+                          </button>
+                          {(pendingStock[product.id] ?? product.stock) === 0 && <span className={styles.adminReadonlyBadge}>Sin stock</span>}
+                          {(pendingStock[product.id] ?? product.stock) > 0 && (pendingStock[product.id] ?? product.stock) <= 5 && <span className={styles.adminReadonlyBadge}>Bajo stock</span>}
+                        </div>
+                      ) : (
+                        <span>
+                          {product.stock}{' '}
+                          {product.stock === 0 && <span className={styles.adminReadonlyBadge}>Sin stock</span>}
+                          {product.stock > 0 && product.stock <= 5 && <span className={styles.adminReadonlyBadge}>Bajo stock</span>}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <span className={`${styles.status} ${styles[getStatusClass(product.status === 'ACTIVE' ? 'PAID' : 'CANCELLED')]}`}>
@@ -617,15 +660,6 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
                         >
                           {product.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
                         </button>
-                        {onMigrateImages && (isExternalImageUrl(product.imageUrl) || product.carouselImages?.some(isExternalImageUrl)) && (
-                          <button
-                            className={styles.adminTableActionButton}
-                            onClick={() => void onMigrateImages(product.id)}
-                            title="Descargar imÃ¡genes externas a almacenamiento local"
-                          >
-                            ðŸ“¥ ImÃ¡genes
-                          </button>
-                        )}
                         <DeleteButton product={product} isReadOnly={isReadOnly} onDelete={onDelete} />
                       </div>
                     </td>
