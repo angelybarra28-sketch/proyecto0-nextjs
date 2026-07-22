@@ -84,7 +84,7 @@ export function AdminImportPortfolioPage() {
               />
               <label htmlFor="portfolio-file-input">
                 <button
-                  className={styles.adminActionButton}
+                  className={styles.compactBtn}
                   onClick={() => document.getElementById('portfolio-file-input')?.click()}
                   disabled={isUploading}
                 >
@@ -278,13 +278,13 @@ export function AdminImportPortfolioPage() {
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <button
-                className={styles.adminActionButton}
+                className={styles.compactBtn}
                 disabled={!confirmed || isImporting || preview.stats.importableCount === 0}
                 onClick={() => confirmImport(preview.importableRows)}
               >
                 {isImporting ? 'Importando...' : 'Importar Cartera'}
               </button>
-              <button className={styles.adminActionButton} onClick={() => { setConfirmed(false); uploadForPreview(new File([], '')); }} disabled>
+              <button className={styles.compactBtn} onClick={() => { setConfirmed(false); uploadForPreview(new File([], '')); }} disabled>
                 Cancelar
               </button>
             </div>
@@ -334,9 +334,9 @@ export function AdminImportPortfolioPage() {
 
             <div style={{ display: 'flex', gap: 12 }}>
               <Link href="/admin/cuenta-corriente">
-                <button className={styles.adminActionButton}>Ir a Cuenta Corriente</button>
+                <button className={styles.compactBtn}>Ir a Cuenta Corriente</button>
               </Link>
-              <button className={styles.adminActionButton} onClick={() => window.location.reload()}>
+              <button className={styles.compactBtn} onClick={() => window.location.reload()}>
                 Importar otro archivo
               </button>
             </div>

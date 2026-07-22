@@ -281,7 +281,7 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
                 <td>
                   <button
                     onClick={() => onSelectAccount?.(acc.id)}
-                    className={styles.adminActionButton}
+                    className={styles.compactBtn}
                   >
                     Ver
                   </button>
@@ -296,7 +296,7 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
           <button
             onClick={handleBatchSubmit}
             disabled={pendingCount === 0 || isBatchSubmitting}
-            className={styles.adminActionButton}
+            className={styles.compactBtn}
             style={{ padding: '10px 24px', fontSize: 16, fontWeight: 700 }}
           >
             {isBatchSubmitting ? 'Enviando...' : `Confirmar pagos (${pendingCount})`}

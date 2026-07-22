@@ -29,7 +29,7 @@ export default function CartItemComponent({
 
   const totalPrice = item.price * item.quantity;
   const installmentCount = item.installmentCount ?? 8;
-  const installmentAmount = Math.round(totalPrice / installmentCount);
+  const installmentAmount = item.installmentAmount ?? Math.round(totalPrice / installmentCount);
   const priceFormatted = `$${totalPrice.toLocaleString('es-AR')}`;
   const cuotaText = `${installmentCount} cuotas de $${installmentAmount.toLocaleString('es-AR')}`;
 

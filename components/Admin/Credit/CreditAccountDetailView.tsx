@@ -359,7 +359,7 @@ export function CreditAccountDetailView({ account, onPayment, onAddNote, onFixIn
               style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #363330', background: '#1e1d1b', color: '#f5f2ec' }}
             />
           </div>
-          <button type="submit" className={styles.adminActionButton}>Agregar gestion</button>
+          <button type="submit" className={styles.compactBtn}>Agregar gestion</button>
         </form>
       </section>
 

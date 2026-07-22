@@ -77,10 +77,10 @@ export default function CheckoutPage() {
       message += `\nDirección: ${parts.join(', ')}`;
     }
 
-    message += `\n\n8 cuotas de $${Math.round(total / 8).toLocaleString('es-AR')}`;
-    message += `\n9 cuotas de $${Math.round(total / 9).toLocaleString('es-AR')}`;
-    message += `\n10 cuotas de $${Math.round(total / 10).toLocaleString('es-AR')}`;
-    message += `\n12 cuotas de $${Math.round(total / 12).toLocaleString('es-AR')}`;
+    const firstItem = items[0];
+    if (firstItem?.installmentCount && firstItem?.installmentAmount) {
+      message += `\n${firstItem.installmentCount} cuotas de $${firstItem.installmentAmount.toLocaleString('es-AR')}`;
+    }
     message += `\n\nTotal: $${total.toLocaleString('es-AR')}`;
 
     const encodedMessage = encodeURIComponent(message);

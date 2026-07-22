@@ -32,7 +32,7 @@ export function AdminCollectionsPage() {
               <h2 className={styles.sectionTitle}>Ruta de Cobranza (Cuenta Corriente)</h2>
               <p className={styles.adminTableSummary}>{route.length} cliente(s) con cuotas vencidas</p>
             </div>
-            <button onClick={() => reloadRoute()} className={styles.adminActionButton} disabled={routeLoading}>
+            <button onClick={() => reloadRoute()} className={styles.compactBtn} disabled={routeLoading}>
               {routeLoading ? 'Cargando...' : 'Actualizar'}
             </button>
           </div>

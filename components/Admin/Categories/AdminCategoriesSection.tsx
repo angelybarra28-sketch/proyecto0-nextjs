@@ -297,7 +297,7 @@ export function AdminCategoriesSection() {
           <td>{node.category.isActive ? 'Sí' : 'No'}</td>
           <td>
             <div className={styles.adminRowActions}>
-              <button className={styles.adminActionButton} disabled={isSaving} onClick={() => startEdit(node.category)}>
+              <button className={styles.compactBtn} disabled={isSaving} onClick={() => startEdit(node.category)}>
                 Editar
               </button>
               <button className={styles.deleteBtn} disabled={isSaving} onClick={() => setDeleteConfirmId(node.category.id)}>
@@ -453,7 +453,7 @@ export function AdminCategoriesSection() {
               <button className={styles.deleteBtn} onClick={() => void handleDelete(deleteConfirmId)}>
                 Sí, eliminar
               </button>
-              <button className={styles.adminActionButton} onClick={() => setDeleteConfirmId(null)}>
+              <button className={styles.compactBtn} onClick={() => setDeleteConfirmId(null)}>
                 No, cancelar
               </button>
             </div>

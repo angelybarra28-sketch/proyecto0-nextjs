@@ -70,7 +70,7 @@ export function CreditPaymentForm({ remaining, onSubmit }: CreditPaymentFormProp
       <button
         type="submit"
         disabled={isSubmitting || !amount || Number(amount) <= 0 || Number(amount) > remaining}
-        className={styles.adminActionButton}
+        className={styles.compactBtn}
       >
         {isSubmitting ? 'Registrando...' : 'Registrar Pago'}
       </button>

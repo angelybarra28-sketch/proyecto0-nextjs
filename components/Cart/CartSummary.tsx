@@ -60,6 +60,17 @@ export default function CartSummary({ onWhatsApp }: CartSummaryProps) {
         </div>
       )}
 
+      {/* Cuotas */}
+      {items.length > 0 && items[0]?.installmentCount && items[0]?.installmentAmount && (
+        <div className={styles.summarySection}>
+          <div className={styles.summaryRow}>
+            <span className={styles.summaryInstallmentHighlight}>
+              {items[0].installmentCount} cuotas de ${items[0].installmentAmount.toLocaleString('es-AR')}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Total */}
       <div className={styles.totalSection}>
         <div className={styles.summaryRow + ' ' + styles.totalRow}>
@@ -72,24 +83,6 @@ export default function CartSummary({ onWhatsApp }: CartSummaryProps) {
           </span>
         </div>
       </div>
-
-      {/* Cuotas */}
-      {items.length > 0 && (
-        <div className={styles.summaryInstallments}>
-          <span className={styles.summaryInstallment}>
-            8 cuotas de ${Math.round(total / 8).toLocaleString('es-AR')}
-          </span>
-          <span className={styles.summaryInstallment}>
-            9 cuotas de ${Math.round(total / 9).toLocaleString('es-AR')}
-          </span>
-          <span className={styles.summaryInstallment}>
-            10 cuotas de ${Math.round(total / 10).toLocaleString('es-AR')}
-          </span>
-          <span className={styles.summaryInstallment + ' ' + styles.summaryInstallmentHighlight}>
-            12 cuotas de ${Math.round(total / 12).toLocaleString('es-AR')}
-          </span>
-        </div>
-      )}
 
       {/* CTA Button */}
       {items.length > 0 ? (

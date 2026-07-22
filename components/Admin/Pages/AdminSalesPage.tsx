@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminSalesSummarySection } from '@/components/Admin/Sales/AdminSalesSummarySection';
 import { AdminSalesTable } from '@/components/Admin/Sales/AdminSalesTable';
+import { AdminSalesChart } from '@/components/Admin/Sales/AdminSalesChart';
 import { CreditAccountsTable } from '@/components/Admin/Credit/CreditAccountsTable';
-import { useAdminAccess, useAdminSales } from '@/components/Admin/useAdminData';
+import { useAdminAccess, useAdminSales, useAdminDashboard } from '@/components/Admin/useAdminData';
 import { useCreditAccounts } from '@/components/Admin/useCreditAccounts';
 import { useAdminSalesTable } from '@/hooks/useAdminSalesTable';
 import { fetchCommercialMetrics } from '@/lib/services/admin/client';
@@ -19,6 +20,7 @@ export function AdminSalesPage() {
   const table = useAdminSalesTable();
   const { sales, pagination, isLoadingSales, salesError } = useAdminSales(isAdmin, table.query);
   const { accounts, isLoading, error: creditError } = useCreditAccounts(isAdmin);
+  const dashboard = useAdminDashboard(isAdmin);
 
   const [commercial, setCommercial] = useState<{
     currentMonthlyCollection: number;
@@ -103,6 +105,10 @@ export function AdminSalesPage() {
         </section>
 
         <AdminSalesTable sales={sales} table={table} pagination={pagination} isLoadingSales={isLoadingSales} salesError={salesError} />
+
+        {dashboard?.monthly && dashboard.monthly.length > 0 && (
+          <AdminSalesChart monthly={dashboard.monthly} />
+        )}
       </div>
       <div className={styles.backLink}>
         <Link href="/admin">Volver al panel</Link>

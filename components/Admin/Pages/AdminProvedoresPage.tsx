@@ -1,11 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useAdminAccess } from '@/components/Admin/useAdminData';
+import { ProveedoresTabs, type Tab } from '@/components/Admin/Proveedores/ProveedoresTabs';
+import { ProveedoresDashboard } from '@/components/Admin/Proveedores/ProveedoresDashboard';
+import { ProveedoresList } from '@/components/Admin/Proveedores/ProveedoresList';
+import { ComprasList } from '@/components/Admin/Proveedores/ComprasList';
+import { PagosList } from '@/components/Admin/Proveedores/PagosList';
+import { DeudasSection } from '@/components/Admin/Proveedores/DeudasSection';
+import { EstadisticasProveedores } from '@/components/Admin/Proveedores/EstadisticasProveedores';
 import styles from '@/styles/Admin.module.css';
 
 export function AdminProvedoresPage() {
   const { isAdmin } = useAdminAccess();
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
 
   if (!isAdmin) return null;
 
@@ -22,11 +31,15 @@ export function AdminProvedoresPage() {
         </div>
       </div>
 
+      <ProveedoresTabs active={activeTab} onChange={setActiveTab} />
+
       <div className={styles.sections}>
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Próximamente</h2>
-          <p className={styles.empty}>Sección en desarrollo</p>
-        </section>
+        {activeTab === 'dashboard' && <ProveedoresDashboard onNavigateTab={setActiveTab} />}
+        {activeTab === 'proveedores' && <ProveedoresList />}
+        {activeTab === 'compras' && <ComprasList />}
+        {activeTab === 'pagos' && <PagosList />}
+        {activeTab === 'deudas' && <DeudasSection />}
+        {activeTab === 'estadisticas' && <EstadisticasProveedores />}
       </div>
 
       <div className={styles.backLink}>

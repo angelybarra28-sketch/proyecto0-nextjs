@@ -179,7 +179,7 @@ export function CreditDashboardSection({ dashboard }: CreditDashboardSectionProp
           <h3 className={styles.sectionTitle} style={{ marginBottom: 0, fontSize: 15 }}>Métricas Comerciales</h3>
           <button
             onClick={handleExportControlMensual}
-            className={styles.adminActionButton}
+            className={styles.compactBtn}
             disabled={exporting}
           >
             {exporting ? 'Exportando...' : 'Exportar Control Mensual'}

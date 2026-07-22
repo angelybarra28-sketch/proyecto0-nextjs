@@ -129,13 +129,6 @@ export function AdminCreditAccountsPage() {
             Gestión de ventas a crédito y pagos
           </p>
         </div>
-        <button
-          onClick={() => document.getElementById('cuentas-table')?.scrollIntoView({ behavior: 'smooth' })}
-          className={styles.adminActionButton}
-          style={{ fontSize: 14, padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 6 }}
-        >
-          Clientes ↓
-        </button>
       </div>
 
       {error && <div className={styles.adminAlertError}>{error}</div>}
@@ -146,7 +139,7 @@ export function AdminCreditAccountsPage() {
           <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               onClick={() => setSelectedAccountId(null)}
-              className={styles.adminActionButton}
+              className={styles.compactBtn}
               style={{ fontSize: 14, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -178,12 +171,12 @@ export function AdminCreditAccountsPage() {
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <button
                   onClick={() => exportCreditAccountsToExcel(accounts)}
-                  className={styles.adminActionButton}
+                  className={styles.compactBtn}
                   disabled={accounts.length === 0}
                 >
                   Exportar Excel
                 </button>
-                <button onClick={() => reload()} className={styles.adminActionButton} disabled={isLoading}>
+                <button onClick={() => reload()} className={styles.compactBtn} disabled={isLoading}>
                   {isLoading ? 'Cargando...' : 'Actualizar'}
                 </button>
                 <button onClick={openCleanModal} className={styles.deleteBtn}>
@@ -407,7 +400,7 @@ export function AdminCreditAccountsPage() {
                 </label>
 
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                  <button onClick={closeCleanModal} className={styles.adminActionButton} disabled={cleaning}>
+                  <button onClick={closeCleanModal} className={styles.compactBtn} disabled={cleaning}>
                     Cancelar
                   </button>
                   <button
@@ -439,7 +432,7 @@ export function AdminCreditAccountsPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button onClick={closeCleanModal} className={styles.adminActionButton}>
+                  <button onClick={closeCleanModal} className={styles.compactBtn}>
                     Cerrar
                   </button>
                 </div>

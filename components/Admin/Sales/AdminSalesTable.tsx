@@ -135,7 +135,7 @@ export function AdminSalesTable({ sales, table, pagination, isLoadingSales, sale
                     </span>
                   </td>
                   <td>
-                    <Link href={`/admin/ventas/${sale.id}`} className={styles.adminActionButton}>
+                    <Link href={`/admin/ventas/${sale.id}`} className={styles.compactBtn}>
                       Ver detalle
                     </Link>
                   </td>
@@ -150,8 +150,8 @@ export function AdminSalesTable({ sales, table, pagination, isLoadingSales, sale
         <div className={styles.adminPagination}>
           <span>Página {page} de {totalPages}</span>
           <div className={styles.adminRowActions}>
-            <button className={styles.adminActionButton} disabled={page === 1} onClick={() => table.setPage(page - 1)}>Anterior</button>
-            <button className={styles.adminActionButton} disabled={page === totalPages} onClick={() => table.setPage(page + 1)}>Siguiente</button>
+            <button className={styles.compactBtn} disabled={page === 1} onClick={() => table.setPage(page - 1)}>Anterior</button>
+            <button className={styles.compactBtn} disabled={page === totalPages} onClick={() => table.setPage(page + 1)}>Siguiente</button>
           </div>
         </div>
       )}
