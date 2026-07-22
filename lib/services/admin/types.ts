@@ -22,6 +22,8 @@ export function normalizePage(value: unknown): number {
 }
 
 export function normalizeLimit(value: unknown, defaultLimit = 10, maxLimit = 100): number {
+  if (value === -1 || value === '-1') return -1;
+
   const limit = Number(value);
 
   if (!Number.isInteger(limit) || limit <= 0) {

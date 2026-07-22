@@ -669,54 +669,71 @@ export function AdminProductsTable({ products, categories, table, isLoading, isR
             </table>
           </div>
 
-          <div className={styles.adminPagination}>
-            <span>Página {table.page} de {table.totalPages}</span>
-            <div className={styles.adminPaginationPages}>
+          {table.showAll ? (
+            <div className={styles.adminPagination}>
               <button
                 className={styles.adminTableActionButton}
-                disabled={table.page === 1}
-                onClick={() => table.setPage(table.page - 1)}
+                onClick={() => table.toggleShowAll()}
               >
-                Anterior
-              </button>
-              {(() => {
-                const total = table.totalPages;
-                const current = table.page;
-                const pages: (number | 'dots')[] = [];
-                if (total <= 7) {
-                  for (let i = 1; i <= total; i++) pages.push(i);
-                } else {
-                  pages.push(1);
-                  if (current > 3) pages.push('dots');
-                  const start = Math.max(2, current - 1);
-                  const end = Math.min(total - 1, current + 1);
-                  for (let i = start; i <= end; i++) pages.push(i);
-                  if (current < total - 2) pages.push('dots');
-                  pages.push(total);
-                }
-                return pages.map((p, i) =>
-                  p === 'dots' ? (
-                    <span key={`dots-${i}`} className={styles.adminPaginationDots}>…</span>
-                  ) : (
-                    <button
-                      key={p}
-                      className={`${styles.adminTableActionButton} ${p === current ? styles.adminPaginationActive : ''}`}
-                      onClick={() => table.setPage(p)}
-                    >
-                      {p}
-                    </button>
-                  )
-                );
-              })()}
-              <button
-                className={styles.adminTableActionButton}
-                disabled={table.page === table.totalPages}
-                onClick={() => table.setPage(table.page + 1)}
-              >
-                Siguiente
+                Ver paginado
               </button>
             </div>
-          </div>
+          ) : (
+            <div className={styles.adminPagination}>
+              <span>Página {table.page} de {table.totalPages}</span>
+              <div className={styles.adminPaginationPages}>
+                <button
+                  className={styles.adminTableActionButton}
+                  disabled={table.page === 1}
+                  onClick={() => table.setPage(table.page - 1)}
+                >
+                  Anterior
+                </button>
+                {(() => {
+                  const total = table.totalPages;
+                  const current = table.page;
+                  const pages: (number | 'dots')[] = [];
+                  if (total <= 7) {
+                    for (let i = 1; i <= total; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (current > 3) pages.push('dots');
+                    const start = Math.max(2, current - 1);
+                    const end = Math.min(total - 1, current + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (current < total - 2) pages.push('dots');
+                    pages.push(total);
+                  }
+                  return pages.map((p, i) =>
+                    p === 'dots' ? (
+                      <span key={`dots-${i}`} className={styles.adminPaginationDots}>…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        className={`${styles.adminTableActionButton} ${p === current ? styles.adminPaginationActive : ''}`}
+                        onClick={() => table.setPage(p)}
+                      >
+                        {p}
+                      </button>
+                    )
+                  );
+                })()}
+                <button
+                  className={styles.adminTableActionButton}
+                  disabled={table.page === table.totalPages}
+                  onClick={() => table.setPage(table.page + 1)}
+                >
+                  Siguiente
+                </button>
+                <button
+                  className={styles.adminTableActionButton}
+                  onClick={() => table.toggleShowAll()}
+                >
+                  Ver todos
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </section>

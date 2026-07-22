@@ -159,8 +159,6 @@ export async function listProductsPaginated(
   supabase: SupabaseClient,
   input: PaginatedProductsInput
 ): Promise<PaginatedProductsResult> {
-  const from = (input.page - 1) * input.limit;
-  const to = from + input.limit - 1;
   let query = supabase
     .from('products')
     .select(productColumns, { count: 'exact' });
@@ -204,8 +202,13 @@ export async function listProductsPaginated(
   }
 
   query = query
-    .order(getProductOrderColumn(input.sorting.sortKey), { ascending: input.sorting.direction === 'asc' })
-    .range(from, to);
+    .order(getProductOrderColumn(input.sorting.sortKey), { ascending: input.sorting.direction === 'asc' });
+
+  if (input.limit !== -1) {
+    const from = (input.page - 1) * input.limit;
+    const to = from + input.limit - 1;
+    query = query.range(from, to);
+  }
 
   const { data, error, count } = await query;
 

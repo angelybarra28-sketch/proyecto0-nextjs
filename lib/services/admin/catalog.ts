@@ -235,8 +235,9 @@ export async function getAdminCatalog(input: AdminProductListInput = {}): Promis
     throw new Error('Supabase no está configurado');
   }
 
-  const page = normalizePage(input.page);
   const limit = normalizeLimit(input.limit);
+  const isUnlimited = limit === -1;
+  const page = isUnlimited ? 1 : normalizePage(input.page);
   const filters = normalizeProductFilters(input);
   const sorting = normalizeProductSorting(input);
 
@@ -256,10 +257,10 @@ export async function getAdminCatalog(input: AdminProductListInput = {}): Promis
     },
     sorting,
   });
-  const totalPages = Math.max(1, Math.ceil(result.total / limit));
-  const resolvedPage = Math.min(page, totalPages);
+  const totalPages = isUnlimited ? 1 : Math.max(1, Math.ceil(result.total / limit));
+  const resolvedPage = isUnlimited ? 1 : Math.min(page, totalPages);
 
-  if (resolvedPage !== page) {
+  if (!isUnlimited && resolvedPage !== page) {
     result = await listProductsPaginated(supabase, {
       page: resolvedPage,
       limit,
@@ -282,7 +283,7 @@ export async function getAdminCatalog(input: AdminProductListInput = {}): Promis
       slug: category.slug,
       parentId: category.parent_id,
     })),
-    pagination: createPagination(resolvedPage, limit, result.total),
+    pagination: createPagination(resolvedPage, isUnlimited ? result.total : limit, result.total),
     filters,
     sorting,
     error: null,

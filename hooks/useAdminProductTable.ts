@@ -25,11 +25,19 @@ export function useAdminProductTable(pagination: AdminPagination | null) {
   const [sortDirection, setSortDirectionValue] = useState<AdminProductSortDirection>('desc');
   const [page, setPageValue] = useState(1);
   const [pageSize, setPageSizeValue] = useState(DEFAULT_PAGE_SIZE);
+  const [showAll, setShowAll] = useState(false);
   const debouncedSearch = useDebouncedValue(search);
+
+  const toggleShowAll = () => {
+    const next = !showAll;
+    setShowAll(next);
+    setPageSizeValue(next ? -1 : DEFAULT_PAGE_SIZE);
+    setPageValue(1);
+  };
 
   const query = useMemo<AdminProductListInput>(() => ({
     page,
-    limit: pageSize,
+    limit: showAll ? -1 : pageSize,
     search: debouncedSearch,
     status: statusFilter,
     featured: featuredFilter,
@@ -37,7 +45,7 @@ export function useAdminProductTable(pagination: AdminPagination | null) {
     size,
     sortKey,
     direction: sortDirection,
-  }), [categoryId, debouncedSearch, featuredFilter, page, pageSize, size, sortDirection, sortKey, statusFilter]);
+  }), [categoryId, debouncedSearch, featuredFilter, page, showAll, pageSize, size, sortDirection, sortKey, statusFilter]);
 
   const setSearch = (value: string) => {
     setSearchValue(value);
@@ -104,6 +112,8 @@ export function useAdminProductTable(pagination: AdminPagination | null) {
     setSortDirection,
     setPage: setPageValue,
     setPageSize,
+    showAll,
+    toggleShowAll,
   };
 }
 
