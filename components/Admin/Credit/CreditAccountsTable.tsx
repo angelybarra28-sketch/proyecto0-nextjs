@@ -37,7 +37,21 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
   const defaultMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
   const defaultYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
 
+  const [globalMonth, setGlobalMonth] = useState<number>(defaultMonth);
+
   const yearOptions = [defaultYear - 1, defaultYear, defaultYear + 1];
+
+  const handleGlobalMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newMonth = Number(e.target.value);
+    setGlobalMonth(newMonth);
+    setPaymentInputs((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(next)) {
+        next[key] = { ...next[key], month: newMonth };
+      }
+      return next;
+    });
+  };
 
   const sortedAccounts = useMemo(() => {
     if (!tarjetaSort) return accounts;
@@ -61,7 +75,7 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
 
   const getPaymentState = (accountId: string) => {
     if (!paymentInputs[accountId]) {
-      return { amount: '', month: defaultMonth, year: defaultYear };
+      return { amount: '', month: globalMonth, year: defaultYear };
     }
     return paymentInputs[accountId];
   };
@@ -145,7 +159,32 @@ export function CreditAccountsTable({ accounts, onSelectAccount, onPayment, onFi
             <th>Cuota</th>
             {onPayment && <th>Cobrar $</th>}
             {onPayment && <th>Pend.</th>}
-            {onPayment && <th>Mes cobro</th>}
+            {onPayment && (
+              <th style={{ minWidth: 80 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 11 }}>Mes cobro</span>
+                  <select
+                    value={globalMonth}
+                    onChange={handleGlobalMonthChange}
+                    style={{
+                      width: '100%',
+                      minHeight: 26,
+                      border: '1px solid #363330',
+                      background: '#2a2826',
+                      color: '#f5f2ec',
+                      borderRadius: 4,
+                      padding: '2px 4px',
+                      fontSize: 11,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {MONTH_NAMES.map((name, idx) => (
+                      <option key={idx} value={idx}>{name.slice(0, 3)}</option>
+                    ))}
+                  </select>
+                </div>
+              </th>
+            )}
             {onPayment && <th>Año</th>}
             <th>Pagado</th>
             <th>Restante</th>

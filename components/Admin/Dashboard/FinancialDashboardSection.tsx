@@ -33,7 +33,7 @@ function KpiCard({
         background: '#262422',
         border: '1px solid #363330',
         borderRadius: 10,
-        padding: '16px 14px',
+        padding: 10,
         display: 'flex',
         flexDirection: 'column',
         gap: 6,
@@ -42,7 +42,7 @@ function KpiCard({
     >
       <span
         style={{
-          fontSize: 12,
+          fontSize: 11,
           color: '#b8a89c',
           fontWeight: 600,
           textTransform: 'uppercase',
@@ -53,7 +53,7 @@ function KpiCard({
       </span>
       <span
         style={{
-          fontSize: 20,
+          fontSize: 16,
           fontWeight: 700,
           color: valueColor,
           lineHeight: 1.2,
@@ -88,8 +88,8 @@ export function FinancialDashboardSection({ dashboard, commercial }: FinancialDa
   const balanceColor = balance >= 0 ? '#34d399' : '#f87171';
 
   return (
-    <section className={styles.section} style={{ padding: '24px' }}>
-      <h2 className={styles.sectionTitle} style={{ marginTop: 0, marginBottom: 18 }}>
+    <section className={styles.section}>
+      <h2 className={styles.sectionTitle} style={{ marginTop: 0, marginBottom: 14 }}>
         Dashboard Financiero
       </h2>
 
@@ -97,8 +97,8 @@ export function FinancialDashboardSection({ dashboard, commercial }: FinancialDa
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-            gap: 12,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+            gap: 10,
           }}
         >
           <KpiCard label="Total Financiado" value={formatCurrency(credit.totalFinanced)} />

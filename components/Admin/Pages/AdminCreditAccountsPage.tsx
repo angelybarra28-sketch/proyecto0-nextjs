@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAdminAccess } from '@/components/Admin/useAdminData';
 import { useCreditAccounts, useCreditAccountDetail } from '@/components/Admin/useCreditAccounts';
-import { CreditDashboardSection } from '@/components/Admin/Credit/CreditDashboardSection';
 import { CreditAccountsTable } from '@/components/Admin/Credit/CreditAccountsTable';
 import { CreditAccountDetailView } from '@/components/Admin/Credit/CreditAccountDetailView';
 import { exportCreditAccountsToExcel } from '@/components/Admin/Credit/creditExport';
@@ -164,8 +163,6 @@ export function AdminCreditAccountsPage() {
         </div>
       ) : (
         <div className={styles.sections}>
-          <CreditDashboardSection dashboard={dashboard} />
-
           <section className={styles.section} id="cuentas-table">
             <div className={styles.adminTableHeader}>
               <div>

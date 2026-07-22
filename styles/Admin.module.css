@@ -16,7 +16,7 @@
   text-align: center;
   color: #d3cdc4;
   font-size: 18px;
-  margin-bottom: 40px;
+  margin-bottom: 16px;
 }
 
 .headerCompact {
@@ -234,25 +234,39 @@
   gap: 8px;
 }
 
+.actionButtonsRow > a {
+  display: flex;
+  text-decoration: none;
+}
+
+.actionButtonsRow button {
+  flex: 1;
+}
+
+.actionButtonsRow > :last-child button {
+  border-right: none;
+}
+
 .adminActionButton {
-  min-width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  border: 1px solid #5a5248;
-  border-radius: 6px;
-  padding: 6px 12px;
+  min-height: 100px;
+  padding: 16px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-right: 1px solid #5a5248;
   background: #4a433a;
   color: #f5f2ec;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
-  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
 
 .adminActionButton:hover:not(:disabled) {
   background: #5a5248;
   color: #f5f2ec;
-  transform: translateY(-2px);
 }
 
 .adminActionButton:disabled,
@@ -386,55 +400,31 @@
 }
 
 .actionButtonsRow {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 0 auto 32px;
-  max-width: 960px;
-  padding: 0 10px;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 0;
+  margin-bottom: 16px;
 }
 
 .adminPrimaryButton {
-  min-width: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 10px 14px;
-  font-size: 13px;
+  min-height: 100px;
+  padding: 16px 12px;
+  font-size: 14px;
   font-weight: 700;
-  border: 1px solid #059669;
-  border-radius: 8px;
+  border: none;
+  border-right: 1px solid #059669;
   background: linear-gradient(135deg, #059669, #047857);
   color: white;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  transition: background 0.2s ease;
 }
 
 .adminPrimaryButton:hover {
   background: linear-gradient(135deg, #047857, #065f46);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
-}
-
-.adminSecondaryButton {
-  min-width: 150px;
-  text-align: center;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  border: 1px solid #5a5248;
-  border-radius: 8px;
-  background: transparent;
-  color: #b8a89c;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-}
-
-.adminSecondaryButton:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #f5f2ec;
-  transform: translateY(-2px);
 }
 
 .adminTableActionButton {
@@ -473,7 +463,7 @@
   }
 
   .container {
-    padding: 40px 20px;
+    padding: 12px 10px;
   }
 
   .section {
@@ -493,6 +483,18 @@
 }
 
 @media (max-width: 900px) {
+  .actionButtonsRow {
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 16px;
+  }
+
+  .adminActionButton,
+  .adminPrimaryButton {
+    min-height: 110px;
+    padding: 14px 8px;
+    font-size: 13px;
+  }
+
   .adminTableHeader,
   .adminPagination {
     align-items: stretch;
