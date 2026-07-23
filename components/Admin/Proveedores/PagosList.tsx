@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { ProveedorPagoRow, ProveedorRow, ProveedorCompraRow } from '@/lib/supabase/types';
-import { fetchPagos, fetchProveedores, fetchCompras, createPago } from '@/lib/services/admin/client';
+import { fetchPagos, fetchProveedores, fetchCompras, createPago, deletePago } from '@/lib/services/admin/client';
 import { PagoForm } from './PagoForm';
 import styles from '@/styles/Admin.module.css';
 
@@ -30,10 +30,11 @@ export function PagosList() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleSave = async (data: any) => {
-    await createPago(data);
+  const handleSave = async (data: any): Promise<string> => {
+    const created = await createPago(data);
     setShowForm(false);
     load();
+    return created.id;
   };
 
   return (
@@ -63,13 +64,14 @@ export function PagosList() {
               <th>Monto</th>
               <th>Forma de Pago</th>
               <th>Observaciones</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className={styles.empty}>Cargando...</td></tr>
+              <tr><td colSpan={6} className={styles.empty}>Cargando...</td></tr>
             ) : pagos.length === 0 ? (
-              <tr><td colSpan={5} className={styles.empty}>No hay pagos registrados</td></tr>
+              <tr><td colSpan={6} className={styles.empty}>No hay pagos registrados</td></tr>
             ) : pagos.map((p) => (
               <tr key={p.id}>
                 <td style={{ fontWeight: 600 }}>{p.proveedor_nombre ?? '—'}</td>
@@ -77,6 +79,14 @@ export function PagosList() {
                 <td>{formatCurrency(p.monto)}</td>
                 <td style={{ textTransform: 'capitalize' }}>{p.forma_pago}</td>
                 <td>{p.observaciones ?? '—'}</td>
+                <td>
+                  <button onClick={async () => {
+                    if (confirm('¿Eliminar este pago?')) {
+                      await deletePago(p.id);
+                      load();
+                    }
+                  }} className={styles.compactBtn} style={{ color: '#f87171' }}>Eliminar</button>
+                </td>
               </tr>
             ))}
           </tbody>

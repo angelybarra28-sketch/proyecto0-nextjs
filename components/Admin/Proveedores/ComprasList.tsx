@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { ProveedorCompraRow, ProveedorRow } from '@/lib/supabase/types';
-import { fetchCompras, fetchProveedores, createCompra, updateCompra } from '@/lib/services/admin/client';
+import { fetchCompras, fetchProveedores, createCompra, updateCompra, deleteCompra } from '@/lib/services/admin/client';
 import { CompraForm } from './CompraForm';
 import { IndicadorEstado } from './ProveedorIndicadores';
 import styles from '@/styles/Admin.module.css';
@@ -34,15 +34,17 @@ export function ComprasList() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: any): Promise<string> => {
     if (editing) {
       await updateCompra(editing.id, data);
-    } else {
-      await createCompra(data);
+      setEditing(null);
+      load();
+      return editing.id;
     }
+    const created = await createCompra(data);
     setShowForm(false);
-    setEditing(null);
     load();
+    return created.id;
   };
 
   if (detailId) {
@@ -113,6 +115,12 @@ export function ComprasList() {
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => setDetailId(c.id)} className={styles.compactBtn}>Ver</button>
                     <button onClick={() => setEditing(c)} className={styles.compactBtn}>Editar</button>
+                    <button onClick={async () => {
+                      if (confirm('¿Eliminar esta compra?')) {
+                        await deleteCompra(c.id);
+                        load();
+                      }
+                    }} className={styles.compactBtn} style={{ color: '#f87171' }}>Eliminar</button>
                   </div>
                 </td>
               </tr>

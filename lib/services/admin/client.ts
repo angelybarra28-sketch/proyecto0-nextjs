@@ -750,15 +750,21 @@ export async function createPago(input: ProveedorPagoInsert): Promise<ProveedorP
   return payload.pago;
 }
 
+export async function deleteCompra(id: string): Promise<void> {
+  const response = await fetch(`/api/admin/proveedores/compras/${id}`, { method: 'DELETE' });
+  if (!response.ok) throw new Error('No se pudo eliminar la compra');
+}
+
 export async function deletePago(id: string): Promise<void> {
   const response = await fetch(`/api/admin/proveedores/pagos/${id}`, { method: 'DELETE' });
   if (!response.ok) throw new Error('No se pudo eliminar el pago');
 }
 
-export async function uploadProveedorAdjunto(compraId: string, file: File, tipo: string): Promise<ProveedorAdjuntoRow> {
+export async function uploadProveedorAdjunto(compraId: string, file: File, tipo: string, pagoId?: string): Promise<ProveedorAdjuntoRow> {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('compra_id', compraId);
+  if (compraId) formData.append('compra_id', compraId);
+  if (pagoId) formData.append('pago_id', pagoId);
   formData.append('tipo', tipo);
   const response = await fetch('/api/admin/proveedores/adjuntos', {
     method: 'POST',

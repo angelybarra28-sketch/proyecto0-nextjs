@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAdminUser } from '@/lib/auth/server';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
-import { getCompra, updateCompra } from '@/lib/services/admin/proveedores';
+import { getCompra, updateCompra, deleteCompra } from '@/lib/services/admin/proveedores';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const context = createRequestContext(request);
@@ -17,6 +17,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json(result, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
     logServerError({ area: 'admin.compras', action: 'get', entityId: (await params).id, requestId: context.requestId, error });
+    return errorResponse(error, context.requestId, 500);
+  }
+}
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const context = createRequestContext(request);
+  try {
+    const authError = await requireAdminUser();
+    if (authError) return authError;
+
+    const { id } = await params;
+    await deleteCompra(id);
+    return NextResponse.json({ success: true }, { headers: { 'x-request-id': context.requestId } });
+  } catch (error) {
+    logServerError({ area: 'admin.compras', action: 'delete', entityId: (await params).id, requestId: context.requestId, error });
     return errorResponse(error, context.requestId, 500);
   }
 }

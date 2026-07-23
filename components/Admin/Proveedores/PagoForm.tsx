@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import type { ProveedorRow } from '@/lib/supabase/types';
+import { uploadProveedorAdjunto } from '@/lib/services/admin/client';
 import styles from '@/styles/Admin.module.css';
 
 type PagoFormProps = {
   proveedores: ProveedorRow[];
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: any) => Promise<string>;
   onClose: () => void;
 };
 
@@ -24,6 +25,8 @@ export function PagoForm({ proveedores, onSave, onClose }: PagoFormProps) {
   const [monto, setMonto] = useState('');
   const [formaPago, setFormaPago] = useState('efectivo');
   const [observaciones, setObservaciones] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,13 +34,23 @@ export function PagoForm({ proveedores, onSave, onClose }: PagoFormProps) {
     if (!proveedorId || !monto) return;
     setSaving(true);
     try {
-      await onSave({
+      const pagoId = await onSave({
         proveedor_id: proveedorId,
         fecha,
         monto: Number(monto),
         forma_pago: formaPago,
         observaciones: observaciones || null,
       });
+      if (file) {
+        setUploading(true);
+        try {
+          await uploadProveedorAdjunto('', file, 'factura', pagoId);
+        } catch (err) {
+          console.error('Error uploading file:', err);
+        } finally {
+          setUploading(false);
+        }
+      }
     } finally {
       setSaving(false);
     }
@@ -97,10 +110,14 @@ export function PagoForm({ proveedores, onSave, onClose }: PagoFormProps) {
             Observaciones
             <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} style={{ ...fieldStyle, minHeight: 60, resize: 'vertical' }} />
           </label>
+          <label style={{ ...labelStyle, cursor: 'pointer' }}>
+            {file ? `Archivo: ${file.name}` : 'Adjuntar Factura (opcional)'}
+            <input type="file" accept="image/*,.pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} style={{ display: 'none' }} />
+          </label>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
             <button type="button" onClick={onClose} className={styles.compactBtn}>Cancelar</button>
-            <button type="submit" disabled={saving || !proveedorId || !monto} className={`${styles.compactBtn} ${styles.primary}`}>
-              {saving ? 'Guardando...' : 'Registrar Pago'}
+            <button type="submit" disabled={saving || uploading || !proveedorId || !monto} className={`${styles.compactBtn} ${styles.primary}`}>
+              {uploading ? 'Subiendo archivo...' : saving ? 'Guardando...' : 'Registrar Pago'}
             </button>
           </div>
         </form>

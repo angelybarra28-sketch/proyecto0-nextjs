@@ -15,26 +15,29 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const compraId = formData.get('compra_id') as string | null;
+    const pagoId = formData.get('pago_id') as string | null;
     const tipo = (formData.get('tipo') as string | null) ?? 'factura';
 
-    if (!file || !compraId) {
-      return errorResponse(new Error('Archivo y compra_id son requeridos'), context.requestId, 400);
+    if (!file || (!compraId && !pagoId)) {
+      return errorResponse(new Error('Archivo y compra_id o pago_id son requeridos'), context.requestId, 400);
     }
 
     if (file.size > 10 * 1024 * 1024) {
       return errorResponse(new Error('El archivo no puede superar los 10MB'), context.requestId, 400);
     }
 
+    const entityId = compraId ?? pagoId!;
     const supabase = getSupabaseAdminClient();
     if (!supabase) {
       return errorResponse(new Error('Supabase no disponible'), context.requestId, 500);
     }
 
-    const path = getAdjuntoPath(compraId, tipo, file.name);
+    const path = getAdjuntoPath(entityId, tipo, file.name);
     const { path: storedPath, url } = await uploadProveedorAdjunto(supabase, file, path);
 
     const adjunto = await createAdjunto({
       compra_id: compraId,
+      pago_id: pagoId,
       tipo: tipo as any,
       nombre_original: file.name,
       path: storedPath,

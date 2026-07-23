@@ -366,7 +366,8 @@ export interface ProveedorPagoRow extends ProveedorPagoInsert {
 }
 
 export interface ProveedorAdjuntoInsert {
-  compra_id: string;
+  compra_id?: string | null;
+  pago_id?: string | null;
   tipo?: AdjuntoTipo;
   nombre_original?: string | null;
   path: string;
@@ -375,6 +376,8 @@ export interface ProveedorAdjuntoInsert {
 
 export interface ProveedorAdjuntoRow extends ProveedorAdjuntoInsert {
   id: string;
+  compra_id: string | null;
+  pago_id: string | null;
   tipo: AdjuntoTipo;
   created_at: string;
 }

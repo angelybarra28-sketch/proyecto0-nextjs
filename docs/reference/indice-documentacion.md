@@ -127,6 +127,15 @@ docs/
 
 ---
 
+## Documentación de Importación de Facturas
+
+| Documento | Propósito |
+|-----------|-----------|
+| `docs/guides/MODULO_LECTURA_FACTURAS.md` | Documentación técnica completa del módulo |
+| `docs/reference/CHANGELOG_LECTURA_FACTURAS.md` | Changelog v1.0 y versiones planificadas |
+
+---
+
 ## Documentación de Operaciones
 
 | Documento | Propósito |

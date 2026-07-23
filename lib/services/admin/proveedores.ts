@@ -20,7 +20,7 @@ const COMPRAS_COLS = 'id, proveedor_id, fecha, numero_factura, importe_total, es
 const COMPRAS_COLS_WITH_PROVEEDOR = `${COMPRAS_COLS}, proveedor:proveedores!inner(nombre)`;
 const ITEMS_COLS = 'id, compra_id, descripcion, cantidad, costo_unitario, subtotal, created_at';
 const PAGOS_COLS = 'id, proveedor_id, compra_id, fecha, monto, forma_pago, observaciones, created_at, updated_at';
-const ADJUNTOS_COLS = 'id, compra_id, tipo, nombre_original, path, url, created_at';
+const ADJUNTOS_COLS = 'id, compra_id, pago_id, tipo, nombre_original, path, url, created_at';
 
 export async function listProveedores(estado?: string, search?: string): Promise<ProveedorRow[]> {
   const supabase = getSupabaseAdminClient();
@@ -209,6 +209,19 @@ export async function createAdjunto(input: ProveedorAdjuntoInsert): Promise<Prov
   const { data, error } = await supabase.from('proveedor_adjuntos').insert(input).select(ADJUNTOS_COLS).single();
   if (error) throw new Error(error.message);
   return data as ProveedorAdjuntoRow;
+}
+
+export async function listAdjuntos(): Promise<ProveedorAdjuntoRow[]> {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('proveedor_adjuntos')
+    .select(`${ADJUNTOS_COLS}`)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ProveedorAdjuntoRow[];
 }
 
 export async function deleteAdjunto(id: string, path: string): Promise<void> {
