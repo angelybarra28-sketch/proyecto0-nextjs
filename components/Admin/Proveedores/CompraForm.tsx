@@ -1,14 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import type { ProveedorCompraRow, ProveedorRow } from '@/lib/supabase/types';
-import type { InvoiceData } from '@/lib/invoice-reader/types';
 import { uploadProveedorAdjunto } from '@/lib/services/admin/client';
-import { InvoicePreview } from './InvoicePreview';
 import styles from '@/styles/Admin.module.css';
-// TODO v2.0: al confirmar OCR, asociar automáticamente cada item de la factura
-// con un producto del catálogo (por coincidencia de descripción + presentación).
-// Almacenar la relación en una tabla compra_items para trazabilidad.
 
 type CompraFormProps = {
   compra?: ProveedorCompraRow | null;
@@ -33,13 +28,6 @@ export function CompraForm({ compra, proveedores, onSave, onClose }: CompraFormP
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const [ocrLoading, setOcrLoading] = useState(false);
-  const [ocrError, setOcrError] = useState<string | null>(null);
-  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [ocrFile, setOcrFile] = useState<File | null>(null);
-  const ocrInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,62 +55,6 @@ export function CompraForm({ compra, proveedores, onSave, onClose }: CompraFormP
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleOcrSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    setOcrFile(selectedFile);
-    setOcrLoading(true);
-    setOcrError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      const response = await fetch('/api/admin/proveedores/compras/leer-factura', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errBody = await response.json().catch(() => null);
-        throw new Error(errBody?.error?.message ?? 'Error al procesar la factura');
-      }
-
-      const result = await response.json();
-      setInvoiceData(result.data);
-      setShowPreview(true);
-    } catch (err) {
-      setOcrError(err instanceof Error ? err.message : 'Error inesperado al leer la factura');
-    } finally {
-      setOcrLoading(false);
-    }
-  };
-
-  const handleOcrConfirm = (data: InvoiceData) => {
-    if (data.proveedor) {
-      const match = proveedores.find(
-        (p) => p.nombre.toLowerCase() === data.proveedor!.toLowerCase(),
-      );
-      if (match && !compra) {
-        setProveedorId(match.id);
-      }
-    }
-    if (data.fecha) setFecha(data.fecha);
-    if (data.numeroFactura) setNumeroFactura(data.numeroFactura);
-    const total = data.total ?? data.items.reduce((s, it) => s + it.subtotal, 0);
-    if (total > 0) setImporteTotal(String(total));
-    if (ocrFile) setFile(ocrFile);
-
-    setShowPreview(false);
-    setInvoiceData(null);
-  };
-
-  const handleOcrCancel = () => {
-    setShowPreview(false);
-    setInvoiceData(null);
   };
 
   const overlayStyle: React.CSSProperties = {
@@ -154,20 +86,6 @@ export function CompraForm({ compra, proveedores, onSave, onClose }: CompraFormP
           <h2 style={{ margin: 0, fontSize: 18, color: '#f5f2ec' }}>
             {compra ? 'Editar Compra' : 'Nueva Compra'}
           </h2>
-          {!compra && (
-            <>
-              <input type="file" accept="image/*" ref={ocrInputRef} onChange={handleOcrSelect} style={{ display: 'none' }} />
-              <button
-                type="button"
-                onClick={() => ocrInputRef.current?.click()}
-                disabled={ocrLoading}
-                className={styles.compactBtn}
-                style={{ background: '#4a433a', borderColor: '#c8a87c', color: '#c8a87c' }}
-              >
-                {ocrLoading ? 'Leyendo factura...' : '📄 Importar factura'}
-              </button>
-            </>
-          )}
         </div>
         <form onSubmit={handleSubmit}>
           <label style={labelStyle}>
@@ -203,11 +121,6 @@ export function CompraForm({ compra, proveedores, onSave, onClose }: CompraFormP
             Observaciones
             <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} style={{ ...fieldStyle, minHeight: 60, resize: 'vertical' }} />
           </label>
-          {ocrError && (
-            <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(254,226,226,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, color: '#f87171', fontSize: 12 }}>
-              {ocrError}
-            </div>
-          )}
           <label style={{ ...labelStyle, cursor: 'pointer' }}>
             {file ? `Archivo: ${file.name}` : 'Adjuntar Factura (opcional)'}
             <input type="file" accept="image/*,.pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} style={{ display: 'none' }} />
@@ -220,15 +133,6 @@ export function CompraForm({ compra, proveedores, onSave, onClose }: CompraFormP
           </div>
         </form>
       </div>
-
-      {showPreview && invoiceData && (
-        <InvoicePreview
-          invoice={invoiceData}
-          imageUrl={ocrFile ? URL.createObjectURL(ocrFile) : undefined}
-          onConfirm={handleOcrConfirm}
-          onCancel={handleOcrCancel}
-        />
-      )}
     </div>
   );
 }
