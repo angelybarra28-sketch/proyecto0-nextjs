@@ -671,12 +671,13 @@ export async function updateProveedor(id: string, input: Partial<ProveedorInsert
   return payload.proveedor;
 }
 
-export async function fetchCompras(params?: { proveedor_id?: string; estado?: string; date_from?: string; date_to?: string }, signal?: AbortSignal): Promise<ProveedorCompraRow[]> {
+export async function fetchCompras(params?: { proveedor_id?: string; estado?: string; date_from?: string; date_to?: string; solo_pendientes?: boolean }, signal?: AbortSignal): Promise<ProveedorCompraRow[]> {
   const searchParams = new URLSearchParams();
   if (params?.proveedor_id) appendDefinedParam(searchParams, 'proveedor_id', params.proveedor_id);
   if (params?.estado) appendDefinedParam(searchParams, 'estado', params.estado);
   if (params?.date_from) appendDefinedParam(searchParams, 'date_from', params.date_from);
   if (params?.date_to) appendDefinedParam(searchParams, 'date_to', params.date_to);
+  if (params?.solo_pendientes) searchParams.set('solo_pendientes', 'true');
   const query = searchParams.toString();
   const response = await fetch(`/api/admin/proveedores/compras${query ? `?${query}` : ''}`, { signal });
   if (!response.ok) throw new Error('No se pudieron cargar las compras');

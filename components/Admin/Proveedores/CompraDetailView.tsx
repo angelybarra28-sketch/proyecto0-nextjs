@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import type { ProveedorCompraRow, ProveedorCompraItemRow, ProveedorPagoRow, ProveedorAdjuntoRow } from '@/lib/supabase/types';
 import { fetchCompraDetail, createCompraItems, deleteCompraItem, uploadProveedorAdjunto, deleteProveedorAdjunto } from '@/lib/services/admin/client';
+import { IndicadorEstadoBadge } from './ProveedorIndicadores';
+import { RegistrarPagoModal } from './RegistrarPagoModal';
 import styles from '@/styles/Admin.module.css';
 
 function formatCurrency(value: number): string {
@@ -19,6 +21,7 @@ export function CompraDetailView({ compraId, onBack, onUpdated }: Props) {
   const [data, setData] = useState<{ compra: ProveedorCompraRow; items: ProveedorCompraItemRow[]; pagos: ProveedorPagoRow[]; adjuntos: ProveedorAdjuntoRow[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<{ descripcion: string; cantidad: string; costo_unitario: string; subtotal: string }[]>([]);
+  const [showPagoModal, setShowPagoModal] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const load = () => {
@@ -91,35 +94,48 @@ export function CompraDetailView({ compraId, onBack, onUpdated }: Props) {
 
   return (
     <div>
-      <button onClick={onBack} className={styles.compactBtn} style={{ marginBottom: 16 }}>
-        ← Volver a Compras
-      </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <button onClick={onBack} className={styles.compactBtn}>
+          ← Volver a Compras
+        </button>
+        <button onClick={() => setShowPagoModal(true)} className={styles.compactBtn} style={{ color: '#c8a87c' }}>
+          Registrar Pago
+        </button>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 20 }}>
-        <div style={{ background: '#f9fafb', borderRadius: 10, padding: 12, color: '#333' }}>
-          <p style={{ fontSize: 11, color: '#666', margin: 0 }}>Proveedor</p>
-          <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 15 }}>{compra.proveedor_nombre ?? '—'}</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 20 }}>
+        <div style={{ background: '#262422', borderRadius: 10, padding: 12, border: '1px solid #363330' }}>
+          <p style={{ fontSize: 11, color: '#8a7e72', margin: 0 }}>Factura</p>
+          <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 15, color: '#f5f2ec' }}>{compra.numero_factura ?? '—'}</p>
         </div>
-        <div style={{ background: '#f9fafb', borderRadius: 10, padding: 12, color: '#333' }}>
-          <p style={{ fontSize: 11, color: '#666', margin: 0 }}>Fecha</p>
-          <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 15 }}>{new Date(compra.fecha).toLocaleDateString('es-AR')}</p>
+        <div style={{ background: '#262422', borderRadius: 10, padding: 12, border: '1px solid #363330' }}>
+          <p style={{ fontSize: 11, color: '#8a7e72', margin: 0 }}>Proveedor</p>
+          <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 15, color: '#f5f2ec' }}>{compra.proveedor_nombre ?? '—'}</p>
         </div>
-        <div style={{ background: '#f9fafb', borderRadius: 10, padding: 12, color: '#333' }}>
-          <p style={{ fontSize: 11, color: '#666', margin: 0 }}>Factura</p>
-          <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 15 }}>{compra.numero_factura ?? '—'}</p>
+        <div style={{ background: '#262422', borderRadius: 10, padding: 12, border: '1px solid #363330' }}>
+          <p style={{ fontSize: 11, color: '#8a7e72', margin: 0 }}>Fecha</p>
+          <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 15, color: '#f5f2ec' }}>{new Date(compra.fecha).toLocaleDateString('es-AR')}</p>
         </div>
-        <div style={{ background: '#f9fafb', borderRadius: 10, padding: 12, color: '#333' }}>
-          <p style={{ fontSize: 11, color: '#666', margin: 0 }}>Importe</p>
-          <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 15 }}>{formatCurrency(compra.importe_total)}</p>
+        <div style={{ background: '#262422', borderRadius: 10, padding: 12, border: '1px solid #363330' }}>
+          <p style={{ fontSize: 11, color: '#8a7e72', margin: 0 }}>Total</p>
+          <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 15, color: '#f5f2ec' }}>{formatCurrency(compra.importe_total)}</p>
         </div>
-        <div style={{ background: '#f9fafb', borderRadius: 10, padding: 12, color: '#333' }}>
-          <p style={{ fontSize: 11, color: '#666', margin: 0 }}>Estado</p>
+        <div style={{ background: '#262422', borderRadius: 10, padding: 12, border: '1px solid #363330' }}>
+          <p style={{ fontSize: 11, color: '#8a7e72', margin: 0 }}>Pagado</p>
+          <p style={{ fontWeight: 700, margin: '4px 0 0', fontSize: 15, color: '#22c55e' }}>{formatCurrency(compra.pagado ?? 0)}</p>
+        </div>
+        <div style={{ background: '#262422', borderRadius: 10, padding: 12, border: '1px solid #363330' }}>
+          <p style={{ fontSize: 11, color: '#8a7e72', margin: 0 }}>Saldo</p>
           <p style={{
             fontWeight: 700, margin: '4px 0 0', fontSize: 15,
-            color: compra.estado === 'pagada' ? '#065f46' : compra.estado === 'parcial' ? '#92400e' : '#991b1b',
+            color: (compra.saldo ?? 0) > 0 ? '#f87171' : '#22c55e',
           }}>
-            {compra.estado === 'pagada' ? 'Pagada' : compra.estado === 'parcial' ? 'Parcial' : 'Pendiente'}
+            {formatCurrency(compra.saldo ?? 0)}
           </p>
+        </div>
+        <div style={{ background: '#262422', borderRadius: 10, padding: 12, border: '1px solid #363330' }}>
+          <p style={{ fontSize: 11, color: '#8a7e72', margin: 0 }}>Estado</p>
+          <p style={{ margin: '4px 0 0' }}><IndicadorEstadoBadge estado={compra.estado} /></p>
         </div>
       </div>
 
@@ -198,7 +214,9 @@ export function CompraDetailView({ compraId, onBack, onUpdated }: Props) {
         </div>
       )}
 
-      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#f5f2ec', marginBottom: 10 }}>Pagos</h3>
+      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#f5f2ec', marginBottom: 10 }}>
+        Historial de Pagos ({pagos.length})
+      </h3>
       <div className={styles.tableContainer}>
         <table className={styles.table}>
           <thead>
@@ -215,14 +233,36 @@ export function CompraDetailView({ compraId, onBack, onUpdated }: Props) {
             ) : pagos.map((p) => (
               <tr key={p.id}>
                 <td>{new Date(p.fecha).toLocaleDateString('es-AR')}</td>
-                <td>{formatCurrency(p.monto)}</td>
+                <td style={{ fontWeight: 600 }}>{formatCurrency(p.monto)}</td>
                 <td style={{ textTransform: 'capitalize' }}>{p.forma_pago}</td>
                 <td>{p.observaciones ?? '—'}</td>
               </tr>
             ))}
+            {pagos.length > 0 && (
+              <tr style={{ background: '#262422' }}>
+                <td style={{ fontWeight: 700 }}>Total</td>
+                <td style={{ fontWeight: 700 }}>{formatCurrency(pagos.reduce((s, p) => s + p.monto, 0))}</td>
+                <td></td>
+                <td></td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {showPagoModal ? (
+        <RegistrarPagoModal
+          compraId={compraId}
+          proveedorId={compra.proveedor_id}
+          proveedorNombre={compra.proveedor_nombre ?? '—'}
+          numeroFactura={compra.numero_factura ?? null}
+          importeTotal={compra.importe_total}
+          pagado={compra.pagado ?? 0}
+          saldo={compra.saldo ?? 0}
+          onSave={() => { setShowPagoModal(false); load(); onUpdated(); }}
+          onClose={() => setShowPagoModal(false)}
+        />
+      ) : null}
     </div>
   );
 }

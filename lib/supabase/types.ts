@@ -332,6 +332,8 @@ export interface ProveedorCompraRow extends ProveedorCompraInsert {
   updated_at: string;
   proveedor_nombre?: string;
   pagado?: number;
+  saldo?: number;
+  ultimo_pago_fecha?: string | null;
 }
 
 export interface ProveedorCompraItemInsert {
@@ -395,6 +397,7 @@ export interface ProveedorDashboard {
     importe_total: number;
     estado: CompraEstado;
   }[];
+  proveedores: ProveedorDashboardProveedor[];
 }
 
 export interface ProveedorDeuda {
@@ -403,6 +406,17 @@ export interface ProveedorDeuda {
   total_comprado: number;
   total_pagado: number;
   saldo_pendiente: number;
+}
+
+export interface ProveedorDashboardProveedor {
+  proveedor_id: string;
+  proveedor_nombre: string;
+  total_comprado: number;
+  total_pagado: number;
+  total_pendiente: number;
+  facturas_pendientes: number;
+  facturas_parciales: number;
+  facturas_pagadas: number;
 }
 
 export type AlertaTipo = 'factura_pendiente' | 'saldo_pendiente' | 'sin_movimiento' | 'sin_factura_adjunto';

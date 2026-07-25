@@ -12,18 +12,13 @@ type CompraFormProps = {
   onClose: () => void;
 };
 
-const ESTADOS = [
-  { value: 'pendiente', label: 'Pendiente' },
-  { value: 'parcial', label: 'Parcial' },
-  { value: 'pagada', label: 'Pagada' },
-];
+
 
 export function CompraForm({ compra, proveedores, onSave, onClose }: CompraFormProps) {
   const [proveedorId, setProveedorId] = useState(compra?.proveedor_id ?? '');
   const [fecha, setFecha] = useState(compra?.fecha ?? new Date().toISOString().split('T')[0]);
   const [numeroFactura, setNumeroFactura] = useState(compra?.numero_factura ?? '');
   const [importeTotal, setImporteTotal] = useState(compra ? String(compra.importe_total) : '');
-  const [estado, setEstado] = useState(compra?.estado ?? 'pendiente');
   const [observaciones, setObservaciones] = useState(compra?.observaciones ?? '');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -39,7 +34,7 @@ export function CompraForm({ compra, proveedores, onSave, onClose }: CompraFormP
         fecha,
         numero_factura: numeroFactura || null,
         importe_total: Number(importeTotal),
-        estado,
+        estado: 'pendiente',
         observaciones: observaciones || null,
       });
       if (file) {
@@ -105,18 +100,10 @@ export function CompraForm({ compra, proveedores, onSave, onClose }: CompraFormP
               <input value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)} style={fieldStyle} />
             </label>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <label style={labelStyle}>
-              Importe Total *
-              <input type="number" step="0.01" min="0" value={importeTotal} onChange={(e) => setImporteTotal(e.target.value)} style={fieldStyle} required />
-            </label>
-            <label style={labelStyle}>
-              Estado
-              <select value={estado} onChange={(e) => setEstado(e.target.value as 'pendiente' | 'parcial' | 'pagada')} style={fieldStyle}>
-                {ESTADOS.map((e) => <option key={e.value} value={e.value}>{e.label}</option>)}
-              </select>
-            </label>
-          </div>
+          <label style={labelStyle}>
+            Importe Total *
+            <input type="number" step="0.01" min="0" value={importeTotal} onChange={(e) => setImporteTotal(e.target.value)} style={fieldStyle} required />
+          </label>
           <label style={labelStyle}>
             Observaciones
             <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} style={{ ...fieldStyle, minHeight: 60, resize: 'vertical' }} />

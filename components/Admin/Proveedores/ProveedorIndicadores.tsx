@@ -4,8 +4,8 @@ import type { CompraEstado } from '@/lib/supabase/types';
 
 const INDICATOR_STYLES: Record<string, { bg: string; color: string; label: string }> = {
   pagada: { bg: '#d1fae5', color: '#065f46', label: 'Pagada' },
-  parcial: { bg: '#fef3c7', color: '#92400e', label: 'Pago parcial' },
-  pendiente: { bg: '#fee2e2', color: '#991b1b', label: 'Pendiente' },
+  parcial: { bg: '#fef3c7', color: '#92400e', label: 'Parcial' },
+  pendiente: { bg: '#fef9c3', color: '#854d0e', label: 'Pendiente' },
   reciente: { bg: '#dbeafe', color: '#1e40af', label: 'Reciente' },
   sin_actividad: { bg: '#f3f4f6', color: '#6b7280', label: 'Sin actividad' },
   sin_deuda: { bg: '#d1fae5', color: '#065f46', label: 'Sin deuda' },
@@ -26,6 +26,25 @@ export function IndicadorEstado({ estado, fecha }: { estado: CompraEstado; fecha
           Nuevo
         </span>
       )}
+    </span>
+  );
+}
+
+export function IndicadorEstadoBadge({ estado }: { estado: CompraEstado }) {
+  const config: Record<CompraEstado, { bg: string; color: string; label: string }> = {
+    pendiente: { bg: '#fef9c3', color: '#854d0e', label: 'Pendiente' },
+    parcial: { bg: '#fed7aa', color: '#9a3412', label: 'Parcial' },
+    pagada: { bg: '#bbf7d0', color: '#166534', label: 'Pagada' },
+  };
+  const c = config[estado];
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      background: c.bg, color: c.color, padding: '2px 10px',
+      borderRadius: 12, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
+    }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.color, flexShrink: 0 }} />
+      {c.label}
     </span>
   );
 }

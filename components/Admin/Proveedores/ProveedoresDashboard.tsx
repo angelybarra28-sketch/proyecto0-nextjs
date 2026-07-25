@@ -5,7 +5,7 @@ import type { ProveedorDashboard } from '@/lib/supabase/types';
 import { fetchProveedorDashboard } from '@/lib/services/admin/client';
 import { ProveedorAlertasSummaryCards } from './ProveedorAlertasSummaryCards';
 import { ProveedorAlertasPanel } from './ProveedorAlertasPanel';
-import { IndicadorEstado } from './ProveedorIndicadores';
+import { IndicadorEstadoBadge } from './ProveedorIndicadores';
 import styles from '@/styles/Admin.module.css';
 import type { Tab } from './ProveedoresTabs';
 
@@ -51,6 +51,42 @@ export function ProveedoresDashboard({ onNavigateTab }: { onNavigateTab?: (tab: 
 
       <ProveedorAlertasPanel onNavigateTab={onNavigateTab} />
 
+      {data.proveedores.length > 0 && (
+        <>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: '#f5f2ec', marginBottom: 10 }}>Estado por Proveedor</h3>
+          <div className={styles.tableContainer} style={{ marginBottom: 20 }}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Proveedor</th>
+                  <th>Comprado</th>
+                  <th>Pagado</th>
+                  <th>Pendiente</th>
+                  <th>Pendientes</th>
+                  <th>Parciales</th>
+                  <th>Pagadas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.proveedores.map((p) => (
+                  <tr key={p.proveedor_id}>
+                    <td style={{ fontWeight: 600 }}>{p.proveedor_nombre}</td>
+                    <td>{formatCurrency(p.total_comprado)}</td>
+                    <td style={{ color: '#22c55e' }}>{formatCurrency(p.total_pagado)}</td>
+                    <td style={{ fontWeight: 700, color: p.total_pendiente > 0 ? '#f87171' : '#22c55e' }}>
+                      {formatCurrency(p.total_pendiente)}
+                    </td>
+                    <td>{p.facturas_pendientes > 0 ? p.facturas_pendientes : '—'}</td>
+                    <td>{p.facturas_parciales > 0 ? p.facturas_parciales : '—'}</td>
+                    <td>{p.facturas_pagadas > 0 ? p.facturas_pagadas : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
       <h3 style={{ fontSize: 14, fontWeight: 600, color: '#f5f2ec', marginBottom: 10 }}>Últimas Compras</h3>
       <div className={styles.tableContainer}>
         <table className={styles.table}>
@@ -70,7 +106,7 @@ export function ProveedoresDashboard({ onNavigateTab }: { onNavigateTab?: (tab: 
                 <td>{c.proveedor_nombre}</td>
                 <td>{new Date(c.fecha).toLocaleDateString('es-AR')}</td>
                 <td>{formatCurrency(c.importe_total)}</td>
-                <td><IndicadorEstado estado={c.estado} fecha={c.fecha} /></td>
+                <td><IndicadorEstadoBadge estado={c.estado} /></td>
               </tr>
             ))}
           </tbody>
