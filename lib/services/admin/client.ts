@@ -548,8 +548,9 @@ export async function cleanCreditPortfolio(): Promise<{
   });
 
   if (!response.ok) {
-    const payload = await response.json() as { message?: string };
-    throw new Error(payload.message ?? 'No se pudo ejecutar la limpieza');
+    const payload = await response.json().catch(() => null);
+    const msg = payload?.error?.message || payload?.message || 'No se pudo ejecutar la limpieza';
+    throw new Error(msg);
   }
 
   return await response.json() as {
@@ -671,13 +672,14 @@ export async function updateProveedor(id: string, input: Partial<ProveedorInsert
   return payload.proveedor;
 }
 
-export async function fetchCompras(params?: { proveedor_id?: string; estado?: string; date_from?: string; date_to?: string; solo_pendientes?: boolean }, signal?: AbortSignal): Promise<ProveedorCompraRow[]> {
+export async function fetchCompras(params?: { proveedor_id?: string; estado?: string; date_from?: string; date_to?: string; solo_pendientes?: boolean; solo_pagadas?: boolean }, signal?: AbortSignal): Promise<ProveedorCompraRow[]> {
   const searchParams = new URLSearchParams();
   if (params?.proveedor_id) appendDefinedParam(searchParams, 'proveedor_id', params.proveedor_id);
   if (params?.estado) appendDefinedParam(searchParams, 'estado', params.estado);
   if (params?.date_from) appendDefinedParam(searchParams, 'date_from', params.date_from);
   if (params?.date_to) appendDefinedParam(searchParams, 'date_to', params.date_to);
   if (params?.solo_pendientes) searchParams.set('solo_pendientes', 'true');
+  if (params?.solo_pagadas) searchParams.set('solo_pagadas', 'true');
   const query = searchParams.toString();
   const response = await fetch(`/api/admin/proveedores/compras${query ? `?${query}` : ''}`, { signal });
   if (!response.ok) throw new Error('No se pudieron cargar las compras');
@@ -746,7 +748,11 @@ export async function createPago(input: ProveedorPagoInsert): Promise<ProveedorP
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  if (!response.ok) throw new Error('No se pudo registrar el pago');
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const msg = body?.error?.message || 'No se pudo registrar el pago';
+    throw new Error(msg);
+  }
   const payload = await response.json() as { pago: ProveedorPagoRow };
   return payload.pago;
 }

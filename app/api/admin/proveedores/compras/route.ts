@@ -16,8 +16,9 @@ export async function GET(request: Request) {
     const dateFrom = searchParams.get('date_from') ?? undefined;
     const dateTo = searchParams.get('date_to') ?? undefined;
     const soloPendientes = searchParams.get('solo_pendientes') === 'true' || undefined;
+    const soloPagadas = searchParams.get('solo_pagadas') === 'true' || undefined;
 
-    const compras = await listCompras(proveedorId, estado, dateFrom, dateTo, soloPendientes);
+    const compras = await listCompras(proveedorId, estado, dateFrom, dateTo, soloPendientes, soloPagadas);
     return NextResponse.json({ compras }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
     logServerError({ area: 'admin.compras', action: 'list', requestId: context.requestId, error });

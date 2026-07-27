@@ -28,11 +28,10 @@ begin
     raise exception 'La compra asociada no existe';
   end if;
 
-  -- Lock and sum existing payments for this compra
+  -- Sum existing payments for this compra
   select coalesce(sum(monto), 0) into v_pagado_previo
   from proveedor_pagos
-  where compra_id = p_compra_id
-  for update;
+  where compra_id = p_compra_id;
 
   v_saldo := v_importe_total - v_pagado_previo;
 
@@ -58,3 +57,6 @@ begin
   return to_jsonb(v_pago);
 end;
 $$;
+
+GRANT EXECUTE ON FUNCTION insert_and_validate_pago TO service_role;
+GRANT EXECUTE ON FUNCTION insert_and_validate_pago TO authenticated;

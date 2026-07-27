@@ -179,23 +179,29 @@ export async function getCreditAccountsPaginated(
 
   const allAccountIds = (allAccounts ?? []).map((a) => a.id);
 
-  const allInstallments = await batchedInQuery<{ credit_account_id: string; original_amount: number; paid_amount: number }>(
+  const allInstallments = await batchedInQuery<{ credit_account_id: string; original_amount: number; paid_amount: number; remaining_amount: number }>(
     supabase, 'credit_installments', 'credit_account_id', allAccountIds, { column: 'installment_number', ascending: true }
   );
 
-  const instByAccount = new Map<string, { original_amount: number; paid_amount: number }[]>();
+  const instByAccount = new Map<string, { original_amount: number; paid_amount: number; remaining_amount: number }[]>();
   for (const inst of allInstallments) {
     const list = instByAccount.get(inst.credit_account_id) ?? [];
     list.push(inst);
     instByAccount.set(inst.credit_account_id, list);
   }
 
-  let filteredAccounts = (allAccounts ?? []).filter((account) => {
+  const filteredAccounts = (allAccounts ?? []).filter((account) => {
     if (statusFilter === 'all') return true;
     const accInst = instByAccount.get(account.id) ?? [];
-    const total = accInst.reduce((sum, i) => sum + Number(i.original_amount), 0);
+    const installmentTotal = accInst.reduce((sum, i) => sum + Number(i.original_amount), 0);
     const paid = accInst.reduce((sum, i) => sum + Number(i.paid_amount), 0);
-    const remaining = total - paid;
+    const remainingFromInstallments = accInst.reduce((sum, i) => sum + Number(i.remaining_amount), 0);
+    const expectedTotal = account.installment_count * Number(account.installment_amount);
+    const installmentsMissing = accInst.length < account.installment_count;
+    const total = Math.max(installmentTotal, expectedTotal);
+    const remaining = installmentsMissing
+      ? Math.max(0, total - paid)
+      : Math.max(remainingFromInstallments, 0);
     return statusFilter === 'active' ? remaining > 0 : remaining <= 0;
   });
 

@@ -112,6 +112,21 @@ create policy "Admin can read proveedor_pagos"
       and is_active = true
   ));
 
+create policy "Admin can modify proveedor_pagos"
+  on proveedor_pagos for all
+  using (exists (
+    select 1 from profiles
+    where user_id = auth.uid()
+      and role in ('ADMIN', 'STAFF')
+      and is_active = true
+  ))
+  with check (exists (
+    select 1 from profiles
+    where user_id = auth.uid()
+      and role in ('ADMIN', 'STAFF')
+      and is_active = true
+  ));
+
 create policy "Admin can read proveedor_adjuntos"
   on proveedor_adjuntos for select
   using (exists (

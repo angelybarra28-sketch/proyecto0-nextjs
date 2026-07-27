@@ -3,8 +3,24 @@
 --
 -- IMPORTANTE: Esta migración debe ejecutarse manualmente en Supabase.
 -- Ver la sección "Cómo aplicar" al final del archivo.
+--
+-- Seguridad: Se envuelve en BEGIN/COMMIT para atomicidad.
+-- Se usa DROP IF EXISTS antes de cada CREATE para permitir
+-- cambios de return type entre ejecuciones.
 
+BEGIN;
+
+-- ============================================================================
+-- DROP functions (if exist with different signatures)
+-- ============================================================================
+DROP FUNCTION IF EXISTS get_credit_clean_summary();
+DROP FUNCTION IF EXISTS clean_credit_portfolio();
+DROP FUNCTION IF EXISTS get_credit_commercial_metrics();
+DROP FUNCTION IF EXISTS get_credit_monthly_control();
+
+-- ============================================================================
 -- 1. Summary before cleanup: counts of portfolio tables
+-- ============================================================================
 CREATE OR REPLACE FUNCTION get_credit_clean_summary()
 RETURNS TABLE (
   allocation_count bigint,
@@ -25,7 +41,9 @@ AS $$
     (SELECT COUNT(*) FROM customers);
 $$;
 
+-- ============================================================================
 -- 2. Transactional cleanup of the entire portfolio (keeps users, profiles, products, etc.)
+-- ============================================================================
 CREATE OR REPLACE FUNCTION clean_credit_portfolio()
 RETURNS TABLE (
   allocations_deleted bigint,
@@ -43,30 +61,26 @@ DECLARE
   v_payments bigint;
   v_installments bigint;
   v_accounts bigint;
-  v_customers bigint;
 BEGIN
-  DELETE FROM credit_payment_allocations;
+  DELETE FROM credit_payment_allocations WHERE true;
   GET DIAGNOSTICS v_allocations = ROW_COUNT;
 
-  DELETE FROM credit_payments;
+  DELETE FROM credit_payments WHERE true;
   GET DIAGNOSTICS v_payments = ROW_COUNT;
 
-  DELETE FROM credit_installments;
+  DELETE FROM credit_installments WHERE true;
   GET DIAGNOSTICS v_installments = ROW_COUNT;
 
-  DELETE FROM credit_accounts;
+  DELETE FROM credit_accounts WHERE true;
   GET DIAGNOSTICS v_accounts = ROW_COUNT;
 
-  DELETE FROM customers;
-  GET DIAGNOSTICS v_customers = ROW_COUNT;
-
-  RETURN QUERY SELECT v_allocations, v_payments, v_installments, v_accounts, v_customers;
+  RETURN QUERY SELECT v_allocations, v_payments, v_installments, v_accounts, 0::bigint;
 EXCEPTION WHEN OTHERS THEN
-  -- Automatic rollback on exception
   RAISE;
 END;
 $$;
 
+-- ============================================================================
 -- 3. Commercial metrics for the dashboard
 --
 -- Business definitions:
@@ -75,6 +89,7 @@ $$;
 --   finished_cards             = COUNT(*) of accounts with total_paid >= total_financed and last payment in current month
 --   finished_installments_amount = SUM(installment_amount) of those finished accounts
 --   projected_next_month       = current_monthly_collection + monthly_replacement - finished_installments_amount
+-- ============================================================================
 CREATE OR REPLACE FUNCTION get_credit_commercial_metrics()
 RETURNS TABLE (
   current_monthly_collection numeric,
@@ -105,7 +120,6 @@ account_aggregates AS (
   GROUP BY ca.id, ca.installment_amount, ca.installment_count, ca.sale_date
 )
 SELECT
-  -- 1. Cobranza Actual: sum of all payments received in the current month
   COALESCE((
     SELECT SUM(cp.amount)::numeric
     FROM credit_payments cp
@@ -114,13 +128,11 @@ SELECT
       AND cp.payment_date < mb.month_end
   ), 0)::numeric AS current_monthly_collection,
 
-  -- 2. Reposición del Mes: sum of installment_amount for accounts sold this month
   COALESCE(SUM(
     CASE WHEN aa.sale_date >= mb.month_start AND aa.sale_date < mb.month_end
          THEN aa.installment_amount ELSE 0 END
   ), 0)::numeric AS monthly_replacement,
 
-  -- 3. Tarjetas Terminadas del Mes: count of accounts with zero debt and last payment this month
   COALESCE(SUM(
     CASE WHEN aa.total_paid >= aa.total_financed
           AND aa.last_payment_date >= mb.month_start
@@ -128,7 +140,6 @@ SELECT
          THEN 1 ELSE 0 END
   ), 0)::integer AS finished_cards,
 
-  -- 4. Monto de Tarjetas Terminadas del Mes
   COALESCE(SUM(
     CASE WHEN aa.total_paid >= aa.total_financed
           AND aa.last_payment_date >= mb.month_start
@@ -136,7 +147,6 @@ SELECT
          THEN aa.installment_amount ELSE 0 END
   ), 0)::numeric AS finished_installments_amount,
 
-  -- 5. Proyección Próxima Cobranza
   (
     COALESCE((
       SELECT SUM(cp.amount)::numeric
@@ -159,7 +169,9 @@ SELECT
 FROM account_aggregates aa, month_bounds mb;
 $$;
 
+-- ============================================================================
 -- 4. Monthly control report rows
+-- ============================================================================
 CREATE OR REPLACE FUNCTION get_credit_monthly_control()
 RETURNS TABLE (
   customer_name text,
@@ -196,16 +208,28 @@ AS $$
   ORDER BY ca.sale_date DESC;
 $$;
 
--- Revoke public execution
+-- ============================================================================
+-- Permissions
+-- ============================================================================
+
+-- Revoke public execution (only service_role should call these)
 REVOKE EXECUTE ON FUNCTION get_credit_clean_summary() FROM anon, authenticated;
 REVOKE EXECUTE ON FUNCTION clean_credit_portfolio() FROM anon, authenticated;
 REVOKE EXECUTE ON FUNCTION get_credit_commercial_metrics() FROM anon, authenticated;
 REVOKE EXECUTE ON FUNCTION get_credit_monthly_control() FROM anon, authenticated;
 
+-- Grant execution to service_role (used by admin API routes)
+GRANT EXECUTE ON FUNCTION get_credit_clean_summary() TO service_role;
+GRANT EXECUTE ON FUNCTION clean_credit_portfolio() TO service_role;
+GRANT EXECUTE ON FUNCTION get_credit_commercial_metrics() TO service_role;
+GRANT EXECUTE ON FUNCTION get_credit_monthly_control() TO service_role;
+
+COMMIT;
+
 -- ============================================================================
 -- CÓMO APLICAR ESTA MIGRACIÓN EN SUPABASE
 -- ============================================================================
--- Opción A: Consola SQL de Supabase (recomendada para una sola ejecución)
+-- Opción A: Consola SQL de Supabase (recomendada)
 -- 1. Ir a https://supabase.com/dashboard
 -- 2. Seleccionar el proyecto
 -- 3. Ir a SQL Editor (izquierda) → New query
@@ -218,13 +242,7 @@ REVOKE EXECUTE ON FUNCTION get_credit_monthly_control() FROM anon, authenticated
 --
 -- Opción B: CLI de Supabase (si se tiene configurado localmente)
 --   npx supabase db push
---   o
---   npx supabase migration up
 --
--- Opción C: psql directo (si se tiene acceso a la base de datos)
+-- Opción C: psql directo
 --   psql "postgresql://..." -f supabase/migrations/202606050001_credit_portfolio_clean_and_metrics.sql
---
--- NOTA: Si la ejecución falla, el mensaje de error aparecerá en la consola.
--- Revise que las tablas credit_payment_allocations, credit_payments,
--- credit_installments, credit_accounts y customers existan antes de ejecutar.
 -- ============================================================================

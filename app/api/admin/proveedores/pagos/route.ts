@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdminUser } from '@/lib/auth/server';
-import { errorResponse } from '@/lib/server/apiErrors';
+import { classifyError, errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 import { listPagos, createPago } from '@/lib/services/admin/proveedores';
 
@@ -32,6 +32,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ pago }, { status: 201, headers: { 'x-request-id': context.requestId } });
   } catch (error) {
     logServerError({ area: 'admin.pagos', action: 'create', requestId: context.requestId, error });
-    return errorResponse(error, context.requestId, 500);
+    const code = classifyError(error);
+    const status = code === 'VALIDATION_ERROR' ? 400 : 500;
+    return errorResponse(error, context.requestId, status);
   }
 }

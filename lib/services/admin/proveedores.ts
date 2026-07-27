@@ -109,7 +109,8 @@ export async function listCompras(
   estado?: string,
   dateFrom?: string,
   dateTo?: string,
-  soloPendientes?: boolean
+  soloPendientes?: boolean,
+  soloPagadas?: boolean
 ): Promise<ProveedorCompraRow[]> {
   const supabase = getSupabaseAdminClient();
   if (!supabase) return [];
@@ -146,6 +147,10 @@ export async function listCompras(
 
   if (soloPendientes) {
     result = result.filter((c) => (c.saldo ?? 0) > 0);
+  }
+
+  if (soloPagadas) {
+    result = result.filter((c) => (c.saldo ?? 0) === 0);
   }
 
   return result;
