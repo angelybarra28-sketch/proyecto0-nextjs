@@ -7,8 +7,8 @@ import { canAccessAdmin, type AppRole } from '@/lib/auth/permissions';
 import { getCurrentAuthProfile } from '@/lib/auth/profileClient';
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: Omit<User, 'id' | 'createdAt' | 'role'>) => Promise<{ success: boolean; message: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  register: (userData: Omit<User, 'id' | 'createdAt' | 'role'>) => Promise<{ success: boolean; message: string; emailConfirmationPending?: boolean }>;
   logout: () => Promise<void>;
 }
 
@@ -63,28 +63,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     const supabase = getSupabaseBrowserClient();
 
-    if (!supabase) return false;
+    if (!supabase) return { success: false, message: 'Supabase Auth no está configurado' };
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) return false;
+    if (error) {
+      if (error.message.includes('Email not confirmed') || error.message.includes('email_not_confirmed')) {
+        return { success: false, message: 'Falta confirmar la cuenta. Revisá tu bandeja de entrada del email.' };
+      }
+      return { success: false, message: 'Email o contraseña incorrectos' };
+    }
 
     const profile = await getCurrentAuthProfile();
     setUser(profile && profile.isActive ? toAppUser(profile) : null);
-    return Boolean(profile?.isActive);
+    return Boolean(profile?.isActive) ? { success: true } : { success: false, message: 'Cuenta desactivada' };
   }, []);
 
-  const register = useCallback(async (userData: Omit<User, 'id' | 'createdAt' | 'role'>): Promise<{ success: boolean; message: string }> => {
+  const register = useCallback(async (userData: Omit<User, 'id' | 'createdAt' | 'role'>): Promise<{ success: boolean; message: string; emailConfirmationPending?: boolean }> => {
     const supabase = getSupabaseBrowserClient();
 
     if (!supabase) {
       return { success: false, message: 'Supabase Auth no está configurado' };
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
       options: {
@@ -99,6 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       return { success: false, message: error.message };
+    }
+
+    if (!data.session) {
+      return { success: true, message: 'Te enviamos un email para confirmar tu cuenta. Revisá tu bandeja de entrada.', emailConfirmationPending: true };
     }
 
     return { success: true, message: 'Usuario registrado correctamente' };

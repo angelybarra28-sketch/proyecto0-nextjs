@@ -372,9 +372,52 @@ export async function toggleAdminUser(userId: string, isActive: boolean, signal?
   return payload;
 }
 
+export type AdminCustomerView = {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  dni: string | null;
+  user_id: string | null;
+  operation_numbers: string[];
+  credit_accounts: Array<{
+    id: string;
+    operation_number: string | null;
+    product_name: string;
+    sale_date: string;
+    installment_amount: number;
+    installment_count: number;
+  }>;
+};
+
+export async function fetchAdminCustomers(signal?: AbortSignal): Promise<AdminCustomerView[]> {
+  const response = await fetch('/api/admin/customers', { signal });
+
+  if (!response.ok) {
+    throw new Error('No se pudieron cargar los clientes');
+  }
+
+  const payload = await response.json() as { customers: AdminCustomerView[] };
+  return payload.customers;
+}
+
+export async function linkCustomerToUser(customerId: string, userId: string | null, signal?: AbortSignal): Promise<void> {
+  const response = await fetch(`/api/admin/customers/${customerId}`, {
+    method: 'PATCH',
+    signal,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json() as { error?: { message?: string }; message?: string };
+    throw new Error(payload.error?.message ?? payload.message ?? 'No se pudo vincular el cliente');
+  }
+}
+
 export async function fetchCreditAccounts(
   signal?: AbortSignal,
-  options?: { search?: string; statusFilter?: 'active' | 'finished' | 'all'; page?: number; pageSize?: number }
+  options?: { search?: string; statusFilter?: 'active' | 'finished' | 'all'; page?: number; pageSize?: number; filterMonth?: number; filterYear?: number; filterPaymentStatus?: 'paid' | 'pending' | null }
 ): Promise<{ accounts: import('@/lib/types').CreditAccountSummary[]; dashboard: import('@/lib/types').CreditDashboard | null; totalCount?: number; page?: number; pageSize?: number }> {
   const searchParams = new URLSearchParams();
   searchParams.set('dashboard', 'true');
@@ -382,6 +425,9 @@ export async function fetchCreditAccounts(
   if (options?.statusFilter) searchParams.set('statusFilter', options.statusFilter);
   if (options?.page) searchParams.set('page', String(options.page));
   if (options?.pageSize) searchParams.set('pageSize', String(options.pageSize));
+  if (options?.filterMonth !== undefined) searchParams.set('filterMonth', String(options.filterMonth));
+  if (options?.filterYear !== undefined) searchParams.set('filterYear', String(options.filterYear));
+  if (options?.filterPaymentStatus) searchParams.set('filterPaymentStatus', options.filterPaymentStatus);
   const response = await fetch(`/api/admin/credit-accounts?${searchParams.toString()}`, { signal });
 
   if (!response.ok) {

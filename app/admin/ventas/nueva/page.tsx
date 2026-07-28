@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { useAdminAccess } from '@/components/Admin/useAdminData';
@@ -38,7 +38,7 @@ interface FormData {
 // COMPONENT: Nueva Venta Manual (Credit Account)
 // Estilo homogeneizado con la interfaz principal del sitio (ElectroBlancos)
 // =============================================================================
-export default function NuevaVentaPage() {
+function NuevaVentaForm() {
   const { isAdmin } = useAdminAccess();
   const router = useRouter();
   const supabase = getSupabaseBrowserClient();
@@ -68,6 +68,30 @@ export default function NuevaVentaPage() {
 
   const customerSearchRef = useRef<HTMLDivElement>(null);
   const customerSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const customerId = searchParams.get('customerId');
+    if (!customerId || !supabase) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, full_name, phone, address')
+        .eq('id', customerId)
+        .single();
+      if (!error && data) {
+        setForm((prev) => ({
+          ...prev,
+          customerId: data.id,
+          customerName: data.full_name,
+          customerPhone: data.phone || '',
+          customerAddress: data.address || '',
+        }));
+        setShowCustomerDropdown(false);
+        setCustomers([]);
+      }
+    })();
+  }, [searchParams, supabase]);
 
   // ---------------------------------------------------------------------------
   // Computed: Total Financiado
@@ -1242,5 +1266,13 @@ export default function NuevaVentaPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function NuevaVentaPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, color: '#8a7e72' }}>Cargando...</div>}>
+      <NuevaVentaForm />
+    </Suspense>
   );
 }

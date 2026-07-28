@@ -14,7 +14,11 @@ export function AdminCreditAccountsPage() {
   const { isAdmin } = useAdminAccess();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'active' | 'finished' | 'all'>('active');
-  const { accounts, dashboard, isLoading, error, reload, addPaymentInline, processBatchPayments, fixInstallments, page, setPage, totalCount, showAll, setShowAll, pageSize } = useCreditAccounts(isAdmin, search, statusFilter);
+  const now = new Date();
+  const [filterMonth, setFilterMonth] = useState<number | undefined>(undefined);
+  const [filterYear, setFilterYear] = useState<number | undefined>(undefined);
+  const [filterPaymentStatus, setFilterPaymentStatus] = useState<'paid' | 'pending' | null>(null);
+  const { accounts, dashboard, isLoading, error, reload, addPaymentInline, processBatchPayments, fixInstallments, page, setPage, totalCount, showAll, setShowAll, pageSize } = useCreditAccounts(isAdmin, search, statusFilter, filterMonth, filterYear, filterPaymentStatus);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
   const [showCleanModal, setShowCleanModal] = useState(false);
@@ -157,57 +161,134 @@ export function AdminCreditAccountsPage() {
       ) : (
         <div className={styles.sections}>
           <section className={styles.section} id="cuentas-table">
-            <div className={styles.adminTableHeader}>
-              <div>
-                <h2 className={styles.sectionTitle}>Cuentas Corrientes</h2>
-                <p className={styles.adminTableSummary}>
-                  {totalCount > 0
-                    ? showAll
-                      ? `Mostrando las ${totalCount} cuenta(s)`
-                      : `Mostrando ${((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, totalCount)} de ${totalCount} cuenta(s)`
-                    : `${accounts.length} cuenta(s)`}
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => exportCreditAccountsToExcel(accounts)}
-                  className={styles.compactBtn}
-                  disabled={accounts.length === 0}
-                >
-                  Exportar Excel
-                </button>
-                <button onClick={() => reload()} className={styles.compactBtn} disabled={isLoading}>
-                  {isLoading ? 'Cargando...' : 'Actualizar'}
-                </button>
-                <button onClick={openCleanModal} className={styles.deleteBtn}>
-                  Limpiar Cartera de Prueba
-                </button>
-              </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 700, color: '#555' }}>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16, padding: '14px 16px', background: '#2a2826', borderRadius: 8, border: '1px solid #363330' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 700, color: '#d3cdc4' }}>
                 Buscar
                 <input
                   type="text"
                   placeholder="N° tarjeta, cliente, artículo..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={{ minHeight: 38, border: '1px solid #ddd', borderRadius: 8, padding: '8px 10px' }}
+                  style={{ minHeight: 36, border: '1px solid #363330', background: '#1e1d1b', color: '#f5f2ec', borderRadius: 6, padding: '6px 10px', fontSize: 13 }}
                 />
               </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 700, color: '#555' }}>
-                Estado
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                  style={{ minHeight: 38, border: '1px solid #ddd', borderRadius: 8, padding: '8px 10px' }}
-                >
-                  <option value="active">Activas</option>
-                  <option value="finished">Finalizadas</option>
-                  <option value="all">Todas</option>
-                </select>
-              </label>
+
+              <hr style={{ border: 'none', borderTop: '1px solid #3a3632', margin: '2px 0' }} />
+
+              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 250, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span style={{ fontSize: 11, color: '#8a7e72', fontWeight: 600 }}>Filtro por mes y pago:</span>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 10, fontWeight: 600, color: '#8a7e72' }}>
+                      Mes
+                      <select
+                        value={filterMonth ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFilterMonth(val !== '' ? Number(val) : undefined);
+                          if (val !== '' && filterYear === undefined) setFilterYear(now.getFullYear());
+                        }}
+                        style={{ minHeight: 30, border: '1px solid #363330', background: '#1e1d1b', color: '#f5f2ec', borderRadius: 4, padding: '2px 8px', fontSize: 12, cursor: 'pointer' }}
+                      >
+                        <option value="">—</option>
+                        {['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'].map((n, i) => (
+                          <option key={i} value={i}>{n}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 10, fontWeight: 600, color: '#8a7e72' }}>
+                      Año
+                      <select
+                        value={filterYear ?? ''}
+                        onChange={(e) => setFilterYear(e.target.value !== '' ? Number(e.target.value) : undefined)}
+                        style={{ minHeight: 30, border: '1px solid #363330', background: '#1e1d1b', color: '#f5f2ec', borderRadius: 4, padding: '2px 8px', fontSize: 12, cursor: 'pointer' }}
+                      >
+                        <option value="">—</option>
+                        {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map((y) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  {filterMonth !== undefined && filterYear !== undefined && (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', paddingBottom: 2 }}>
+                      <span style={{ fontSize: 11, color: '#8a7e72', fontWeight: 600 }}>Pago del mes:</span>
+                      {(['all' as const, 'pending' as const, 'paid' as const]).map((opt) => {
+                        const label = opt === 'all' ? 'Todas' : opt === 'pending' ? 'Pendientes' : 'Pagadas';
+                        const active = (opt === 'all' && filterPaymentStatus === null) || filterPaymentStatus === opt;
+                        return (
+                          <button
+                            key={opt}
+                            onClick={() => setFilterPaymentStatus(opt === 'all' ? null : opt)}
+                            style={{
+                              padding: '4px 10px',
+                              border: '1px solid',
+                              borderColor: active ? '#c8a87c' : '#5a5248',
+                              borderRadius: 4,
+                              background: active ? '#c8a87c' : 'transparent',
+                              color: active ? '#1e1d1b' : '#d3cdc4',
+                              cursor: 'pointer',
+                              fontSize: 11,
+                              fontWeight: active ? 700 : 400,
+                            }}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 250, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span style={{ fontSize: 11, color: '#8a7e72', fontWeight: 600 }}>Estado general de la cuenta:</span>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    {(['active' as const, 'finished' as const, 'all' as const]).map((opt) => {
+                      const label = opt === 'active' ? 'Activas' : opt === 'finished' ? 'Finalizadas' : 'Todas';
+                      const active = statusFilter === opt;
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => setStatusFilter(opt)}
+                          style={{
+                            padding: '4px 10px',
+                            border: '1px solid',
+                            borderColor: active ? '#c8a87c' : '#5a5248',
+                            borderRadius: 4,
+                            background: active ? '#c8a87c' : 'transparent',
+                            color: active ? '#1e1d1b' : '#d3cdc4',
+                            cursor: 'pointer',
+                            fontSize: 11,
+                            fontWeight: active ? 700 : 400,
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                    {(search || filterMonth !== undefined || filterYear !== undefined || filterPaymentStatus !== null) && (
+                      <button
+                        onClick={() => { setSearch(''); setFilterMonth(undefined); setFilterYear(undefined); setFilterPaymentStatus(null); setStatusFilter('active'); }}
+                        style={{ marginLeft: 12, padding: '4px 10px', border: '1px solid #d4543b', borderRadius: 4, background: 'transparent', color: '#d4543b', cursor: 'pointer', fontSize: 11 }}
+                      >
+                        Quitar todos los filtros
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <hr style={{ border: 'none', borderTop: '1px solid #3a3632', margin: '2px 0' }} />
+
+              <p style={{ fontSize: 12, color: '#8a7e72', margin: 0 }}>
+                {totalCount > 0
+                  ? showAll
+                    ? `Mostrando las ${totalCount} cuenta(s)`
+                    : `Mostrando ${((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, totalCount)} de ${totalCount} cuenta(s)`
+                  : `${accounts.length} cuenta(s)`}
+              </p>
             </div>
 
             <CreditAccountsTable accounts={accounts} onSelectAccount={setSelectedAccountId} onPayment={addPaymentInline} onBatchSubmit={processBatchPayments} onFixInstallments={fixInstallments} />
@@ -312,19 +393,38 @@ export function AdminCreditAccountsPage() {
               </div>
             )}
 
-            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center' }}>
-              <Link
-                href="/admin/importacion-cartera"
-                style={{ fontSize: 14, color: '#667eea', textDecoration: 'none' }}
-              >
-                + Importar nueva cartera desde Excel
-              </Link>
-              <Link
-                href="/admin/ventas/nueva"
-                className="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition shadow-sm"
-              >
-                + Cargar Venta Manual
-              </Link>
+            <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <button
+                  onClick={() => exportCreditAccountsToExcel(accounts)}
+                  className={styles.compactBtn}
+                  disabled={accounts.length === 0}
+                >
+                  Exportar Excel
+                </button>
+                <button onClick={() => reload()} className={styles.compactBtn} disabled={isLoading}>
+                  {isLoading ? 'Cargando...' : 'Actualizar'}
+                </button>
+                <button onClick={openCleanModal} className={styles.deleteBtn}>
+                  Limpiar Cartera de Prueba
+                </button>
+                <Link
+                  href="/admin/importacion-cartera"
+                  style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #4b6cb7', borderRadius: 4, background: '#3b5998', color: '#fff', cursor: 'pointer', textDecoration: 'none', transition: 'background 0.2s ease', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2d4373'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#3b5998'; }}
+                >
+                  + Importar nueva cartera desde Excel
+                </Link>
+                <Link
+                  href="/admin/ventas/nueva"
+                  style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #059669', borderRadius: 4, background: '#059669', color: '#fff', cursor: 'pointer', textDecoration: 'none', transition: 'background 0.2s ease', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#047857'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#059669'; }}
+                >
+                  + Cargar Venta Manual
+                </Link>
+              </div>
             </div>
           </section>
         </div>

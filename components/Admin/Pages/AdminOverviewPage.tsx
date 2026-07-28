@@ -1,13 +1,44 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AdminUsersSection } from '@/components/Admin/Customers/AdminUsersSection';
 import { useAdminAccess, useAdminUsers } from '@/components/Admin/useAdminData';
+import { fetchAdminCustomers, linkCustomerToUser } from '@/lib/services/admin/client';
+import type { AdminCustomerView } from '@/lib/services/admin/client';
 import styles from '@/styles/Admin.module.css';
 
 export function AdminOverviewPage() {
   const { isAdmin } = useAdminAccess();
-  const { users, handleToggleUser } = useAdminUsers(isAdmin);
+  const { users, handleToggleUser, reloadUsers } = useAdminUsers(isAdmin);
+  const [customers, setCustomers] = useState<AdminCustomerView[]>([]);
+
+  const loadCustomers = useCallback(async () => {
+    try {
+      const data = await fetchAdminCustomers();
+      setCustomers(data);
+    } catch {
+      // Silently fail, component shows fallback
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadCustomers();
+    }
+  }, [isAdmin, loadCustomers]);
+
+  const handleLinkCustomer = useCallback(async (customerId: string, userId: string) => {
+    await linkCustomerToUser(customerId, userId);
+    await loadCustomers();
+    await reloadUsers();
+  }, [loadCustomers, reloadUsers]);
+
+  const handleUnlinkCustomer = useCallback(async (customerId: string) => {
+    await linkCustomerToUser(customerId, null);
+    await loadCustomers();
+    await reloadUsers();
+  }, [loadCustomers, reloadUsers]);
 
   if (!isAdmin) return null;
 
@@ -72,7 +103,13 @@ export function AdminOverviewPage() {
       </div>
 
       <div className={styles.sections}>
-        <AdminUsersSection users={users} onToggleUser={handleToggleUser} />
+        <AdminUsersSection
+          users={users}
+          onToggleUser={handleToggleUser}
+          customers={customers}
+          onLinkCustomer={handleLinkCustomer}
+          onUnlinkCustomer={handleUnlinkCustomer}
+        />
       </div>
 
     </div>

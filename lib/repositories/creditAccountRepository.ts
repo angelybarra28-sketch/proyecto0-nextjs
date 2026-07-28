@@ -156,22 +156,14 @@ export async function getCreditAccounts(
 
 export async function getCreditAccountsPaginated(
   supabase: SupabaseClient,
-  options: { page: number; pageSize: number; statusFilter?: 'active' | 'finished' | 'all'; search?: string }
-): Promise<{ accounts: DbCreditAccount[]; installments: DbCreditInstallment[]; payments: DbCreditPayment[]; items: DbCreditAccountItem[]; totalCount: number }> {
-  const { page, pageSize, statusFilter = 'active', search } = options;
+  _options: { page: number; pageSize: number; statusFilter?: 'active' | 'finished' | 'all'; search?: string }
+): Promise<{ accounts: DbCreditAccount[]; installments: DbCreditInstallment[]; payments: DbCreditPayment[]; items: DbCreditAccountItem[] }> {
 
-  let baseQuery = supabase
+  const { data: allAccounts, error: accError } = await supabase
     .from('credit_accounts')
     .select('*')
     .eq('is_active', true)
     .order('sale_date', { ascending: false });
-
-  if (search) {
-    const q = search.trim().toLowerCase();
-    baseQuery = baseQuery.or(`operation_number.ilike.%${q}%,product_name.ilike.%${q}%`);
-  }
-
-  const { data: allAccounts, error: accError } = await baseQuery;
 
   if (accError) {
     throw accError;
@@ -179,43 +171,13 @@ export async function getCreditAccountsPaginated(
 
   const allAccountIds = (allAccounts ?? []).map((a) => a.id);
 
-  const allInstallments = await batchedInQuery<{ credit_account_id: string; original_amount: number; paid_amount: number; remaining_amount: number }>(
-    supabase, 'credit_installments', 'credit_account_id', allAccountIds, { column: 'installment_number', ascending: true }
-  );
+  const [installments, payments, items] = await Promise.all([
+    batchedInQuery<DbCreditInstallment>(supabase, 'credit_installments', 'credit_account_id', allAccountIds, { column: 'installment_number', ascending: true }),
+    batchedInQuery<DbCreditPayment>(supabase, 'credit_payments', 'credit_account_id', allAccountIds, { column: 'payment_date', ascending: false }),
+    batchedInQuery<DbCreditAccountItem>(supabase, 'credit_account_items', 'credit_account_id', allAccountIds, { column: 'created_at', ascending: true }),
+  ]);
 
-  const instByAccount = new Map<string, { original_amount: number; paid_amount: number; remaining_amount: number }[]>();
-  for (const inst of allInstallments) {
-    const list = instByAccount.get(inst.credit_account_id) ?? [];
-    list.push(inst);
-    instByAccount.set(inst.credit_account_id, list);
-  }
-
-  const filteredAccounts = (allAccounts ?? []).filter((account) => {
-    if (statusFilter === 'all') return true;
-    const accInst = instByAccount.get(account.id) ?? [];
-    const installmentTotal = accInst.reduce((sum, i) => sum + Number(i.original_amount), 0);
-    const paid = accInst.reduce((sum, i) => sum + Number(i.paid_amount), 0);
-    const remainingFromInstallments = accInst.reduce((sum, i) => sum + Number(i.remaining_amount), 0);
-    const expectedTotal = account.installment_count * Number(account.installment_amount);
-    const installmentsMissing = accInst.length < account.installment_count;
-    const total = Math.max(installmentTotal, expectedTotal);
-    const remaining = installmentsMissing
-      ? Math.max(0, total - paid)
-      : Math.max(remainingFromInstallments, 0);
-    return statusFilter === 'active' ? remaining > 0 : remaining <= 0;
-  });
-
-  const totalCount = filteredAccounts.length;
-
-  const from = (page - 1) * pageSize;
-  const pagedAccounts = filteredAccounts.slice(from, from + pageSize);
-  const pagedIds = pagedAccounts.map((a) => a.id);
-
-  const installments = await batchedInQuery<DbCreditInstallment>(supabase, 'credit_installments', 'credit_account_id', pagedIds, { column: 'installment_number', ascending: true });
-  const payments = await batchedInQuery<DbCreditPayment>(supabase, 'credit_payments', 'credit_account_id', pagedIds, { column: 'payment_date', ascending: false });
-  const items = await batchedInQuery<DbCreditAccountItem>(supabase, 'credit_account_items', 'credit_account_id', pagedIds, { column: 'created_at', ascending: true });
-
-  return { accounts: pagedAccounts, installments, payments, items, totalCount };
+  return { accounts: allAccounts ?? [], installments, payments, items };
 }
 
 export async function getCreditAccountById(

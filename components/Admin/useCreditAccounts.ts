@@ -27,7 +27,10 @@ function isAbortError(error: unknown): boolean {
 export function useCreditAccounts(
   enabled: boolean,
   search?: string,
-  statusFilter: 'active' | 'finished' | 'all' = 'active'
+  statusFilter: 'active' | 'finished' | 'all' = 'active',
+  filterMonth?: number,
+  filterYear?: number,
+  filterPaymentStatus?: 'paid' | 'pending' | null
 ) {
   const [accounts, setAccounts] = useState<CreditAccountSummary[]>([]);
   const [dashboard, setDashboard] = useState<CreditDashboard | null>(null);
@@ -55,6 +58,9 @@ export function useCreditAccounts(
         statusFilter,
         page: currentPage ?? 1,
         pageSize,
+        filterMonth,
+        filterYear,
+        filterPaymentStatus: filterPaymentStatus ?? undefined,
       });
 
       setAccounts(data.accounts);
@@ -67,13 +73,13 @@ export function useCreditAccounts(
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter, pageSize]);
+  }, [search, statusFilter, pageSize, filterMonth, filterYear, filterPaymentStatus]);
 
   useEffect(() => {
     if (!enabled) return;
     setPage(1);
     setPageSize(NORMAL_PAGE_SIZE);
-  }, [enabled, search, statusFilter]);
+  }, [enabled, search, statusFilter, filterMonth, filterYear, filterPaymentStatus]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -102,6 +108,9 @@ export function useCreditAccounts(
         statusFilter,
         page,
         pageSize,
+        filterMonth,
+        filterYear,
+        filterPaymentStatus: filterPaymentStatus ?? undefined,
       });
       setAccounts(data.accounts);
       setDashboard(data.dashboard);
@@ -112,7 +121,7 @@ export function useCreditAccounts(
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter, page, pageSize]);
+  }, [search, statusFilter, page, pageSize, filterMonth, filterYear, filterPaymentStatus]);
 
   const createAccount = useCallback(async (input: CreateCreditAccountInput) => {
     try {

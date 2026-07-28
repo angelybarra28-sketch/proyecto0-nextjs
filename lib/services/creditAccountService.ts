@@ -242,6 +242,9 @@ export async function listCreditAccountSummariesPaginated(options?: {
   pageSize?: number;
   search?: string;
   statusFilter?: 'active' | 'finished' | 'all';
+  filterMonth?: number;
+  filterYear?: number;
+  filterPaymentStatus?: 'paid' | 'pending';
 }): Promise<{ accounts: CreditAccountSummary[]; totalCount: number; page: number; pageSize: number }> {
   const supabase = getSupabaseAdminClient();
   if (!supabase) {
@@ -250,12 +253,17 @@ export async function listCreditAccountSummariesPaginated(options?: {
 
   const page = options?.page ?? 1;
   const pageSize = options?.pageSize ?? 15;
+  const search = options?.search;
+  const statusFilter = options?.statusFilter ?? 'active';
+  const filterMonth = options?.filterMonth;
+  const filterYear = options?.filterYear;
+  const filterPaymentStatus = options?.filterPaymentStatus;
 
-  const { accounts, installments, payments, items, totalCount } = await getCreditAccountsPaginated(supabase, {
+  const { accounts: allAccounts, installments, payments, items } = await getCreditAccountsPaginated(supabase, {
     page,
     pageSize,
-    statusFilter: options?.statusFilter ?? 'active',
-    search: options?.search,
+    statusFilter,
+    search,
   });
 
   const installmentsByAccount = new Map<string, { original_amount: number; paid_amount: number; remaining_amount: number; status: string }[]>();
@@ -263,6 +271,13 @@ export async function listCreditAccountSummariesPaginated(options?: {
     const list = installmentsByAccount.get(inst.credit_account_id) ?? [];
     list.push(inst);
     installmentsByAccount.set(inst.credit_account_id, list);
+  }
+
+  const fullInstallmentsByAccount = new Map<string, { id: string; due_date: string; status: string }[]>();
+  for (const inst of installments) {
+    const list = fullInstallmentsByAccount.get(inst.credit_account_id) ?? [];
+    list.push({ id: inst.id, due_date: inst.due_date, status: inst.status });
+    fullInstallmentsByAccount.set(inst.credit_account_id, list);
   }
 
   const paymentsByAccount = new Map<string, { payment_date: string }[]>();
@@ -279,7 +294,7 @@ export async function listCreditAccountSummariesPaginated(options?: {
     itemsByAccount.set(item.credit_account_id, list);
   }
 
-  const summaries = accounts.map((account) => {
+  const allSummaries = allAccounts.map((account) => {
     const summary = calculateSummary(
       account,
       installmentsByAccount.get(account.id) ?? [],
@@ -299,18 +314,54 @@ export async function listCreditAccountSummariesPaginated(options?: {
     return summary;
   });
 
-  const customerIds = [...new Set(summaries.map((s) => s.customerId))];
+  const customerIds = [...new Set(allSummaries.map((s) => s.customerId))];
   const customers = await batchedCustomerQuery(supabase, customerIds);
   const customerMap = new Map<string, { id: string; full_name: string; phone: string | null }>(
     customers.map((c) => [c.id, c])
   );
 
-  const enriched = summaries.map((s) => ({
+  const enriched = allSummaries.map((s) => ({
     ...s,
     customerName: customerMap.get(s.customerId)?.full_name ?? 'Cliente desconocido',
   }));
 
-  return { accounts: enriched, totalCount, page, pageSize };
+  let filtered = enriched;
+  if (search) {
+    const q = search.trim().toLowerCase();
+    filtered = enriched.filter((s) => {
+      if (s.operationNumber?.toLowerCase().includes(q)) return true;
+      if (s.productName?.toLowerCase().includes(q)) return true;
+      if (s.customerName?.toLowerCase().includes(q)) return true;
+      const customer = customerMap.get(s.customerId);
+      if (customer?.phone?.toLowerCase().includes(q)) return true;
+      return false;
+    });
+  }
+
+  if (statusFilter === 'active') {
+    filtered = filtered.filter((s) => s.remaining > 0);
+  } else if (statusFilter === 'finished') {
+    filtered = filtered.filter((s) => s.remaining <= 0);
+  }
+
+  if (filterMonth !== undefined && filterYear !== undefined) {
+    filtered = filtered.filter((s) => {
+      const accInst = fullInstallmentsByAccount.get(s.id) ?? [];
+      const match = accInst.find((inst) => {
+        const d = new Date(inst.due_date);
+        return d.getMonth() === filterMonth && d.getFullYear() === filterYear;
+      });
+      if (!match) return false;
+      if (filterPaymentStatus === 'paid') return match.status === 'PAID';
+      if (filterPaymentStatus === 'pending') return match.status !== 'PAID';
+      return true;
+    });
+  }
+
+  const totalCount = filtered.length;
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  return { accounts: paged, totalCount, page, pageSize };
 }
 
 export async function getCreditAccountDetail(accountId: string): Promise<CreditAccountDetail> {

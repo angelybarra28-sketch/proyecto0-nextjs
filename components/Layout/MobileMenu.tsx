@@ -105,6 +105,9 @@ export default function MobileMenu({ isOpen, onClose, products }: MobileMenuProp
             <div className={styles.authLogged}>
               <span className={styles.userName}>Hola, {user?.nombreApellido}</span>
               <div className={styles.authActions}>
+                <Link href="/mi-cuenta" className={styles.adminLink} onClick={onClose}>
+                  Mi Cuenta
+                </Link>
                 <Link href="/admin" className={styles.adminLink} onClick={onClose}>
                   Panel Admin
                 </Link>

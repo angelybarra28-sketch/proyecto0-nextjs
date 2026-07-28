@@ -17,6 +17,7 @@ export default function AuthPage() {
     confirmPassword: '',
   });
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const { login, register } = useAuth();
   const router = useRouter();
 
@@ -27,14 +28,15 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
 
     if (isLogin) {
       // Login
-      const success = await login(formData.email, formData.password);
-      if (success) {
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
         router.push('/');
       } else {
-        setError('Email o contraseña incorrectos');
+        setError(result.message || 'Email o contraseña incorrectos');
       }
     } else {
       // Registro
@@ -52,7 +54,9 @@ export default function AuthPage() {
         password: formData.password,
       });
 
-      if (result.success) {
+      if (result.success && result.emailConfirmationPending) {
+        setSuccessMsg(result.message);
+      } else if (result.success) {
         router.push('/');
       } else {
         setError(result.message);
@@ -85,6 +89,7 @@ export default function AuthPage() {
         </div>
 
         {error && <div className={styles.error}>{error}</div>}
+        {successMsg && <div className={styles.success}>{successMsg}</div>}
 
         <form onSubmit={handleSubmit} className={styles.form}>
           {!isLogin && (

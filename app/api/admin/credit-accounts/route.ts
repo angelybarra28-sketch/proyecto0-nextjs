@@ -22,18 +22,26 @@ export async function GET(request: Request) {
     const statusFilter = url.searchParams.get('statusFilter') as 'active' | 'finished' | 'all' | undefined;
     const pageParam = url.searchParams.get('page');
     const pageSizeParam = url.searchParams.get('pageSize');
+    const filterMonthParam = url.searchParams.get('filterMonth');
+    const filterYearParam = url.searchParams.get('filterYear');
+    const filterPaymentStatus = url.searchParams.get('filterPaymentStatus') as 'paid' | 'pending' | null | undefined;
 
     const usePagination = pageParam !== null || pageSizeParam !== null;
 
     if (usePagination) {
       const page = Math.max(1, Number(pageParam) || 1);
       const pageSize = Math.min(100000, Math.max(1, Number(pageSizeParam) || 15));
+      const filterMonth = filterMonthParam !== null ? Number(filterMonthParam) : undefined;
+      const filterYear = filterYearParam !== null ? Number(filterYearParam) : undefined;
 
       const result = await listCreditAccountSummariesPaginated({
         page,
         pageSize,
         search,
         statusFilter: statusFilter ?? 'active',
+        filterMonth,
+        filterYear,
+        filterPaymentStatus: filterPaymentStatus ?? undefined,
       });
 
       if (withDashboard) {

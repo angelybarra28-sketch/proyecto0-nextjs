@@ -62,6 +62,16 @@
   text-align: center;
 }
 
+.success {
+  background: #efe;
+  border: 1px solid #afa;
+  color: #060;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
 .form {
   display: flex;
   flex-direction: column;

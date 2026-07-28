@@ -34,7 +34,7 @@
 .section {
   background: #262422;
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 16px 20px;
   margin-bottom: 10px;
   border: 1px solid #363330;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -718,4 +718,275 @@
   color: #c8a87c;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.smallBtn {
+  background: #4a433a;
+  color: #f5f2ec;
+  border: 1px solid #5a5248;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 0.2s ease;
+  margin-left: 4px;
+}
+
+.smallBtn:hover {
+  background: #5a5248;
+}
+
+.smallBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selectInput {
+  padding: 4px 6px;
+  border: 1px solid #5a5248;
+  border-radius: 4px;
+  background: #1e1d1b;
+  color: #d3cdc4;
+  font-size: 12px;
+  max-width: 220px;
+}
+
+.linkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: #8a7e72;
+  font-size: 12px;
+}
+
+.linkBtn {
+  background: #4a433a;
+  color: #c8a87c;
+  border: 1px solid #5a5248;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s ease;
+}
+
+.linkBtn:hover {
+  background: #5a5248;
+}
+
+.unlinkBtn {
+  background: transparent;
+  color: #d4543b;
+  border: 1px solid #d4543b;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.unlinkBtn:hover {
+  background: #d4543b;
+  color: white;
+}
+
+.linkedInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.cardNum {
+  color: #c8a87c;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.searchWrapper {
+  min-width: 280px;
+}
+
+.searchInputRow {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 6px 10px;
+  padding-right: 28px;
+  border: 1px solid #5a5248;
+  border-radius: 4px;
+  background: #1e1d1b;
+  color: #d3cdc4;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  border-color: #c8a87c;
+}
+
+.clearBtn {
+  position: absolute;
+  right: 4px;
+  background: none;
+  border: none;
+  color: #8a7e72;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  line-height: 1;
+}
+
+.clearBtn:hover {
+  color: #d3cdc4;
+}
+
+.searchResults {
+  max-height: 200px;
+  overflow-y: auto;
+  background: #2a2724;
+  border: 1px solid #5a5248;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.searchEmpty {
+  padding: 12px;
+  color: #8a7e72;
+  text-align: center;
+  font-size: 13px;
+}
+
+.searchResultItem {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #3a3632;
+  transition: background 0.15s ease;
+}
+
+.searchResultItem:last-child {
+  border-bottom: none;
+}
+
+.searchResultItem:hover {
+  background: #3a3632;
+}
+
+.searchResultName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d3cdc4;
+}
+
+.searchResultMeta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #8a7e72;
+  margin-top: 2px;
+}
+
+.searchResultCard {
+  color: #c8a87c;
+  font-weight: 600;
+}
+
+.linkActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.linkedBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 320px;
+}
+
+.linkedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.linkedName {
+  font-size: 13px;
+  color: #d3cdc4;
+}
+
+.creditAccountList {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.creditAccountItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #1e1d1b;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.creditAccountProduct {
+  color: #d3cdc4;
+  font-weight: 600;
+}
+
+.creditAccountOp {
+  color: #c8a87c;
+  font-weight: 600;
+}
+
+.creditAccountDate {
+  color: #8a7e72;
+  font-size: 10px;
+}
+
+.creditAccountAmount {
+  color: #b8aa94;
+  margin-left: auto;
+  font-size: 11px;
+}
+
+.creditAccountEmpty {
+  color: #8a7e72;
+  font-size: 11px;
+  padding: 2px 0;
+}
+
+.addSaleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  color: #c8a87c;
+  border: 1px dashed #5a5248;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.addSaleBtn:hover {
+  background: #3a3632;
+  border-color: #c8a87c;
 }
