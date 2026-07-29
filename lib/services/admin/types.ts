@@ -42,11 +42,4 @@ export function createPagination(page: number, limit: number, total: number): Ad
   };
 }
 
-export function getPaginationRange(page: number, limit: number): { from: number; to: number } {
-  const from = (page - 1) * limit;
 
-  return {
-    from,
-    to: from + limit - 1,
-  };
-}

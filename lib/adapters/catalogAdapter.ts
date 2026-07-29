@@ -78,9 +78,7 @@ function toNumber(value: number | string | null): number {
   return typeof value === 'number' ? value : Number(value);
 }
 
-function toStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
-}
+import { toStringArray } from '@/lib/utils';
 
 function stableNumericId(uuid: string): number {
   let hash = 0;

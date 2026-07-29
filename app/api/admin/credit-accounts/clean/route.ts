@@ -17,8 +17,6 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await supabase.rpc('clean_credit_portfolio');
-      console.log('RPC DATA:', data);
-      console.log('RPC ERROR:', error);
     
     if (error) {
       throw error;

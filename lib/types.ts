@@ -33,12 +33,6 @@ export interface ProductSection {
   products: Product[];
 }
 
-export interface NavLink {
-  label: string;
-  href: string;
-  submenu?: NavLink[];
-}
-
 export interface ContactInfo {
   phone: string;
   email: string;

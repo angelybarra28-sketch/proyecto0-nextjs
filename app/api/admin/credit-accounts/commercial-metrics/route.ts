@@ -52,9 +52,6 @@ export async function GET(request: Request) {
 
     // Fetch all accounts (including inactive/finished) to build the finished list
     const { accounts, installments, payments } = await getCreditAccounts(supabase, true);
-    console.log(`[commercial-metrics] Total accounts fetched: ${accounts.length}`);
-    console.log(`[commercial-metrics] Total installments fetched: ${installments.length}`);
-    console.log(`[commercial-metrics] Total payments fetched: ${payments.length}`);
 
     const installmentsByAccount = new Map<string, { original_amount: number; paid_amount: number; remaining_amount: number; status: string }[]>();
     for (const inst of installments) {
@@ -106,24 +103,18 @@ export async function GET(request: Request) {
         // Exact logic from get_credit_commercial_metrics:
         // total_remaining = 0 AND last_payment_date in current month
         if (acc.remaining > 0.01) {
-          console.log(`[commercial-metrics] Account ${acc.id} excluded: remaining=${acc.remaining}`);
           return false;
         }
         if (!acc.lastPaymentDate) {
-          console.log(`[commercial-metrics] Account ${acc.id} excluded: no lastPaymentDate`);
           return false;
         }
         const parts = parseDateParts(acc.lastPaymentDate);
         if (!parts) {
-          console.log(`[commercial-metrics] Account ${acc.id} excluded: invalid date ${acc.lastPaymentDate}`);
           return false;
         }
         const isCurrentMonth = parts.year === currentYear && parts.month === currentMonth;
-        console.log(`[commercial-metrics] Account ${acc.id}: lastPaymentDate=${acc.lastPaymentDate}, parts=${JSON.stringify(parts)}, isCurrentMonth=${isCurrentMonth}`);
         return isCurrentMonth;
       });
-
-    console.log(`[commercial-metrics] Finished accounts found: ${finishedAccountsList.length}`);
 
     // Load customer names for finished accounts
     const customerIds = [...new Set(finishedAccountsList.map((a) => a.customerId))];
@@ -137,8 +128,6 @@ export async function GET(request: Request) {
       ...acc,
       customerName: customerMap.get(acc.customerId) ?? 'Cliente desconocido',
     }));
-
-    console.log(`[commercial-metrics] Returning ${finishedAccountsListWithNames.length} finished accounts`);
 
     return NextResponse.json(
       {

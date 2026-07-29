@@ -103,9 +103,7 @@ async function downloadAndUpload(
   }
 }
 
-function toStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
-}
+import { toStringArray } from '@/lib/utils';
 
 export type EnovaUrlMigrationResult = {
   totalProducts: number;

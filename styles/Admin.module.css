@@ -152,12 +152,6 @@
   background: #2a2724;
 }
 
-.creditSubheader td {
-  font-weight: 700;
-  background: #363330;
-  color: #f5f2ec;
-}
-
 .adminTableHeader {
   display: flex;
   align-items: flex-start;
@@ -473,12 +467,6 @@
   .table th,
   .table td {
     padding: 8px 6px;
-  }
-}
-
-@media (max-width: 600px) {
-  .desktopOnly {
-    display: none;
   }
 }
 

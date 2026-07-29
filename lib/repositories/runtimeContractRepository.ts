@@ -8,9 +8,7 @@ export type RuntimeContractStatus = {
   missingExtensions: string[];
 };
 
-function toStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
-}
+import { toStringArray } from '@/lib/utils';
 
 export async function validateRuntimeContract(supabase: SupabaseClient): Promise<RuntimeContractStatus> {
   const { data, error } = await supabase.rpc('validate_runtime_contract').single();
