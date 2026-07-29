@@ -1,19 +1,11 @@
+import { isValidCheckoutSaleInput } from '@/lib/validation/ventas';
+import type { CheckoutSaleInput } from '@/lib/supabase/types';
 import { NextResponse } from 'next/server';
 import { persistCheckoutSale } from '@/lib/services/checkoutSaleService';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 import { isMaintenanceModeActive, maintenanceModeResponse } from '@/lib/server/maintenance';
 import { measureAsync } from '@/lib/server/runtimeMetrics';
-import type { CheckoutSaleInput } from '@/lib/supabase/types';
-
-function isValidCheckoutSaleInput(input: CheckoutSaleInput): boolean {
-  return Boolean(
-    input.customer?.fullName &&
-    input.checkoutRequestId &&
-    Array.isArray(input.items) &&
-    input.items.length > 0
-  );
-}
 
 export async function POST(request: Request) {
   const context = createRequestContext(request);

@@ -5,7 +5,7 @@ import type { CreditDashboard } from '@/lib/types';
 import styles from '@/styles/Admin.module.css';
 import { CreditMonthlyChart } from './CreditMonthlyChart';
 import { fetchCommercialMetrics, fetchControlMensual } from '@/lib/services/admin/client';
-import { exportControlMensualToExcel } from './creditExport';
+
 
 type CreditDashboardSectionProps = {
   dashboard: CreditDashboard | null;
@@ -50,7 +50,8 @@ export function CreditDashboardSection({ dashboard }: CreditDashboardSectionProp
     setExporting(true);
     try {
       const data = await fetchControlMensual();
-      exportControlMensualToExcel(data.rows, data.summary);
+      const { exportControlMensualToExcel: doExport } = await import('./creditExport');
+      doExport(data.rows, data.summary);
     } catch (err) {
       console.error('Error exporting control mensual:', err);
       alert('No se pudo exportar el control mensual');

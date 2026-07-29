@@ -33,18 +33,6 @@ export function sumarPagos(pagoTotal: { monto: number }[] | null | undefined): n
   return (pagoTotal ?? []).reduce((s: number, p: any) => s + Number(p.monto), 0);
 }
 
-export function validarFecha(fecha: string): Date {
-  const d = new Date(fecha);
-  if (isNaN(d.getTime())) throw new Error(`Fecha inválida: ${fecha}`);
-  return d;
-}
-
-export function validarMonto(monto: unknown): number {
-  const n = Number(monto);
-  if (isNaN(n) || n <= 0) throw new Error('El monto debe ser un número positivo');
-  return n;
-}
-
 export async function recalcularEstadoCompra(supabase: ReturnType<typeof getSupabaseAdminClient>, compraId: string): Promise<void> {
   if (!supabase) return;
 

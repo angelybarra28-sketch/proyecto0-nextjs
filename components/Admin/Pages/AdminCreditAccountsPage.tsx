@@ -6,7 +6,6 @@ import { useAdminAccess } from '@/components/Admin/useAdminData';
 import { useCreditAccounts, useCreditAccountDetail } from '@/components/Admin/useCreditAccounts';
 import { CreditAccountsTable } from '@/components/Admin/Credit/CreditAccountsTable';
 import { CreditAccountDetailView } from '@/components/Admin/Credit/CreditAccountDetailView';
-import { exportCreditAccountsToExcel } from '@/components/Admin/Credit/creditExport';
 import { fetchCleanSummary, cleanCreditPortfolio } from '@/lib/services/admin/client';
 import styles from '@/styles/Admin.module.css';
 
@@ -98,7 +97,8 @@ export function AdminCreditAccountsPage() {
       const now = new Date();
       const backupName = `BACKUP_CARTERA_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}.xlsx`;
       try {
-        exportCreditAccountsToExcel(accounts, backupName);
+        const { exportCreditAccountsToExcel: doExport } = await import('@/components/Admin/Credit/creditExport');
+        doExport(accounts, backupName);
       } catch (backupErr) {
         console.error('Backup export failed:', backupErr);
         setCleanError('La exportación de backup falló. Limpieza cancelada.');
@@ -396,7 +396,10 @@ export function AdminCreditAccountsPage() {
             <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
-                  onClick={() => exportCreditAccountsToExcel(accounts)}
+                  onClick={async () => {
+                    const { exportCreditAccountsToExcel: doExport } = await import('@/components/Admin/Credit/creditExport');
+                    doExport(accounts);
+                  }}
                   className={styles.compactBtn}
                   disabled={accounts.length === 0}
                 >

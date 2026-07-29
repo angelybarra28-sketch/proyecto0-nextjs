@@ -1,6 +1,7 @@
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import type { ProveedorPagoRow, ProveedorPagoInsert, ProveedorAdjuntoRow, ProveedorAdjuntoInsert } from '@/lib/supabase/types';
-import { PAGOS_COLS, ADJUNTOS_COLS, validarMonto, validarFecha, recalcularEstadoCompra } from './helpers';
+import { validarMonto, validarFecha } from '@/lib/validation/common';
+import { PAGOS_COLS, ADJUNTOS_COLS, recalcularEstadoCompra } from './helpers';
 
 export async function listPagos(proveedorId?: string): Promise<ProveedorPagoRow[]> {
   const supabase = getSupabaseAdminClient();

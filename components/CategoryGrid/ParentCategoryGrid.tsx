@@ -1,5 +1,3 @@
-'use client';
-
 import SubcategoryCard from './SubcategoryCard';
 import styles from '@/styles/ParentCategoryGrid.module.css';
 

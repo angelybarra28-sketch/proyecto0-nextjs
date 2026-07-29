@@ -12,7 +12,9 @@ import {
   type AdminSaleSortKey,
   type SaleUpdateFields,
 } from '@/lib/repositories/saleRepository';
-import type { AdminSaleDetail, AdminSaleSummary, CollectionStatus, SaleStatus, CollectionSummary, SaleItemInsert } from '@/lib/supabase/types';
+import { normalizeText } from '@/lib/validation/common';
+import { normalizeSaleStatus, normalizeCollectionStatus } from '@/lib/validation/ventas';
+import type { AdminSaleDetail, AdminSaleSummary, CollectionSummary, SaleItemInsert } from '@/lib/supabase/types';
 import {
   createPagination,
   normalizeLimit,
@@ -41,18 +43,6 @@ export type AdminSaleListInput = {
   page?: unknown;
   limit?: unknown;
 };
-
-function normalizeText(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function normalizeSaleStatus(value: unknown): SaleStatus | 'all' {
-  return value === 'PENDING' || value === 'CONFIRMED' || value === 'DELIVERED' || value === 'CANCELLED' ? value : 'all';
-}
-
-function normalizeCollectionStatus(value: unknown): CollectionStatus | 'all' {
-  return value === 'PENDING' || value === 'UP_TO_DATE' || value === 'OVERDUE' || value === 'PAID' ? value : 'all';
-}
 
 function normalizeSaleFilters(input: AdminSaleListInput): AdminSaleFilters {
   return {

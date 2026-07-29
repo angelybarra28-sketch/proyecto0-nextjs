@@ -1,5 +1,3 @@
-'use client';
-
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from '@/styles/ProductCard.module.css';
@@ -40,6 +38,7 @@ export default function ProductCard({
             src={imageUrl}
             alt={name}
             fill
+            sizes="(max-width: 768px) 50vw, 25vw"
             className={styles.image}
           />
         ) : (

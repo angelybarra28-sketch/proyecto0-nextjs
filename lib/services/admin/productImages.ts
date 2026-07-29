@@ -1,3 +1,4 @@
+import { validateProductImageFile, assertValidProductImagePath } from '@/lib/validation/productos';
 import { randomUUID } from 'crypto';
 import {
   deleteProductImageObject,
@@ -7,9 +8,6 @@ import {
 } from '@/lib/storage/productImageStorage';
 import { getProductById } from '@/lib/repositories/productRepository';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
-
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
 function getExtension(file: File): string {
   const nameExtension = file.name.split('.').pop()?.toLowerCase();
@@ -23,27 +21,6 @@ function getExtension(file: File): string {
 
 function createProductImagePath(productId: string, file: File): string {
   return `products/${productId}/${Date.now()}-${randomUUID()}.${getExtension(file)}`;
-}
-
-function assertValidProductImagePath(path: string, productId?: string): void {
-  const escapedProductId = productId?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = escapedProductId
-    ? new RegExp(`^products/${escapedProductId}/[a-zA-Z0-9._-]+$`)
-    : /^products\/[0-9a-fA-F-]{36}\/[a-zA-Z0-9._-]+$/;
-
-  if (!pattern.test(path) || path.includes('..')) {
-    throw new Error('Ruta de imagen no permitida');
-  }
-}
-
-export function validateProductImageFile(file: File): void {
-  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    throw new Error('Tipo de imagen no permitido. Usá JPG, PNG, WebP o GIF.');
-  }
-
-  if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    throw new Error('La imagen supera el tamaño máximo de 5 MB.');
-  }
 }
 
 export async function uploadAdminProductImage(productId: string, file: File): Promise<StoredProductImage> {

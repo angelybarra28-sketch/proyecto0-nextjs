@@ -48,6 +48,7 @@ export default function ProductCarousel({ images, productName }: ProductCarousel
             src={images[currentIndex]}
             alt={`${productName} - imagen ${currentIndex + 1}`}
             fill
+            sizes="(max-width: 768px) 100vw, 600px"
             className={styles.mainImage}
             priority
           />
@@ -101,6 +102,7 @@ export default function ProductCarousel({ images, productName }: ProductCarousel
               src={images[currentIndex]}
               alt={`${productName} - imagen ${currentIndex + 1}`}
               fill
+              sizes="90vw"
               className={styles.lightboxImage}
               priority
             />

@@ -1,6 +1,7 @@
 import {
   getCreditAccounts,
   getCreditAccountsPaginated,
+  getPaymentsAndItemsForAccounts,
   getCreditAccountById,
   getCustomerForCredit,
   insertCreditAccount,
@@ -259,7 +260,7 @@ export async function listCreditAccountSummariesPaginated(options?: {
   const filterYear = options?.filterYear;
   const filterPaymentStatus = options?.filterPaymentStatus;
 
-  const { accounts: allAccounts, installments, payments, items } = await getCreditAccountsPaginated(supabase, {
+  const { accounts: allAccounts, installments } = await getCreditAccountsPaginated(supabase, {
     page,
     pageSize,
     statusFilter,
@@ -280,39 +281,11 @@ export async function listCreditAccountSummariesPaginated(options?: {
     fullInstallmentsByAccount.set(inst.credit_account_id, list);
   }
 
-  const paymentsByAccount = new Map<string, { payment_date: string }[]>();
-  for (const payment of payments) {
-    const list = paymentsByAccount.get(payment.credit_account_id) ?? [];
-    list.push({ payment_date: payment.payment_date });
-    paymentsByAccount.set(payment.credit_account_id, list);
-  }
-
-  const itemsByAccount = new Map<string, import('@/lib/repositories/creditAccountRepository').DbCreditAccountItem[]>();
-  for (const item of items) {
-    const list = itemsByAccount.get(item.credit_account_id) ?? [];
-    list.push(item);
-    itemsByAccount.set(item.credit_account_id, list);
-  }
-
-  const allSummaries = allAccounts.map((account) => {
-    const summary = calculateSummary(
-      account,
-      installmentsByAccount.get(account.id) ?? [],
-      paymentsByAccount.get(account.id) ?? []
-    );
-    const accountItems = itemsByAccount.get(account.id) ?? [];
-    if (accountItems.length > 0) {
-      summary.items = accountItems.map((item) => ({
-        id: item.id,
-        creditAccountId: item.credit_account_id,
-        productName: item.product_name,
-        quantity: item.quantity,
-        unitPrice: item.unit_price,
-        createdAt: item.created_at,
-      }));
-    }
-    return summary;
-  });
+  const allSummaries = allAccounts.map((account) => calculateSummary(
+    account,
+    installmentsByAccount.get(account.id) ?? [],
+    []
+  ));
 
   const customerIds = [...new Set(allSummaries.map((s) => s.customerId))];
   const customers = await batchedCustomerQuery(supabase, customerIds);
@@ -361,7 +334,44 @@ export async function listCreditAccountSummariesPaginated(options?: {
   const totalCount = filtered.length;
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  return { accounts: paged, totalCount, page, pageSize };
+  // Fetch payments and items only for the current page accounts
+  const pagedAccountIds = paged.map((a) => a.id);
+  let paymentsByAccount = new Map<string, { payment_date: string }[]>();
+  let itemsByAccount = new Map<string, import('@/lib/repositories/creditAccountRepository').DbCreditAccountItem[]>();
+  if (pagedAccountIds.length > 0) {
+    const { payments, items } = await getPaymentsAndItemsForAccounts(supabase, pagedAccountIds);
+    for (const payment of payments) {
+      const list = paymentsByAccount.get(payment.credit_account_id) ?? [];
+      list.push({ payment_date: payment.payment_date });
+      paymentsByAccount.set(payment.credit_account_id, list);
+    }
+    for (const item of items) {
+      const list = itemsByAccount.get(item.credit_account_id) ?? [];
+      list.push(item);
+      itemsByAccount.set(item.credit_account_id, list);
+    }
+  }
+
+  const withPaymentsAndItems = paged.map((s) => {
+    const accountPayments = paymentsByAccount.get(s.id) ?? [];
+    const lastPaymentDate = accountPayments.length > 0
+      ? accountPayments.sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())[0].payment_date
+      : null;
+    const accountItems = itemsByAccount.get(s.id) ?? [];
+    if (accountItems.length > 0) {
+      return { ...s, lastPaymentDate, items: accountItems.map((item) => ({
+        id: item.id,
+        creditAccountId: item.credit_account_id,
+        productName: item.product_name,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        createdAt: item.created_at,
+      })) };
+    }
+    return { ...s, lastPaymentDate };
+  });
+
+  return { accounts: withPaymentsAndItems, totalCount, page, pageSize };
 }
 
 export async function getCreditAccountDetail(accountId: string): Promise<CreditAccountDetail> {

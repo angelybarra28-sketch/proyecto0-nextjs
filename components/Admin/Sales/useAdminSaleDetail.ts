@@ -64,6 +64,29 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
       .then((data) => {
         if (!isMounted) return;
         setSale(data);
+        setEditSaleNumber(data.saleNumber);
+        setEditDelivery({
+          fullName: data.deliveryFullName ?? '',
+          phone: data.deliveryPhone ?? '',
+          address: data.deliveryAddress ?? '',
+          city: data.deliveryCity ?? '',
+          notes: data.notes ?? '',
+        });
+        setEditStatus(data.saleStatus);
+        setEditDiscount(String(data.discountAmount));
+        setEditItems(
+          data.items.map((item, index) => ({
+            key: `${item.id ?? index}`,
+            name: item.name,
+            unitPrice: item.unitPrice,
+            quantity: item.quantity,
+            category: item.category,
+            categoryName: item.category ?? '',
+            slug: item.slug ?? '',
+            legacyProductId: item.legacyProductId,
+            installmentCount: 8,
+          }))
+        );
       })
       .catch((loadError: unknown) => {
         if (isAbortError(loadError) || !isMounted) return;
@@ -79,34 +102,6 @@ export function useAdminSaleDetail({ isAdmin, saleId }: UseAdminSaleDetailParams
       controller.abort();
     };
   }, [isAdmin, saleId]);
-
-  useEffect(() => {
-    if (sale) {
-      setEditSaleNumber(sale.saleNumber);
-      setEditDelivery({
-        fullName: sale.deliveryFullName ?? '',
-        phone: sale.deliveryPhone ?? '',
-        address: sale.deliveryAddress ?? '',
-        city: sale.deliveryCity ?? '',
-        notes: sale.notes ?? '',
-      });
-      setEditStatus(sale.saleStatus);
-      setEditDiscount(String(sale.discountAmount));
-      setEditItems(
-        sale.items.map((item, index) => ({
-          key: `${item.id ?? index}`,
-          name: item.name,
-          unitPrice: item.unitPrice,
-          quantity: item.quantity,
-          category: item.category,
-          categoryName: item.category ?? '',
-          slug: item.slug ?? '',
-          legacyProductId: item.legacyProductId,
-          installmentCount: 8,
-        }))
-      );
-    }
-  }, [sale]);
 
   const refreshSale = useCallback(async () => {
     try {

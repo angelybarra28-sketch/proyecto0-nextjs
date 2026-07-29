@@ -12,6 +12,8 @@ import {
   type ProductUpdateInput,
 } from '@/lib/repositories/productRepository';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
+import { normalizeText, normalizeNullableText } from '@/lib/validation/common';
+import { normalizePrice, normalizeStock, normalizeStatus, normalizeStringArray } from '@/lib/validation/productos';
 import {
   createPagination,
   normalizeLimit,
@@ -76,54 +78,6 @@ export type AdminProductPayload = {
   imageUrl: string;
   carouselImages: string[];
 };
-
-function normalizeText(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function normalizeNullableText(value: unknown): string | null {
-  const text = normalizeText(value);
-  return text ? text : null;
-}
-
-function normalizePrice(value: unknown, fieldName: string): number {
-  const numberValue = typeof value === 'number' ? value : Number(value);
-
-  if (!Number.isFinite(numberValue) || numberValue < 0) {
-    throw new Error(`${fieldName} inválido`);
-  }
-
-  return numberValue;
-}
-
-function normalizeStock(value: unknown): number {
-  const numberValue = typeof value === 'number' ? value : Number(value);
-
-  if (!Number.isInteger(numberValue) || numberValue < 0) {
-    throw new Error('Stock inválido');
-  }
-
-  return numberValue;
-}
-
-function normalizeStatus(value: unknown): ProductStatus {
-  if (value === 'ACTIVE' || value === 'INACTIVE' || value === 'OUT_OF_STOCK' || value === 'ARCHIVED') {
-    return value;
-  }
-
-  return 'ACTIVE';
-}
-
-function normalizeStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .filter((item): item is string => typeof item === 'string')
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
 
 function normalizeProductFilters(input: AdminProductListInput): AdminProductFilters {
   const status = input.status === 'ACTIVE' || input.status === 'INACTIVE' || input.status === 'OUT_OF_STOCK' || input.status === 'ARCHIVED'

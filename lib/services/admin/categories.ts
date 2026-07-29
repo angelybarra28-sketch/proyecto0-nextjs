@@ -1,3 +1,4 @@
+import { normalizeText, normalizeNullableText } from '@/lib/validation/common';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import {
   listAllCategories,
@@ -25,15 +26,6 @@ export type AdminCategoryPayload = {
   categories: AdminCategoryItem[];
   pagination: AdminPagination;
 };
-
-function normalizeText(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function normalizeNullableText(value: unknown): string | null {
-  const text = normalizeText(value);
-  return text || null;
-}
 
 function validateCategoryPayload(payload: {
   name?: unknown;

@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useCart, CartItem } from '@/lib/cartContext';
 import Image from 'next/image';
 import styles from '@/styles/Cart.module.css';
@@ -10,7 +11,7 @@ interface CartItemComponentProps {
   onSelect?: (id: number) => void;
 }
 
-export default function CartItemComponent({
+function CartItemComponent({
   item,
   isSelected,
   onSelect
@@ -51,6 +52,7 @@ export default function CartItemComponent({
           src={item.imageUrl}
           alt={item.name}
           fill
+          sizes="80px"
           className={styles.cardImageInner}
         />
       </div>
@@ -85,3 +87,5 @@ export default function CartItemComponent({
     </div>
   );
 }
+
+export default memo(CartItemComponent);

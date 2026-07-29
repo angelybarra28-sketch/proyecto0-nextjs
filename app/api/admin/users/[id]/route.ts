@@ -1,3 +1,4 @@
+import { isValidUUID } from '@/lib/validation/common';
 import { NextResponse } from 'next/server';
 import { getAdminUserContext } from '@/lib/auth/server';
 import { getOptionalSupabaseClientEnv } from '@/env/client';
@@ -12,10 +13,6 @@ type RouteContext = {
 
 interface ToggleUserBody {
   isActive: boolean;
-}
-
-function isValidUUID(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 export async function PATCH(request: Request, context: RouteContext) {

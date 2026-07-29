@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/authContext';
 import { fetchAdminDashboard, fetchAdminSales, fetchAdminUsers, fetchCollectionSummary, toggleAdminUser } from '@/lib/services/admin/client';
 import type { AdminSaleListInput } from '@/lib/services/adminSalesService';
@@ -15,13 +14,6 @@ function isAbortError(error: unknown): boolean {
 
 export function useAdminAccess() {
   const { isAdmin, isAuthLoading, user } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isAuthLoading && !isAdmin) {
-      router.push('/auth');
-    }
-  }, [isAdmin, isAuthLoading, router]);
 
   return { isAdmin, isAuthLoading, user };
 }
@@ -153,29 +145,10 @@ export function useAdminUsers(enabled: boolean) {
       return;
     }
 
-    let isMounted = true;
     const controller = new AbortController();
-
-    fetchAdminUsers(controller.signal)
-      .then((data) => {
-        if (!isMounted) return;
-        setUsers(data);
-        setUsersError('');
-      })
-      .catch((error: unknown) => {
-        if (isAbortError(error) || !isMounted) return;
-        console.error('Error loading users:', error);
-        setUsersError('No se pudieron cargar los usuarios');
-      })
-      .finally(() => {
-        if (isMounted) setIsLoadingUsers(false);
-      });
-
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [enabled]);
+    loadUsers(controller.signal);
+    return () => controller.abort();
+  }, [enabled, loadUsers]);
 
   const handleToggleUser = useCallback(async (id: string, isActive: boolean) => {
     try {

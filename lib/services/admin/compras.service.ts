@@ -1,6 +1,7 @@
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import type { ProveedorCompraRow, ProveedorCompraInsert, ProveedorCompraItemRow, ProveedorCompraItemInsert, ProveedorPagoRow, ProveedorAdjuntoRow } from '@/lib/supabase/types';
-import { COMPRAS_COLS, COMPRAS_COLS_WITH_PROVEEDOR, ITEMS_COLS, PAGOS_COLS, ADJUNTOS_COLS, calcularEstado, sumarPagos, validarMonto, validarFecha } from './helpers';
+import { validarMonto, validarFecha } from '@/lib/validation/common';
+import { COMPRAS_COLS, COMPRAS_COLS_WITH_PROVEEDOR, ITEMS_COLS, PAGOS_COLS, ADJUNTOS_COLS, calcularEstado, sumarPagos } from './helpers';
 
 export async function listCompras(
   proveedorId?: string,
@@ -125,8 +126,8 @@ export async function deleteCompra(id: string): Promise<void> {
   const supabase = getSupabaseAdminClient();
   if (!supabase) throw new Error('Supabase no disponible');
 
-  const { data: pagosExistentes } = await supabase.from('proveedor_pagos').select('id', { count: 'exact', head: true }).eq('compra_id', id);
-  const totalPagos = (pagosExistentes ?? []).length;
+  const { count } = await supabase.from('proveedor_pagos').select('id', { count: 'exact', head: true }).eq('compra_id', id);
+  const totalPagos = count ?? 0;
 
   if (totalPagos > 0) {
     throw new Error('No se puede eliminar la compra porque tiene pagos asociados. Elimine los pagos primero o anule la factura.');

@@ -132,7 +132,7 @@ export async function getCreditAccounts(
 ): Promise<{ accounts: DbCreditAccount[]; installments: DbCreditInstallment[]; payments: DbCreditPayment[]; items: DbCreditAccountItem[] }> {
   let query = supabase
     .from('credit_accounts')
-    .select('*')
+    .select('id, customer_id, operation_number, product_name, quantity, installment_count, installment_amount, sale_date, notes, is_active, created_at, updated_at, origin_month, origin_year')
     .order('sale_date', { ascending: false });
 
   if (!includeInactive) {
@@ -157,11 +157,11 @@ export async function getCreditAccounts(
 export async function getCreditAccountsPaginated(
   supabase: SupabaseClient,
   _options: { page: number; pageSize: number; statusFilter?: 'active' | 'finished' | 'all'; search?: string }
-): Promise<{ accounts: DbCreditAccount[]; installments: DbCreditInstallment[]; payments: DbCreditPayment[]; items: DbCreditAccountItem[] }> {
+): Promise<{ accounts: DbCreditAccount[]; installments: DbCreditInstallment[] }> {
 
   const { data: allAccounts, error: accError } = await supabase
     .from('credit_accounts')
-    .select('*')
+    .select('id, customer_id, operation_number, product_name, quantity, installment_count, installment_amount, sale_date, notes, is_active, created_at, updated_at, origin_month, origin_year')
     .eq('is_active', true)
     .order('sale_date', { ascending: false });
 
@@ -171,13 +171,23 @@ export async function getCreditAccountsPaginated(
 
   const allAccountIds = (allAccounts ?? []).map((a) => a.id);
 
-  const [installments, payments, items] = await Promise.all([
-    batchedInQuery<DbCreditInstallment>(supabase, 'credit_installments', 'credit_account_id', allAccountIds, { column: 'installment_number', ascending: true }),
-    batchedInQuery<DbCreditPayment>(supabase, 'credit_payments', 'credit_account_id', allAccountIds, { column: 'payment_date', ascending: false }),
-    batchedInQuery<DbCreditAccountItem>(supabase, 'credit_account_items', 'credit_account_id', allAccountIds, { column: 'created_at', ascending: true }),
-  ]);
+  const installments = await batchedInQuery<DbCreditInstallment>(
+    supabase, 'credit_installments', 'credit_account_id', allAccountIds,
+    { column: 'installment_number', ascending: true }
+  );
 
-  return { accounts: allAccounts ?? [], installments, payments, items };
+  return { accounts: allAccounts ?? [], installments };
+}
+
+export async function getPaymentsAndItemsForAccounts(
+  supabase: SupabaseClient,
+  accountIds: string[]
+): Promise<{ payments: DbCreditPayment[]; items: DbCreditAccountItem[] }> {
+  const [payments, items] = await Promise.all([
+    batchedInQuery<DbCreditPayment>(supabase, 'credit_payments', 'credit_account_id', accountIds, { column: 'payment_date', ascending: false }),
+    batchedInQuery<DbCreditAccountItem>(supabase, 'credit_account_items', 'credit_account_id', accountIds, { column: 'created_at', ascending: true }),
+  ]);
+  return { payments, items };
 }
 
 export async function getCreditAccountById(
@@ -186,7 +196,7 @@ export async function getCreditAccountById(
 ): Promise<{ account: DbCreditAccount; installments: DbCreditInstallment[]; payments: DbCreditPayment[]; collectionNotes: DbCreditCollectionNote[]; items: DbCreditAccountItem[] }> {
   const { data: account, error: accError } = await supabase
     .from('credit_accounts')
-    .select('*')
+    .select('id, customer_id, operation_number, product_name, quantity, installment_count, installment_amount, sale_date, notes, is_active, created_at, updated_at, origin_month, origin_year')
     .eq('id', accountId)
     .single();
 
@@ -196,7 +206,7 @@ export async function getCreditAccountById(
 
   const { data: installments, error: instError } = await supabase
     .from('credit_installments')
-    .select('*')
+    .select('id, credit_account_id, installment_number, due_date, original_amount, paid_amount, remaining_amount, status, created_at, updated_at')
     .eq('credit_account_id', accountId)
     .order('installment_number', { ascending: true });
 
@@ -206,7 +216,7 @@ export async function getCreditAccountById(
 
   const { data: payments, error: payError } = await supabase
     .from('credit_payments')
-    .select('*')
+    .select('id, credit_account_id, amount, payment_method, payment_date, notes, created_at')
     .eq('credit_account_id', accountId)
     .order('payment_date', { ascending: false });
 
@@ -216,7 +226,7 @@ export async function getCreditAccountById(
 
   const { data: collectionNotes, error: noteError } = await supabase
     .from('credit_collection_notes')
-    .select('*')
+    .select('id, credit_account_id, contact_type, result, notes, created_by, created_at')
     .eq('credit_account_id', accountId)
     .order('created_at', { ascending: false });
 
@@ -226,7 +236,7 @@ export async function getCreditAccountById(
 
   const { data: items, error: itemsError } = await supabase
     .from('credit_account_items')
-    .select('*')
+    .select('id, credit_account_id, product_name, quantity, unit_price, created_at')
     .eq('credit_account_id', accountId)
     .order('created_at', { ascending: true });
 
@@ -260,7 +270,7 @@ export async function findCreditAccountByOperationNumber(
 ): Promise<DbCreditAccount | null> {
   const { data, error } = await supabase
     .from('credit_accounts')
-    .select('*')
+    .select('id, customer_id, operation_number, product_name, quantity, installment_count, installment_amount, sale_date, notes, is_active, created_at, updated_at, origin_month, origin_year')
     .eq('operation_number', saleNumber)
     .is('is_active', true)
     .maybeSingle();
@@ -298,7 +308,7 @@ export async function insertCreditAccount(
       origin_month: input.origin_month ?? null,
       origin_year: input.origin_year ?? null,
     })
-    .select()
+    .select('id, customer_id, operation_number, product_name, quantity, installment_count, installment_amount, sale_date, notes, is_active, created_at, updated_at, origin_month, origin_year')
     .single();
 
   if (error) {
@@ -337,7 +347,7 @@ export async function getCreditAccountItems(
 ): Promise<DbCreditAccountItem[]> {
   const { data, error } = await supabase
     .from('credit_account_items')
-    .select('*')
+    .select('id, credit_account_id, product_name, quantity, unit_price, created_at')
     .eq('credit_account_id', accountId)
     .order('created_at', { ascending: true });
 
@@ -419,7 +429,7 @@ export async function insertCollectionNote(
       notes: input.notes,
       created_by: input.created_by,
     })
-    .select()
+    .select('id, credit_account_id, contact_type, result, notes, created_by, created_at')
     .single();
 
   if (error) {
