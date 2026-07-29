@@ -39,6 +39,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'cetrogar.vtexassets.com',
       },
+      {
+        protocol: 'https',
+        hostname: '*.gstatic.com',
+      },
     ],
   },
 };
