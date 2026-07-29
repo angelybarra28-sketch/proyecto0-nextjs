@@ -27,24 +27,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const { data: customer, error: customerError } = await supabase
+    const { data: customers, error: customerError } = await supabase
       .from('customers')
       .select('id, full_name, phone, email, user_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
+      .eq('user_id', user.id);
 
     if (customerError) {
       logServerError({ area: 'mi-cuenta', action: 'resumen', requestId: context.requestId, error: customerError });
       return errorResponse(customerError, context.requestId, 500);
     }
 
-    if (!customer) {
+    if (!customers || customers.length === 0) {
       return NextResponse.json({
         customer: null,
         resumen: null,
         message: 'Tu cuenta aún no está vinculada a un cliente. Contactanos.',
       });
     }
+
+    const customerIds = customers.map((c) => c.id);
+    const mainCustomer = customers[0];
 
     const { data: accounts, error: accountsError } = await supabase
       .from('credit_accounts')
@@ -55,7 +57,7 @@ export async function GET(request: NextRequest) {
         credit_account_items(id, product_name, quantity, unit_price),
         credit_payments(id, amount, payment_method, payment_date)
       `)
-      .eq('customer_id', customer.id)
+      .in('customer_id', customerIds)
       .order('sale_date', { ascending: false });
 
     if (accountsError) {
@@ -87,10 +89,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       customer: {
-        id: customer.id,
-        nombre: customer.full_name,
-        telefono: customer.phone,
-        email: customer.email,
+        id: mainCustomer.id,
+        nombre: mainCustomer.full_name,
+        telefono: mainCustomer.phone,
+        email: mainCustomer.email,
       },
       resumen: {
         saldoDeudor: totalDeuda + montoAtrasado,

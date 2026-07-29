@@ -970,23 +970,3 @@
   padding: 2px 0;
 }
 
-.addSaleBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: transparent;
-  color: #c8a87c;
-  border: 1px dashed #5a5248;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 11px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  width: fit-content;
-}
-
-.addSaleBtn:hover {
-  background: #3a3632;
-  border-color: #c8a87c;
-}

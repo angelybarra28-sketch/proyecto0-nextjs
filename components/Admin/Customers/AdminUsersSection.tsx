@@ -23,9 +23,9 @@ type LinkingState = {
 export function AdminUsersSection({ users, onToggleUser, customers, onLinkCustomer, onUnlinkCustomer }: AdminUsersSectionProps) {
   const [linking, setLinking] = useState<LinkingState | null>(null);
 
-  const getLinkedCustomer = (userId: string): AdminCustomerView | null => {
-    if (!customers) return null;
-    return customers.find((c) => c.user_id === userId) || null;
+  const getLinkedCustomers = (userId: string): AdminCustomerView[] => {
+    if (!customers) return [];
+    return customers.filter((c) => c.user_id === userId);
   };
 
   const availableCustomers = customers?.filter((c) => c.user_id === null) || [];
@@ -46,10 +46,9 @@ export function AdminUsersSection({ users, onToggleUser, customers, onLinkCustom
     setLinking(null);
   };
 
-  const handleUnlink = async (userId: string) => {
-    const customer = customers?.find((c) => c.user_id === userId);
-    if (!customer || !onUnlinkCustomer) return;
-    await onUnlinkCustomer(customer.id);
+  const handleUnlink = async (customerId: string) => {
+    if (!onUnlinkCustomer) return;
+    await onUnlinkCustomer(customerId);
   };
 
   const openLinking = (userId: string) => {
@@ -95,7 +94,7 @@ export function AdminUsersSection({ users, onToggleUser, customers, onLinkCustom
             </thead>
             <tbody>
               {users.map((user) => {
-                const linkedCustomer = getLinkedCustomer(user.id);
+                const linkedCustomers = getLinkedCustomers(user.id);
                 const isLinking = linking?.userId === user.id;
                 return (
                   <tr key={user.id}>
@@ -108,46 +107,7 @@ export function AdminUsersSection({ users, onToggleUser, customers, onLinkCustom
                       </span>
                     </td>
                     <td>
-                      {linkedCustomer ? (
-                        <div className={styles.linkedBlock}>
-                          <div className={styles.linkedHeader}>
-                            <strong className={styles.linkedName}>{linkedCustomer.full_name}</strong>
-                            <button
-                              onClick={() => handleUnlink(user.id)}
-                              className={styles.unlinkBtn}
-                              title="Desvincular cliente"
-                            >
-                              Desvincular
-                            </button>
-                          </div>
-                          {linkedCustomer.credit_accounts && linkedCustomer.credit_accounts.length > 0 ? (
-                            <div className={styles.creditAccountList}>
-                              {linkedCustomer.credit_accounts.map((acc) => (
-                                <div key={acc.id} className={styles.creditAccountItem}>
-                                  <span className={styles.creditAccountProduct}>{acc.product_name}</span>
-                                  {acc.operation_number && (
-                                    <span className={styles.creditAccountOp}>N° {acc.operation_number}</span>
-                                  )}
-                                  <span className={styles.creditAccountDate}>
-                                    {new Date(acc.sale_date).toLocaleDateString()}
-                                  </span>
-                                  <span className={styles.creditAccountAmount}>
-                                    ${Number(acc.installment_amount).toLocaleString()} x {acc.installment_count}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className={styles.creditAccountEmpty}>Sin cuentas corrientes</div>
-                          )}
-                          <a
-                            href={`/admin/ventas/nueva?customerId=${linkedCustomer.id}`}
-                            className={styles.addSaleBtn}
-                          >
-                            + Agregar otra venta
-                          </a>
-                        </div>
-                      ) : isLinking ? (
+                      {isLinking ? (
                         <div className={styles.searchWrapper}>
                           <div className={styles.searchInputRow}>
                             <input
@@ -205,6 +165,46 @@ export function AdminUsersSection({ users, onToggleUser, customers, onLinkCustom
                               Cancelar
                             </button>
                           </div>
+                        </div>
+                      ) : linkedCustomers.length > 0 ? (
+                        <div className={styles.linkedBlock}>
+                          {linkedCustomers.map((customer) => (
+                            <div key={customer.id}>
+                              <div className={styles.linkedHeader}>
+                                <strong className={styles.linkedName}>{customer.full_name}</strong>
+                                <button
+                                  onClick={() => handleUnlink(customer.id)}
+                                  className={styles.unlinkBtn}
+                                  title="Desvincular cliente"
+                                >
+                                  Desvincular
+                                </button>
+                              </div>
+                              {customer.credit_accounts && customer.credit_accounts.length > 0 ? (
+                                <div className={styles.creditAccountList}>
+                                  {customer.credit_accounts.map((acc) => (
+                                    <div key={acc.id} className={styles.creditAccountItem}>
+                                      <span className={styles.creditAccountProduct}>{acc.product_name}</span>
+                                      {acc.operation_number && (
+                                        <span className={styles.creditAccountOp}>N° {acc.operation_number}</span>
+                                      )}
+                                      <span className={styles.creditAccountDate}>
+                                        {new Date(acc.sale_date).toLocaleDateString()}
+                                      </span>
+                                      <span className={styles.creditAccountAmount}>
+                                        ${Number(acc.installment_amount).toLocaleString()} x {acc.installment_count}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className={styles.creditAccountEmpty}>Sin cuentas corrientes</div>
+                              )}
+                            </div>
+                          ))}
+                          <button onClick={() => openLinking(user.id)} className={styles.linkBtn}>
+                            Vincular cliente
+                          </button>
                         </div>
                       ) : customers ? (
                         <button onClick={() => openLinking(user.id)} className={styles.linkBtn}>

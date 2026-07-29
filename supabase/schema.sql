@@ -1199,7 +1199,7 @@ $$;
 
 -- 202607280001: Link auth users to customers
 alter table customers add column if not exists user_id uuid references auth.users(id) on delete set null;
-create unique index if not exists idx_customers_user_id on customers(user_id) where user_id is not null;
+create index if not exists idx_customers_user_id on customers(user_id);
 
 alter table credit_installments enable row level security;
 alter table credit_account_items enable row level security;
