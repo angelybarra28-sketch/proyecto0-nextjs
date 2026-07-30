@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
 import { deleteAdminProductImage, uploadAdminProductImage } from '@/lib/services/admin/productImages';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 import { measureAsync } from '@/lib/server/runtimeMetrics';
@@ -26,6 +27,15 @@ export async function POST(request: Request) {
 
     const image = await measureAsync('admin.products.images', 'upload', () => uploadAdminProductImage(productId, file), context.requestId);
 
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'product_image_uploaded',
+      entity: 'product',
+      entityId: productId,
+      metadata: { imageUrl: image.url },
+    });
+
     return NextResponse.json({ image }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
     logServerError({ area: 'admin.products.images', action: 'upload', entity: 'product', requestId: context.requestId, error });
@@ -48,6 +58,15 @@ export async function DELETE(request: Request) {
 
     const productId = typeof payload.productId === 'string' ? payload.productId : undefined;
     const deleted = await measureAsync('admin.products.images', 'delete', () => deleteAdminProductImage(payload.url as string, productId), context.requestId);
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'product_image_deleted',
+      entity: 'product',
+      entityId: productId ?? payload.url,
+      metadata: { imageUrl: payload.url },
+    });
 
     return NextResponse.json({ deleted }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {

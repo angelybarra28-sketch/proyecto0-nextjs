@@ -1,6 +1,7 @@
-import { Suspense } from 'react';
+export const revalidate = 60;
+
+import AOSInit from '@/components/AOSInit';
 import Header from '@/components/Layout/Header';
-import BannerCarousel from '@/components/Sections/BannerCarousel';
 import SearchBar from '@/components/SearchBar';
 import ProductsSection from '@/components/Sections/ProductsSection';
 import TabbedProductsSection from '@/components/Sections/TabbedProductsSection';
@@ -17,12 +18,10 @@ export default async function Home() {
 
   return (
     <>
+      <AOSInit />
       <Header products={products} />
-      <BannerCarousel />
       <TabbedProductsSection products={products} id="productos-destacados" />
-      <Suspense fallback={<div style={{ backgroundColor: '#1e1d1b', height: '80px' }} />}>
-        <SearchBar products={products} />
-      </Suspense>
+      <SearchBar products={products} />
       <CategoryAccordion products={products} />
       <ProductsSection
         title="Ofertas y Novedades"

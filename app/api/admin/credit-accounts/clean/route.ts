@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
@@ -25,6 +26,21 @@ export async function POST(request: Request) {
     const row = Array.isArray(data) ? data[0] : data;
     const now = new Date();
     const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'credit_portfolio_cleaned',
+      entity: 'creditPortfolio',
+      entityId: null,
+      metadata: {
+        allocationsDeleted: Number(row?.allocations_deleted ?? 0),
+        paymentsDeleted: Number(row?.payments_deleted ?? 0),
+        installmentsDeleted: Number(row?.installments_deleted ?? 0),
+        accountsDeleted: Number(row?.accounts_deleted ?? 0),
+        customersDeleted: Number(row?.customers_deleted ?? 0),
+      },
+    });
 
     return NextResponse.json(
       {

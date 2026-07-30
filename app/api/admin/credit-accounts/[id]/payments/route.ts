@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
 import { registerCreditPayment } from '@/lib/services/creditAccountService';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 
@@ -32,6 +33,18 @@ export async function POST(request: Request, context: RouteContext) {
       paymentMethod: body.paymentMethod as import('@/lib/types').CreditPaymentMethod,
       paymentDate: body.paymentDate,
       notes: body.notes,
+    });
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'credit_payment_registered',
+      entity: 'creditAccount',
+      entityId: id,
+      metadata: {
+        amount: body.amount,
+        paymentMethod: body.paymentMethod,
+      },
     });
 
     return NextResponse.json(

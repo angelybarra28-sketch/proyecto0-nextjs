@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
 import { fixCreditAccountInstallments } from '@/lib/services/creditAccountService';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 
@@ -18,6 +19,15 @@ export async function POST(request: Request, context: RouteContext) {
     const { id } = await context.params;
 
     const result = await fixCreditAccountInstallments(id);
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'credit_installments_fixed',
+      entity: 'creditAccount',
+      entityId: id,
+      metadata: { installmentCount: result.installmentCount },
+    });
 
     return NextResponse.json(
       { success: true, installmentCount: result.installmentCount },

@@ -104,7 +104,6 @@ export default function ProductCarousel({ images, productName }: ProductCarousel
               fill
               sizes="90vw"
               className={styles.lightboxImage}
-              priority
             />
           </div>
 

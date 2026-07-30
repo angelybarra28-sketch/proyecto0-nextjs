@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
 import { getAdminCatalog, createAdminProduct } from '@/lib/services/adminCatalogService';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 import { measureAsync } from '@/lib/server/runtimeMetrics';
@@ -40,6 +41,14 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const product = await measureAsync('admin.products', 'create', () => createAdminProduct(body), context.requestId);
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'product_created',
+      entity: 'product',
+      entityId: product.id,
+      metadata: { name: product.name, slug: product.slug },
+    });
     return NextResponse.json({ product }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
     logServerError({ area: 'admin.products', action: 'create', requestId: context.requestId, error });

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
 import { addCollectionNote } from '@/lib/services/creditAccountService';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 
@@ -29,6 +30,15 @@ export async function POST(
       result: body.result,
       notes: body.notes ?? '',
       createdBy: body.createdBy ?? 'Admin',
+    });
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'collection_note_added',
+      entity: 'creditAccount',
+      entityId: id,
+      metadata: { contactType: body.contactType, result: body.result },
     });
 
     return NextResponse.json({ note }, { status: 201 });

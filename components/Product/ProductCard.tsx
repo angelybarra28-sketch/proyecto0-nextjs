@@ -10,6 +10,7 @@ interface ProductCardProps {
   productIndex: number;
   productId: number;
   slug: string;
+  priority?: boolean;
   installmentCount?: number;
   installmentAmount?: number;
 }
@@ -20,6 +21,7 @@ export default function ProductCard({
   discount,
   imageUrl,
   slug,
+  priority,
   installmentCount,
   installmentAmount,
 }: ProductCardProps) {
@@ -40,6 +42,7 @@ export default function ProductCard({
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
             className={styles.image}
+            priority={priority}
           />
         ) : (
           <div className={styles.placeholder}>

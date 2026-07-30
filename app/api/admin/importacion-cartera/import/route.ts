@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
 import { importPortfolioBatch } from '@/lib/services/importPortfolioService';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
@@ -26,6 +27,15 @@ export async function POST(request: Request) {
     }
 
     const result = await importPortfolioBatch(supabase, body.rows);
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'portfolio_imported',
+      entity: 'portfolio',
+      entityId: null,
+      metadata: { importedCount: body.rows.length },
+    });
 
     return NextResponse.json({ result }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {

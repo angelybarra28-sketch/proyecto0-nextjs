@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
 import {
   listCreditAccountSummaries,
   listCreditAccountSummariesPaginated,
   createCreditAccount,
   getCreditDashboard,
 } from '@/lib/services/creditAccountService';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 
@@ -121,6 +122,19 @@ export async function POST(request: Request) {
       installmentAmount: body.installmentAmount,
       saleDate: body.saleDate,
       notes: body.notes,
+    });
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'credit_account_created',
+      entity: 'creditAccount',
+      entityId: account.id,
+      metadata: {
+        customerId: body.customerId,
+        installmentCount: body.installmentCount,
+        installmentAmount: body.installmentAmount,
+      },
     });
 
     return NextResponse.json(

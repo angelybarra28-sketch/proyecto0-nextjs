@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
@@ -42,6 +43,15 @@ export async function POST(request: Request) {
       nombre_original: file.name,
       path: storedPath,
       url,
+    });
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'proveedor_adjunto_uploaded',
+      entity: 'proveedorAdjunto',
+      entityId: adjunto.id,
+      metadata: { tipo, compraId, pagoId, nombreOriginal: file.name },
     });
 
     return NextResponse.json({ adjunto }, { status: 201, headers: { 'x-request-id': context.requestId } });

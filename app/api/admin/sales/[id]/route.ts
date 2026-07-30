@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getAdminSaleDetail, updateAdminSale, replaceAdminSaleItems } from '@/lib/services/adminSalesService';
 import { createCreditAccountFromSale } from '@/lib/services/saleToCreditService';
-import { requireAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import type { SaleStatus, SaleItemInsert } from '@/lib/supabase/types';
 
 interface Props {
@@ -85,6 +86,20 @@ export async function PATCH(request: Request, { params }: Props) {
         console.error('[PATCH sale] Error creating credit account:', creditError);
       }
     }
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'sale_updated',
+      entity: 'sale',
+      entityId: id,
+      metadata: {
+        updatedFields: Object.keys(fields),
+        itemsReplaced: body.items !== undefined,
+        saleStatus: body.sale_status,
+        creditAccountCreated: creditAccountId !== null,
+      },
+    });
 
     return NextResponse.json({ success: true, creditAccountId });
   } catch (error) {

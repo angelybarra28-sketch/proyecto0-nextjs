@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
 import { getAdminCategories, createAdminCategory } from '@/lib/services/adminCategoryService';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 import { measureAsync } from '@/lib/server/runtimeMetrics';
@@ -29,6 +30,14 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const category = await measureAsync('admin.categories', 'create', () => createAdminCategory(body), context.requestId);
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'category_created',
+      entity: 'category',
+      entityId: category.id,
+      metadata: { name: category.name, slug: category.slug },
+    });
     return NextResponse.json({ category }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
     logServerError({ area: 'admin.categories', action: 'create', requestId: context.requestId, error });

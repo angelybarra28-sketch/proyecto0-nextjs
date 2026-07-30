@@ -1,3 +1,5 @@
+export const revalidate = 60;
+
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
 import ProductCarousel from '@/components/Product/ProductCarousel';

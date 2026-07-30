@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
@@ -37,6 +38,15 @@ export async function PATCH(
       logServerError({ area: 'admin.customers', action: 'link', requestId: context.requestId, error });
       return errorResponse(error, context.requestId, 500);
     }
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'customer_user_linked',
+      entity: 'customer',
+      entityId: id,
+      metadata: { userId: body.userId, customerName: data.full_name },
+    });
 
     return NextResponse.json({ customer: data }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {

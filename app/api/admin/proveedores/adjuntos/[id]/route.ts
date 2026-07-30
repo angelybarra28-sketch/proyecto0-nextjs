@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
@@ -15,13 +16,22 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const supabase = getSupabaseAdminClient();
     if (!supabase) return errorResponse(new Error('Supabase no disponible'), context.requestId, 500);
 
-    const { data: adjunto } = await supabase.from('proveedor_adjuntos').select('path').eq('id', id).single();
+    const { data: adjunto } = await supabase.from('proveedor_adjuntos').select('path, nombre_original, tipo').eq('id', id).single();
     if (adjunto) {
       await supabase.storage.from('proveedor-adjuntos').remove([adjunto.path]);
     }
 
     const { error } = await supabase.from('proveedor_adjuntos').delete().eq('id', id);
     if (error) throw new Error(error.message);
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'proveedor_adjunto_deleted',
+      entity: 'proveedorAdjunto',
+      entityId: id,
+      metadata: adjunto ? { nombreOriginal: adjunto.nombre_original, tipo: adjunto.tipo } : undefined,
+    });
 
     return NextResponse.json({ success: true }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {

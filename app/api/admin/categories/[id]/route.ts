@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
 import { updateAdminCategory, deleteAdminCategory } from '@/lib/services/adminCategoryService';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 import { measureAsync } from '@/lib/server/runtimeMetrics';
@@ -19,6 +20,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const payload = await request.json();
     const category = await measureAsync('admin.categories', 'update', () => updateAdminCategory(id, payload), requestContext.requestId);
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'category_updated',
+      entity: 'category',
+      entityId: id,
+      metadata: { updatedFields: Object.keys(payload) },
+    });
     return NextResponse.json({ category }, { headers: { 'x-request-id': requestContext.requestId } });
   } catch (error) {
     const { id } = await context.params;
@@ -36,6 +45,13 @@ export async function DELETE(request: Request, context: RouteContext) {
 
     const { id } = await context.params;
     await measureAsync('admin.categories', 'delete', () => deleteAdminCategory(id), requestContext.requestId);
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'category_deleted',
+      entity: 'category',
+      entityId: id,
+    });
     return NextResponse.json({ success: true }, { headers: { 'x-request-id': requestContext.requestId } });
   } catch (error) {
     const { id } = await context.params;

@@ -96,7 +96,7 @@ export default function MobileMenu({ isOpen, onClose, products }: MobileMenuProp
       <div className={`${styles.drawer} ${isOpen ? styles.drawerOpen : ''}`}>
         <div className={styles.drawerHeader}>
           <Link href="/" className={styles.drawerLogoLink} onClick={onClose}>
-            <Image src="/logo/logo.png" alt="Logo" width={80} height={40} className={styles.drawerLogo} priority />
+            <Image src="/logo/logo.png" alt="Logo" width={80} height={40} className={styles.drawerLogo} />
           </Link>
         </div>
 

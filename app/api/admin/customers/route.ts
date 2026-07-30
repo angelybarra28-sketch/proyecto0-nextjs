@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 
@@ -215,6 +216,15 @@ export async function POST(request: Request) {
         500
       );
     }
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'customer_created',
+      entity: 'customer',
+      entityId: newCustomer.id,
+      metadata: { fullName: body.fullName.trim() },
+    });
 
     return NextResponse.json(
       { success: true, customerId: newCustomer.id, existing: false },

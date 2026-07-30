@@ -53,9 +53,17 @@ export default function ProductsSection({ title, subtitle, products, id }: Produ
   }, []);
 
   useEffect(() => {
-    function update() { setVisibleCount(getVisibleCount()); AOS.refresh(); }
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    function update() {
+      setVisibleCount(getVisibleCount());
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => AOS.refresh(), 150);
+    }
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   const scrollCarousel = useCallback((direction: 'left' | 'right') => {

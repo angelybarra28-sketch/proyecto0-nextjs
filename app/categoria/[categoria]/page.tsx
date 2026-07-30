@@ -1,3 +1,5 @@
+export const revalidate = 60;
+
 import Header from '@/components/Layout/Header';
 import CategoryFilters from '@/components/Sections/CategoryFilters';
 import Footer from '@/components/Layout/Footer';

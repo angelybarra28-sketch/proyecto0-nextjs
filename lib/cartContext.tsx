@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 
 export interface CartItem {
   id: number;
@@ -27,34 +27,27 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-function readStoredCartItems(): CartItem[] {
-  const saved = window.localStorage.getItem('cart');
-  if (!saved) return [];
-
-  try {
-    return JSON.parse(saved) as CartItem[];
-  } catch (error) {
-    console.error('Error loading cart:', error);
-    return [];
-  }
-}
-
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window !== 'undefined') return readStoredCartItems();
-    return [];
-  });
-
-  const isFirstRender = useRef(true);
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
+    const saved = window.localStorage.getItem('cart');
+    if (saved) {
+      try {
+        setItems(JSON.parse(saved) as CartItem[]);
+      } catch (error) {
+        console.error('Error loading cart:', error);
+      }
     }
+    setIsHydrated(true);
+  }, []);
 
-    window.localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+  useEffect(() => {
+    if (isHydrated) {
+      window.localStorage.setItem('cart', JSON.stringify(items));
+    }
+  }, [items, isHydrated]);
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'>) => {
     setItems(prevItems => {

@@ -95,6 +95,18 @@ export function AdminOverviewPage() {
           </button>
         </Link>
 
+        <Link href="/admin/auditoria">
+          <button className={styles.adminActionButton}>
+            Auditoría
+          </button>
+        </Link>
+
+        <Link href="/admin/configuracion">
+          <button className={styles.adminActionButton}>
+            Configuración
+          </button>
+        </Link>
+
         <Link href="/">
           <button className={styles.adminActionButton}>
             Volver al inicio

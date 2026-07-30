@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireStrictAdminUser } from '@/lib/auth/server';
+import { getAdminUserContext, requireStrictAdminUser } from '@/lib/auth/server';
 import { previewPortfolioFile } from '@/lib/services/importPortfolioService';
+import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
 
@@ -28,6 +29,15 @@ export async function POST(request: Request) {
 
     const bytes = await file.arrayBuffer();
     const preview = previewPortfolioFile(bytes);
+
+    const adminUser = await getAdminUserContext();
+    await logAdminAction({
+      adminUserId: adminUser?.userId ?? null,
+      action: 'portfolio_preview',
+      entity: 'portfolio',
+      entityId: null,
+      metadata: { fileName: file.name, fileSize: file.size, rowCount: preview.rows?.length ?? 0 },
+    });
 
     return NextResponse.json({ preview }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
