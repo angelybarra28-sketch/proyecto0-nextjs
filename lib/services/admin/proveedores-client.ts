@@ -143,7 +143,11 @@ export async function createPago(input: ProveedorPagoInsert): Promise<ProveedorP
 
 export async function deleteCompra(id: string): Promise<void> {
   const response = await fetch(`/api/admin/proveedores/compras/${id}`, { method: 'DELETE' });
-  if (!response.ok) throw new Error('No se pudo eliminar la compra');
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const msg = body?.error?.message || 'No se pudo eliminar la compra';
+    throw new Error(msg);
+  }
 }
 
 export async function deletePago(id: string): Promise<void> {

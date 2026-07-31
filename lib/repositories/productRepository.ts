@@ -76,6 +76,9 @@ const productColumns = `
   specifications,
   features,
   created_at,
+  deleted_at,
+  deleted_by,
+  delete_reason,
   categories:category_id (name, slug),
   product_categories!left (
     category_id,
@@ -103,6 +106,9 @@ const publicProductColumns = `
   specifications,
   features,
   created_at,
+  deleted_at,
+  deleted_by,
+  delete_reason,
   categories:category_id (name, slug),
   product_categories!left (
     category_id,
@@ -114,6 +120,7 @@ function productsQuery(supabase: SupabaseClient) {
   return supabase
     .from('products')
     .select(productColumns)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 }
 
@@ -122,8 +129,17 @@ function activeProductsQuery(supabase: SupabaseClient) {
     .from('products')
     .select(productColumns)
     .eq('status', 'ACTIVE')
+    .is('deleted_at', null)
     .order('featured', { ascending: false })
     .order('name', { ascending: true });
+}
+
+function trashedProductsQuery(supabase: SupabaseClient) {
+  return supabase
+    .from('products')
+    .select(productColumns)
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false });
 }
 
 function getProductOrderColumn(sortKey: ProductListSortKey): string {
@@ -161,7 +177,8 @@ export async function listProductsPaginated(
 ): Promise<PaginatedProductsResult> {
   let query = supabase
     .from('products')
-    .select(productColumns, { count: 'exact' });
+    .select(productColumns, { count: 'exact' })
+    .is('deleted_at', null);
 
   if (input.filters.status !== 'all') {
     query = query.eq('status', input.filters.status);
@@ -330,6 +347,7 @@ export async function updateProduct(
     .from('products')
     .update(payload)
     .eq('id', productId)
+    .is('deleted_at', null)
     .select(productColumns)
     .single();
 
@@ -428,6 +446,7 @@ export async function listProductsByCategory(
     .from('products')
     .select(publicProductColumns)
     .eq('status', 'ACTIVE')
+    .is('deleted_at', null)
     .in('category_id', categoryIds)
     .order('featured', { ascending: false })
     .order('name', { ascending: true });
@@ -448,6 +467,7 @@ export async function listProductsByCategory(
       .from('products')
       .select(publicProductColumns)
       .eq('status', 'ACTIVE')
+      .is('deleted_at', null)
       .in('id', secondaryProductIds)
       .order('featured', { ascending: false })
       .order('name', { ascending: true });
@@ -478,7 +498,47 @@ export async function listFeaturedProducts(supabase: SupabaseClient): Promise<Ca
   return (data ?? []) as unknown as CatalogProductRow[];
 }
 
-export async function deleteProduct(
+export async function moveProductToTrash(
+  supabase: SupabaseClient,
+  productId: string,
+  deletedBy: string | null,
+  deleteReason?: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('products')
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: deletedBy,
+      delete_reason: deleteReason || null,
+    })
+    .eq('id', productId)
+    .is('deleted_at', null);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function restoreProduct(
+  supabase: SupabaseClient,
+  productId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('products')
+    .update({
+      deleted_at: null,
+      deleted_by: null,
+      delete_reason: null,
+    })
+    .eq('id', productId)
+    .not('deleted_at', 'is', null);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function hardDeleteProduct(
   supabase: SupabaseClient,
   productId: string
 ): Promise<void> {
@@ -497,6 +557,74 @@ export async function deleteProduct(
   if (error) {
     throw error;
   }
+}
+
+export async function listTrashedProducts(supabase: SupabaseClient): Promise<CatalogProductRow[]> {
+  const { data, error } = await trashedProductsQuery(supabase);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as unknown as CatalogProductRow[];
+}
+
+export async function countTrashedProducts(supabase: SupabaseClient): Promise<number> {
+  const { count, error } = await supabase
+    .from('products')
+    .select('id', { count: 'exact', head: true })
+    .not('deleted_at', 'is', null);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+export async function getTrashedProductById(
+  supabase: SupabaseClient,
+  productId: string
+): Promise<CatalogProductRow | null> {
+  const { data, error } = await trashedProductsQuery(supabase)
+    .eq('id', productId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as unknown as CatalogProductRow | null;
+}
+
+export type ProductReferenceCounts = {
+  saleItems: number;
+  creditItems: number;
+};
+
+export async function countProductReferences(
+  supabase: SupabaseClient,
+  productId: string,
+  productName: string
+): Promise<ProductReferenceCounts> {
+  const { count: saleItems, error: saleError } = await supabase
+    .from('sale_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('product_id', productId);
+
+  if (saleError) throw saleError;
+
+  const { count: creditItems, error: creditError } = await supabase
+    .from('credit_account_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('product_name', productName);
+
+  if (creditError) throw creditError;
+
+  return {
+    saleItems: saleItems ?? 0,
+    creditItems: creditItems ?? 0,
+  };
 }
 
 

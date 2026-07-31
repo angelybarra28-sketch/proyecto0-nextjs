@@ -1,31 +1,42 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { buildManifest } from './manifest';
+import { BACKUP_TABLES } from './types';
 import type { BackupPayload } from './types';
 
-const TABLES = [
-  'categories',
-  'products',
-  'product_categories',
-  'customers',
-  'profiles',
-  'sales',
-  'sale_items',
-  'installments',
-  'payments',
-  'payment_allocations',
-  'credit_accounts',
-  'credit_account_items',
-  'credit_installments',
-  'credit_payments',
-  'credit_payment_allocations',
-  'credit_collection_notes',
-  'proveedores',
-  'proveedor_compras',
-  'proveedor_compra_items',
-  'proveedor_pagos',
-  'proveedor_adjuntos',
-  'admin_audit_logs',
-] as const;
+const ROW_CHUNK_SIZE = 1000;
+
+const ORDER_COLUMNS_BY_TABLE: Record<string, string[]> = {
+  product_categories: ['product_id', 'category_id'],
+  profiles: ['user_id'],
+};
+
+async function fetchTableRows(supabase: SupabaseClient, table: string): Promise<unknown[]> {
+  const orderColumns = ORDER_COLUMNS_BY_TABLE[table] ?? ['id'];
+
+  let builder = supabase.from(table).select('*');
+  for (const column of orderColumns) {
+    builder = builder.order(column, { ascending: true });
+  }
+
+  const allRows: unknown[] = [];
+  let start = 0;
+
+  for (;;) {
+    const { data, error } = await builder.range(start, start + ROW_CHUNK_SIZE - 1);
+    if (error) {
+      throw new Error(`Failed to export table "${table}": ${error.message}`);
+    }
+    const rows = data ?? [];
+    allRows.push(...rows);
+    if (rows.length < ROW_CHUNK_SIZE) {
+      break;
+    }
+    start += ROW_CHUNK_SIZE;
+  }
+
+  return allRows;
+}
 
 export async function exportBackup(): Promise<BackupPayload> {
   const supabase = getSupabaseAdminClient();
@@ -38,12 +49,9 @@ export async function exportBackup(): Promise<BackupPayload> {
   const appVersion = process.env.npm_package_version ?? '0.0.0';
 
   const results = await Promise.all(
-    TABLES.map(async (table) => {
-      const { data, error } = await supabase.from(table).select('*');
-      if (error) {
-        throw new Error(`Failed to export table "${table}": ${error.message}`);
-      }
-      return { table, rows: data ?? [] };
+    BACKUP_TABLES.map(async (table) => {
+      const rows = await fetchTableRows(supabase, table);
+      return { table, rows };
     }),
   );
 
@@ -56,7 +64,7 @@ export async function exportBackup(): Promise<BackupPayload> {
   }
 
   const manifest = buildManifest(
-    [...TABLES],
+    [...BACKUP_TABLES],
     rowCounts,
     projectUrl,
     appVersion,

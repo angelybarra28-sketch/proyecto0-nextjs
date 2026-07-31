@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { ProveedorCompraRow, ProveedorCompraItemRow, ProveedorPagoRow, ProveedorAdjuntoRow } from '@/lib/supabase/types';
-import { fetchCompraDetail, createCompraItems, deleteCompraItem, uploadProveedorAdjunto, deleteProveedorAdjunto } from '@/lib/services/admin/client';
+import { fetchCompraDetail, createCompraItems, deleteCompraItem, uploadProveedorAdjunto, deleteProveedorAdjunto, deleteCompra } from '@/lib/services/admin/client';
 import { IndicadorEstadoBadge } from './ProveedorIndicadores';
 import { RegistrarPagoModal } from './RegistrarPagoModal';
 import styles from '@/styles/Admin.module.css';
@@ -23,6 +23,8 @@ export function CompraDetailView({ compraId, onBack, onUpdated }: Props) {
   const [items, setItems] = useState<{ descripcion: string; cantidad: string; costo_unitario: string; subtotal: string }[]>([]);
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -90,6 +92,21 @@ export function CompraDetailView({ compraId, onBack, onUpdated }: Props) {
   if (loading) return <p className={styles.empty}>Cargando detalle...</p>;
   if (!data) return <p className={styles.empty}>No se encontró la compra</p>;
 
+  const handleDeleteCompra = async () => {
+    if (!confirm(`¿Eliminar la compra ${compra.numero_factura ?? 'sin factura'}? Esta acción no se puede deshacer.`)) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteCompra(compraId);
+      onUpdated();
+      onBack();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'No se pudo eliminar la compra');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const { compra, items: compraItems, pagos, adjuntos } = data;
 
   return (
@@ -98,10 +115,22 @@ export function CompraDetailView({ compraId, onBack, onUpdated }: Props) {
         <button onClick={onBack} className={styles.compactBtn}>
           ← Volver a Compras
         </button>
-        <button onClick={() => setShowPagoModal(true)} className={styles.compactBtn} style={{ color: '#c8a87c' }}>
-          Registrar Pago
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setShowPagoModal(true)} className={styles.compactBtn} style={{ color: '#c8a87c' }}>
+            Registrar Pago
+          </button>
+          <button onClick={handleDeleteCompra} disabled={deleting} className={styles.compactBtn} style={{ color: '#f87171' }}>
+            {deleting ? 'Eliminando...' : 'Eliminar compra'}
+          </button>
+        </div>
       </div>
+
+      {deleteError && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 16, padding: '10px 12px', background: 'rgba(248,113,113,0.12)', border: '1px solid #f87171', borderRadius: 8, color: '#f87171', fontSize: 13 }}>
+          <span>{deleteError}</span>
+          <button onClick={() => setDeleteError(null)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 14 }}>✕</button>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 20 }}>
         <div style={{ background: '#262422', borderRadius: 10, padding: 12, border: '1px solid #363330' }}>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
 import { validateBackup } from '@/lib/services/admin/backup';
+import { computeChecksum } from '@/lib/services/admin/backup/checksum';
 import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
@@ -22,7 +23,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const startedAt = Date.now();
     const result = await measureAsync('admin.backup', 'validate', () => Promise.resolve(validateBackup(rawJson)), context.requestId);
+    const durationMs = Date.now() - startedAt;
+
+    const checksum = computeChecksum(rawJson);
 
     const adminUser = await getAdminUserContext();
 
@@ -33,6 +38,9 @@ export async function POST(request: Request) {
       entityId: null,
       metadata: {
         valid: result.valid,
+        version: result.summary.version,
+        checksum,
+        durationMs,
         tables: result.summary.tables,
         rows: result.summary.rows,
         warnings: result.warnings.length,

@@ -2,7 +2,7 @@ import { adaptAdminCatalogProduct, type AdminCatalogProduct } from '@/lib/adapte
 import { listActiveCategories } from '@/lib/repositories/categoryRepository';
 import {
   createProduct,
-  deleteProduct,
+  getProductById,
   listProductsPaginated,
   listAllProducts,
   updateProduct,
@@ -21,6 +21,8 @@ import {
   type AdminListResponse,
   type AdminSortDirection,
 } from '@/lib/services/admin/types';
+import { moveAdminProductToTrash } from '@/lib/services/admin/trash';
+import { recordProductPriceChange } from '@/lib/services/admin/product-price-history';
 
 export type AdminCatalogCategory = {
   id: string;
@@ -77,6 +79,7 @@ export type AdminProductPayload = {
   tendencias: boolean;
   imageUrl: string;
   carouselImages: string[];
+  priceChangeReason?: string | null;
 };
 
 function normalizeProductFilters(input: AdminProductListInput): AdminProductFilters {
@@ -264,7 +267,8 @@ export async function createAdminProduct(payload: AdminProductPayload): Promise<
 
 export async function updateAdminProduct(
   productId: string,
-  payload: Partial<AdminProductPayload>
+  payload: Partial<AdminProductPayload>,
+  adminUserId: string | null = null
 ): Promise<AdminCatalogProduct> {
   const supabase = getSupabaseAdminClient();
 
@@ -272,23 +276,45 @@ export async function updateAdminProduct(
     throw new Error('Supabase no está configurado');
   }
 
+  const priceChangeReason =
+    typeof payload.priceChangeReason === 'string' && payload.priceChangeReason.trim()
+      ? payload.priceChangeReason.trim()
+      : null;
+
   const input = validateProductPayload(payload, false) as ProductUpdateInput;
   await assertValidCategories(input.categoryIds);
   if (input.categoryId && input.categoryIds && !input.categoryIds.includes(input.categoryId)) {
     input.categoryIds = [input.categoryId, ...input.categoryIds];
   }
   await assertUniqueSlug(productId, input.slug);
+
+  let oldPrice: number | null = null;
+  if (input.price !== undefined) {
+    const current = await getProductById(supabase, productId);
+    if (current) {
+      oldPrice = Number(current.price);
+    }
+  }
+
   const product = await updateProduct(supabase, productId, input);
+
+  if (oldPrice !== null && input.price !== undefined && Number(oldPrice) !== Number(input.price)) {
+    await recordProductPriceChange({
+      productId,
+      oldPrice,
+      newPrice: Number(input.price),
+      changedBy: adminUserId,
+      reason: priceChangeReason,
+    });
+  }
 
   return adaptAdminCatalogProduct(product);
 }
 
-export async function deleteAdminProduct(productId: string): Promise<void> {
-  const supabase = getSupabaseAdminClient();
-
-  if (!supabase) {
-    throw new Error('Supabase no está configurado');
-  }
-
-  await deleteProduct(supabase, productId);
+export async function deleteAdminProduct(
+  productId: string,
+  deletedBy: string | null,
+  deleteReason?: string | null
+): Promise<AdminCatalogProduct> {
+  return moveAdminProductToTrash(productId, deletedBy, deleteReason ?? null);
 }

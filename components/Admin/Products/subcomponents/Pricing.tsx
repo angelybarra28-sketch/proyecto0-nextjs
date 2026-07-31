@@ -7,12 +7,14 @@ type PricingProps = {
   referencePrice: string;
   installmentCount: string;
   installmentAmount: string;
+  priceChangeReason: string;
   disabled: boolean;
   isCreate: boolean;
   onPriceChange: (value: string) => void;
   onReferencePriceChange: (value: string) => void;
   onInstallmentCountChange: (value: string) => void;
   onInstallmentAmountChange: (value: string) => void;
+  onPriceChangeReasonChange: (value: string) => void;
 };
 
 export function Pricing({
@@ -20,12 +22,14 @@ export function Pricing({
   referencePrice,
   installmentCount,
   installmentAmount,
+  priceChangeReason,
   disabled,
   isCreate,
   onPriceChange,
   onReferencePriceChange,
   onInstallmentCountChange,
   onInstallmentAmountChange,
+  onPriceChangeReasonChange,
 }: PricingProps) {
   return (
     <>
@@ -65,6 +69,23 @@ export function Pricing({
           )}
         </td>
       </tr>
+      {!isCreate && (
+        <tr>
+          <td>Motivo del cambio</td>
+          <td>
+            <input
+              type="text"
+              value={priceChangeReason}
+              disabled={disabled}
+              onChange={(e) => onPriceChangeReasonChange(e.target.value)}
+              placeholder="Aumento proveedor, Promoción, Actualización de lista, Corrección..."
+            />
+            <small style={{ display: 'block', color: '#888', marginTop: '0.25rem' }}>
+              Opcional. Se guardará en el historial de precios cuando cambies el precio de venta.
+            </small>
+          </td>
+        </tr>
+      )}
       <tr>
         <td>Cuotas</td>
         <td>

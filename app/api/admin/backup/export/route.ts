@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
 import { exportBackup } from '@/lib/services/admin/backup';
+import { computeChecksum } from '@/lib/services/admin/backup/checksum';
 import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
 import { createRequestContext, logServerError } from '@/lib/server/logging';
@@ -13,13 +14,16 @@ export async function POST(request: Request) {
     const authorizationError = await requireAdminUser();
     if (authorizationError) return authorizationError;
 
+    const startedAt = Date.now();
     const payload = await measureAsync('admin.backup', 'export', () => exportBackup(), context.requestId);
+    const durationMs = Date.now() - startedAt;
 
     const adminUser = await getAdminUserContext();
 
     const totalRows = Object.values(payload.manifest.rowCounts).reduce((sum, count) => sum + count, 0);
     const jsonString = JSON.stringify(payload);
     const fileSizeBytes = new TextEncoder().encode(jsonString).length;
+    const checksum = computeChecksum(jsonString);
 
     await logAdminAction({
       adminUserId: adminUser?.userId ?? null,
@@ -27,6 +31,9 @@ export async function POST(request: Request) {
       entity: 'backup',
       entityId: null,
       metadata: {
+        version: payload.manifest.version,
+        checksum,
+        durationMs,
         exportedTables: payload.manifest.tables,
         totalRows,
         fileSizeBytes,

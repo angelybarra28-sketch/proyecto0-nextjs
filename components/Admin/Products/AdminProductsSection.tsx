@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { AdminProductEditForm } from '@/components/Admin/Products/AdminProductEditForm';
 import { AdminProductCreateForm } from '@/components/Admin/Products/AdminProductCreateForm';
 import { AdminProductsTable } from '@/components/Admin/Products/AdminProductsTable';
 import type { AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
 import type { AdminCatalogCategory, AdminProductPayload } from '@/lib/services/adminCatalogService';
-import { deleteAdminProduct as apiDeleteProduct, fetchAdminProducts, updateAdminProduct, createAdminProduct } from '@/lib/services/admin/client';
+import { deleteAdminProduct as apiDeleteProduct, fetchAdminProducts, updateAdminProduct, createAdminProduct, fetchTrashedProducts } from '@/lib/services/admin/client';
 import type { AdminPagination } from '@/lib/services/admin/types';
 import { useAdminProductTable } from '@/hooks/useAdminProductTable';
 import { migrateProductImagesAction } from '@/app/actions/migrateProductImages';
@@ -31,7 +32,18 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [trashCount, setTrashCount] = useState(0);
   const table = useAdminProductTable(pagination);
+
+  const loadTrashCount = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const payload = await fetchTrashedProducts(signal);
+      setTrashCount(payload.total);
+    } catch (loadError) {
+      if (isAbortError(loadError)) return;
+      console.error('Error loading trash count:', loadError);
+    }
+  }, []);
 
   const loadProducts = useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true);
@@ -55,6 +67,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     if (!enabled) return;
     const controller = new AbortController();
     void loadProducts(controller.signal);
+    void loadTrashCount(controller.signal);
 
     migrateEnovaUrlsAction().then((result) => {
       if (controller.signal.aborted) return;
@@ -70,7 +83,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     }).catch(() => { /* silent */ });
 
     return () => controller.abort();
-  }, [enabled, loadProducts]);
+  }, [enabled, loadProducts, loadTrashCount]);
 
   const handleToggleStatus = async (product: AdminCatalogProduct) => {
     setIsSaving(true);
@@ -140,18 +153,18 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
     }
   };
 
-  const handleDelete = async (product: AdminCatalogProduct) => {
+  const handleDelete = async (product: AdminCatalogProduct, reason?: string) => {
     setIsSaving(true);
     setError('');
     setNotice('');
 
     try {
-      await apiDeleteProduct(product.id);
-      await loadProducts();
-      setNotice('Producto eliminado correctamente');
+      await apiDeleteProduct(product.id, reason);
+      await Promise.all([loadProducts(), loadTrashCount()]);
+      setNotice('Producto movido a la papelera');
     } catch (deleteError) {
-      console.error('Error deleting product:', deleteError);
-      setError(deleteError instanceof Error ? deleteError.message : 'No se pudo eliminar el producto');
+      console.error('Error moving product to trash:', deleteError);
+      setError(deleteError instanceof Error ? deleteError.message : 'No se pudo mover el producto a la papelera');
     } finally {
       setIsSaving(false);
     }
@@ -272,7 +285,7 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
       {notice && <p className={styles.adminAlertSuccess}>{notice}</p>}
       
       {!showCreateForm && (
-        <div style={{ marginBottom: '1rem' }}>
+        <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             className={styles.deleteBtn}
             onClick={() => setShowCreateForm(true)}
@@ -280,6 +293,11 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
           >
             + Crear producto nuevo
           </button>
+          <Link href="/admin/productos/papelera">
+            <button className={styles.adminActionButton} disabled={isSaving}>
+              Papelera ({trashCount})
+            </button>
+          </Link>
         </div>
       )}
 

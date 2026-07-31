@@ -31,8 +31,27 @@ export type CatalogProductRow = {
   specifications: unknown;
   features: unknown;
   created_at?: string;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+  delete_reason?: string | null;
   categories: Pick<CatalogCategoryRow, 'name' | 'slug'> | Array<Pick<CatalogCategoryRow, 'name' | 'slug'>> | null;
   product_categories?: Array<{ category_id: string; category: Pick<CatalogCategoryRow, 'id' | 'name' | 'slug'> }>;
+};
+
+export type AdminTrashedProduct = {
+  id: string;
+  legacyProductId: number | null;
+  name: string;
+  slug: string;
+  categoryName: string;
+  categoryNames: string[];
+  imageUrl: string;
+  status: CatalogProductRow['status'];
+  stock: number;
+  deletedAt: string;
+  deletedBy: string | null;
+  deletedByName: string | null;
+  deleteReason: string | null;
 };
 
 export type AdminCatalogProduct = {
@@ -218,6 +237,26 @@ export function adaptAdminCatalogProduct(row: CatalogProductRow): AdminCatalogPr
     imageUrl: row.image_url ?? '',
     carouselImages: toStringArray(row.carousel_images),
     createdAt: row.created_at ?? null,
+  };
+}
+
+export function adaptTrashedProduct(row: CatalogProductRow, deletedByName: string | null): AdminTrashedProduct {
+  const catInfo = extractCategoryIds(row);
+
+  return {
+    id: row.id,
+    legacyProductId: row.legacy_product_id,
+    name: row.name,
+    slug: row.slug,
+    categoryName: catInfo.categoryName,
+    categoryNames: catInfo.categoryNames,
+    imageUrl: row.image_url ?? '',
+    status: row.status,
+    stock: row.stock,
+    deletedAt: row.deleted_at ?? '',
+    deletedBy: row.deleted_by ?? null,
+    deletedByName,
+    deleteReason: row.delete_reason ?? null,
   };
 }
 

@@ -23,7 +23,7 @@ type AdminProductsTableProps = {
   isReadOnly: boolean;
   onEdit: (product: AdminCatalogProduct) => void;
   onToggleStatus: (product: AdminCatalogProduct) => Promise<void>;
-  onDelete?: (product: AdminCatalogProduct) => void;
+  onDelete?: (product: AdminCatalogProduct, reason?: string) => void;
   onUpdateCategory?: (productId: string, categoryId: string) => Promise<void>;
   onUpdateInstallmentCount?: (productId: string, count: number) => Promise<void>;
   onUpdateInstallmentAmount?: (productId: string, amount: number) => Promise<void>;
@@ -34,8 +34,9 @@ type AdminProductsTableProps = {
   onUpdateStock?: (productId: string, stock: number) => Promise<void>;
 };
 
-function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalogProduct; isReadOnly: boolean; onDelete?: (product: AdminCatalogProduct) => void }) {
+function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalogProduct; isReadOnly: boolean; onDelete?: (product: AdminCatalogProduct, reason?: string) => void }) {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [reason, setReason] = useState('');
 
   if (!onDelete) return null;
 
@@ -65,30 +66,51 @@ function DeleteButton({ product, isReadOnly, onDelete }: { product: AdminCatalog
           <div
             style={{
               background: '#1a1a2e',
-              border: '1px solid #e74c3c',
+              border: '1px solid #e7a76f',
               borderRadius: 8,
               padding: '1.5rem',
-              maxWidth: 400,
+              maxWidth: 420,
               width: '90%',
               textAlign: 'center',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <p style={{ color: '#e74c3c', fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.75rem' }}>
-              ¿Estás seguro que deseas eliminar este producto?
+            <p style={{ color: '#e7a76f', fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.75rem' }}>
+              ¿Deseás mover este producto a la papelera?
             </p>
-            <p style={{ color: '#b8a89c', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+            <p style={{ color: '#b8a89c', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+              Podrás restaurarlo más adelante.
+            </p>
+            <p style={{ color: '#f5f2ec', fontWeight: 600, marginBottom: '0.75rem' }}>
               {product.name}
             </p>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Motivo (opcional)"
+              rows={2}
+              style={{
+                width: '100%',
+                background: '#262422',
+                border: '1px solid #363330',
+                borderRadius: 6,
+                color: '#f5f2ec',
+                padding: '0.5rem',
+                fontSize: '0.85rem',
+                marginBottom: '1rem',
+                resize: 'vertical',
+                boxSizing: 'border-box',
+              }}
+            />
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
               <button
                 className={styles.deleteBtn}
                 onClick={() => {
                   setShowConfirm(false);
-                  onDelete(product);
+                  onDelete(product, reason.trim() || undefined);
                 }}
               >
-                Sí, eliminar
+                Mover a papelera
               </button>
               <button
                 className={styles.adminTableActionButton}

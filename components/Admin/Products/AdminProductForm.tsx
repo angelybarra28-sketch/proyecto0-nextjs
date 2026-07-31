@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { AdminCatalogProduct } from '@/lib/adapters/catalogAdapter';
 import type { AdminCatalogCategory, AdminProductPayload } from '@/lib/services/adminCatalogService';
 import styles from '@/styles/Admin.module.css';
@@ -10,6 +11,7 @@ import { Pricing } from './subcomponents/Pricing';
 import { Categories } from './subcomponents/Categories';
 import { Stock } from './subcomponents/Stock';
 import { Status } from './subcomponents/Status';
+import { PriceHistoryTab } from './subcomponents/PriceHistoryTab';
 
 type AdminProductFormProps = {
   mode: 'create' | 'edit';
@@ -23,6 +25,19 @@ type AdminProductFormProps = {
 export function AdminProductForm({ mode, product, categories, isSaving, onSubmit, onCancel }: AdminProductFormProps) {
   const form = useProductForm({ mode, product, categories, isSaving, onSubmit, onCancel });
   const { isCreate, cascade, pricing } = form;
+  const [activeTab, setActiveTab] = useState<'datos' | 'historial'>('datos');
+
+  const tabButtonStyle = (active: boolean): React.CSSProperties => ({
+    padding: '8px 16px',
+    border: 'none',
+    borderRadius: '6px 6px 0 0',
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontSize: '14px',
+    background: active ? '#4a433a' : 'transparent',
+    color: active ? '#f5f2ec' : '#f7c59f',
+    borderBottom: active ? '2px solid #f7c59f' : '2px solid transparent',
+  });
 
   return (
     <section className={styles.section}>
@@ -30,7 +45,25 @@ export function AdminProductForm({ mode, product, categories, isSaving, onSubmit
 
       {isCreate && <CreateExtras onImport={form.handleImport} />}
 
-      <form onSubmit={form.handleSubmit}>
+      {!isCreate && (
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '1rem' }}>
+          <button type="button" style={tabButtonStyle(activeTab === 'datos')} onClick={() => setActiveTab('datos')}>
+            Datos del producto
+          </button>
+          <button
+            type="button"
+            style={tabButtonStyle(activeTab === 'historial')}
+            onClick={() => setActiveTab('historial')}
+          >
+            Historial de precios
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'historial' && product ? (
+        <PriceHistoryTab productId={product.id} />
+      ) : (
+        <form onSubmit={form.handleSubmit}>
         <div className={styles.tableContainer}>
           <table className={styles.table}>
             <tbody>
@@ -48,12 +81,14 @@ export function AdminProductForm({ mode, product, categories, isSaving, onSubmit
                 referencePrice={pricing.referencePrice}
                 installmentCount={pricing.installmentCount}
                 installmentAmount={pricing.installmentAmount}
+                priceChangeReason={form.priceChangeReason}
                 disabled={form.controlsDisabled}
                 isCreate={isCreate}
                 onPriceChange={pricing.handlePriceChange}
                 onReferencePriceChange={pricing.handleReferencePriceChange}
                 onInstallmentCountChange={pricing.handleInstallmentCountChange}
                 onInstallmentAmountChange={pricing.handleInstallmentAmountChange}
+                onPriceChangeReasonChange={form.setPriceChangeReason}
               />
 
               <Stock stock={form.stock} disabled={form.controlsDisabled} onChange={form.setStock} />
@@ -269,7 +304,8 @@ export function AdminProductForm({ mode, product, categories, isSaving, onSubmit
             Cancelar
           </button>
         </div>
-      </form>
+        </form>
+      )}
     </section>
   );
 }

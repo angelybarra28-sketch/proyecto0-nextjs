@@ -1,3 +1,4 @@
+import { BACKUP_VERSION } from './types';
 import type { BackupManifest } from './types';
 
 export function buildManifest(
@@ -7,7 +8,7 @@ export function buildManifest(
   appVersion: string,
 ): BackupManifest {
   return {
-    version: '1.0',
+    version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     projectUrl,
     tables,

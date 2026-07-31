@@ -1,5 +1,5 @@
 import { computeChecksum } from './checksum';
-import type { BackupPayload } from './types';
+import { getBackupTables, SUPPORTED_BACKUP_VERSIONS } from './types';
 
 export interface ValidationResult {
   valid: boolean;
@@ -13,33 +13,6 @@ export interface ValidationResult {
     exportedAt: string;
   };
 }
-
-const EXPECTED_TABLES = [
-  'categories',
-  'products',
-  'product_categories',
-  'customers',
-  'profiles',
-  'sales',
-  'sale_items',
-  'installments',
-  'payments',
-  'payment_allocations',
-  'credit_accounts',
-  'credit_account_items',
-  'credit_installments',
-  'credit_payments',
-  'credit_payment_allocations',
-  'credit_collection_notes',
-  'proveedores',
-  'proveedor_compras',
-  'proveedor_compra_items',
-  'proveedor_pagos',
-  'proveedor_adjuntos',
-  'admin_audit_logs',
-] as const;
-
-const EXPECTED_SET = new Set<string>(EXPECTED_TABLES);
 
 interface ForeignKeyRule {
   table: string;
@@ -58,9 +31,9 @@ const FK_RULES: ForeignKeyRule[] = [
   { table: 'payments', column: 'sale_id', referencedTable: 'sales', referencedColumn: 'id' },
   { table: 'payments', column: 'customer_id', referencedTable: 'customers', referencedColumn: 'id' },
   { table: 'credit_accounts', column: 'customer_id', referencedTable: 'customers', referencedColumn: 'id' },
+  { table: 'credit_account_items', column: 'credit_account_id', referencedTable: 'credit_accounts', referencedColumn: 'id' },
   { table: 'credit_installments', column: 'credit_account_id', referencedTable: 'credit_accounts', referencedColumn: 'id' },
   { table: 'credit_payments', column: 'credit_account_id', referencedTable: 'credit_accounts', referencedColumn: 'id' },
-  { table: 'credit_account_items', column: 'credit_account_id', referencedTable: 'credit_accounts', referencedColumn: 'id' },
   { table: 'credit_payment_allocations', column: 'credit_payment_id', referencedTable: 'credit_payments', referencedColumn: 'id' },
   { table: 'credit_payment_allocations', column: 'credit_installment_id', referencedTable: 'credit_installments', referencedColumn: 'id' },
   { table: 'credit_collection_notes', column: 'credit_account_id', referencedTable: 'credit_accounts', referencedColumn: 'id' },
@@ -68,6 +41,7 @@ const FK_RULES: ForeignKeyRule[] = [
   { table: 'proveedor_compra_items', column: 'compra_id', referencedTable: 'proveedor_compras', referencedColumn: 'id' },
   { table: 'proveedor_pagos', column: 'proveedor_id', referencedTable: 'proveedores', referencedColumn: 'id' },
   { table: 'proveedor_adjuntos', column: 'compra_id', referencedTable: 'proveedor_compras', referencedColumn: 'id' },
+  { table: 'product_price_history', column: 'product_id', referencedTable: 'products', referencedColumn: 'id' },
 ];
 
 function buildIdIndex(data: Record<string, unknown[]>): Record<string, Set<string>> {
@@ -85,25 +59,31 @@ function buildIdIndex(data: Record<string, unknown[]>): Record<string, Set<strin
   return index;
 }
 
-function validateManifest(payload: unknown): string[] {
+function validateManifest(payload: unknown): { errors: string[]; version: string } {
   const errors: string[] = [];
+  let version = '';
 
   if (!payload || typeof payload !== 'object') {
     errors.push('El backup no contiene un objeto válido');
-    return errors;
+    return { errors, version };
   }
 
   const p = payload as Record<string, unknown>;
 
   if (!p.manifest || typeof p.manifest !== 'object') {
     errors.push('manifest: campo obligatorio faltante o inválido');
-    return errors;
+    return { errors, version };
   }
 
   const m = p.manifest as Record<string, unknown>;
 
   if (!m.version || typeof m.version !== 'string') {
     errors.push('manifest.version: campo obligatorio faltante o inválido');
+  } else {
+    version = m.version;
+    if (!SUPPORTED_BACKUP_VERSIONS.includes(version as (typeof SUPPORTED_BACKUP_VERSIONS)[number])) {
+      errors.push(`manifest.version: versión "${version}" no soportada (soportadas: ${SUPPORTED_BACKUP_VERSIONS.join(', ')})`);
+    }
   }
 
   if (!m.exportedAt || typeof m.exportedAt !== 'string') {
@@ -120,11 +100,12 @@ function validateManifest(payload: unknown): string[] {
     errors.push('manifest.projectUrl: campo obligatorio faltante o inválido');
   }
 
-  return errors;
+  return { errors, version };
 }
 
-function validateDataStructure(data: unknown): string[] {
+function validateDataStructure(data: unknown, expectedTables: readonly string[]): string[] {
   const errors: string[] = [];
+  const expectedSet = new Set<string>(expectedTables);
 
   if (!data || typeof data !== 'object') {
     errors.push('data: campo obligatorio faltante o inválido');
@@ -134,7 +115,7 @@ function validateDataStructure(data: unknown): string[] {
   const d = data as Record<string, unknown>;
   const presentTables = new Set(Object.keys(d));
 
-  for (const expected of EXPECTED_TABLES) {
+  for (const expected of expectedTables) {
     if (!presentTables.has(expected)) {
       errors.push(`data: tabla faltante "${expected}"`);
     } else {
@@ -146,7 +127,7 @@ function validateDataStructure(data: unknown): string[] {
   }
 
   for (const tableName of presentTables) {
-    if (!EXPECTED_SET.has(tableName)) {
+    if (!expectedSet.has(tableName)) {
       errors.push(`data: tabla desconocida "${tableName}"`);
     }
   }
@@ -154,7 +135,7 @@ function validateDataStructure(data: unknown): string[] {
   return errors;
 }
 
-function validateRowCounts(payload: unknown): string[] {
+function validateRowCounts(payload: unknown, expectedTables: readonly string[]): string[] {
   const errors: string[] = [];
   const p = payload as Record<string, unknown>;
   const m = p.manifest as Record<string, unknown>;
@@ -167,7 +148,7 @@ function validateRowCounts(payload: unknown): string[] {
 
   const rowCounts = m.rowCounts as Record<string, number>;
 
-  for (const table of EXPECTED_TABLES) {
+  for (const table of expectedTables) {
     const expected = rowCounts[table];
     const actual = d[table]?.length ?? 0;
 
@@ -265,19 +246,21 @@ export function validateBackup(rawJson: string): ValidationResult {
     };
   }
 
-  const manifestErrors = validateManifest(parsed);
+  const { errors: manifestErrors, version } = validateManifest(parsed);
   errors.push(...manifestErrors);
+
+  const expectedTables = getBackupTables(version);
 
   const p = parsed as Record<string, unknown>;
 
-  const dataErrors = validateDataStructure(p.data);
+  const dataErrors = validateDataStructure(p.data, expectedTables);
   errors.push(...dataErrors);
 
   if (dataErrors.length === 0) {
     const data = p.data as Record<string, unknown[]>;
 
     if (typeof p.data === 'object' && p.data !== null) {
-      const rowCountErrors = validateRowCounts(parsed);
+      const rowCountErrors = validateRowCounts(parsed, expectedTables);
       errors.push(...rowCountErrors);
 
       const duplicateErrors = validateDuplicateIds(data);
@@ -286,7 +269,7 @@ export function validateBackup(rawJson: string): ValidationResult {
       const fkErrors = validateForeignKeys(data);
       errors.push(...fkErrors);
 
-      const emptyTables = EXPECTED_TABLES.filter(t => (data[t]?.length ?? 0) === 0);
+      const emptyTables = expectedTables.filter(t => (data[t]?.length ?? 0) === 0);
       if (emptyTables.length > 0) {
         warnings.push(`Las siguientes tablas están vacías: ${emptyTables.join(', ')}`);
       }
@@ -294,7 +277,6 @@ export function validateBackup(rawJson: string): ValidationResult {
   }
 
   const m = p.manifest as Record<string, string> | undefined;
-  const version = m?.version as string ?? '';
   const exportedAt = m?.exportedAt as string ?? '';
 
   const allData = p.data as Record<string, unknown[]> | undefined;

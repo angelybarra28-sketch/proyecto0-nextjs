@@ -72,14 +72,18 @@ export async function updateAdminProduct(
   return payload.product;
 }
 
-export async function deleteAdminProduct(productId: string): Promise<void> {
+export async function deleteAdminProduct(productId: string, reason?: string): Promise<void> {
   const response = await fetch(`/api/admin/products/${productId}`, {
     method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ reason: reason ?? '' }),
   });
 
   if (!response.ok) {
     const message = await parseApiError(response);
-    throw new Error(message || 'No se pudo eliminar el producto');
+    throw new Error(message || 'No se pudo mover el producto a la papelera');
   }
 }
 

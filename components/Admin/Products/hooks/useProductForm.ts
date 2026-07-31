@@ -59,6 +59,7 @@ export function useProductForm({ mode, product, categories, isSaving, onSubmit }
   const [isUploading, setIsUploading] = useState(false);
   const [stock, setStock] = useState(isCreate ? '0' : product!.stock.toString());
   const [imageError, setImageError] = useState('');
+  const [priceChangeReason, setPriceChangeReason] = useState('');
 
   const controlsDisabled = isSaving || isUploading;
 
@@ -191,6 +192,7 @@ export function useProductForm({ mode, product, categories, isSaving, onSubmit }
       tendencias,
       imageUrl,
       carouselImages: currentCarouselImages,
+      priceChangeReason: isCreate ? undefined : priceChangeReason.trim() || null,
     });
   };
 
@@ -217,6 +219,7 @@ export function useProductForm({ mode, product, categories, isSaving, onSubmit }
     imageError,
     controlsDisabled,
     currentCarouselImages,
+    priceChangeReason, setPriceChangeReason,
 
     pricing,
     cascade,

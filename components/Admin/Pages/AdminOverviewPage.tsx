@@ -83,6 +83,12 @@ export function AdminOverviewPage() {
           </button>
         </Link>
 
+        <Link href="/admin/dashboard">
+          <button className={styles.adminActionButton}>
+            Dashboard
+          </button>
+        </Link>
+
         <Link href="/admin/provedores">
           <button className={styles.adminActionButton}>
             Proveedores
@@ -101,9 +107,21 @@ export function AdminOverviewPage() {
           </button>
         </Link>
 
+        <Link href="/admin/mantenimiento">
+          <button className={styles.adminActionButton}>
+            Mantenimiento
+          </button>
+        </Link>
+
         <Link href="/admin/configuracion">
           <button className={styles.adminActionButton}>
             Configuración
+          </button>
+        </Link>
+
+        <Link href="/admin/notificaciones">
+          <button className={styles.adminActionButton}>
+            Notificaciones
           </button>
         </Link>
 

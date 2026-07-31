@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { ProveedorCompraRow, ProveedorRow } from '@/lib/supabase/types';
-import { fetchCompras, fetchProveedores, createCompra } from '@/lib/services/admin/client';
+import { fetchCompras, fetchProveedores, createCompra, deleteCompra } from '@/lib/services/admin/client';
 import { CompraForm } from './CompraForm';
 import { CompraDetailView } from './CompraDetailView';
 import { IndicadorEstadoBadge } from './ProveedorIndicadores';
@@ -22,6 +22,8 @@ export function ComprasList() {
   const [showForm, setShowForm] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [pagoCompra, setPagoCompra] = useState<ProveedorCompraRow | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -41,6 +43,20 @@ export function ComprasList() {
     setShowForm(false);
     load();
     return created.id;
+  };
+
+  const handleDelete = async (c: ProveedorCompraRow) => {
+    if (!confirm(`¿Eliminar la compra ${c.numero_factura ?? 'sin factura'}? Esta acción no se puede deshacer.`)) return;
+    setDeletingId(c.id);
+    setDeleteError(null);
+    try {
+      await deleteCompra(c.id);
+      load();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'No se pudo eliminar la compra');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (detailId) {
@@ -95,6 +111,13 @@ export function ComprasList() {
         </button>
       </div>
 
+      {deleteError && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 12, padding: '10px 12px', background: 'rgba(248,113,113,0.12)', border: '1px solid #f87171', borderRadius: 8, color: '#f87171', fontSize: 13 }}>
+          <span>{deleteError}</span>
+          <button onClick={() => setDeleteError(null)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 14 }}>✕</button>
+        </div>
+      )}
+
       <div className={styles.tableContainer}>
         <table className={styles.table}>
           <thead>
@@ -134,6 +157,9 @@ export function ComprasList() {
                     <button onClick={() => setDetailId(c.id)} className={styles.compactBtn}>Ver detalle</button>
                     <button onClick={() => setPagoCompra(c)} className={styles.compactBtn} style={{ color: '#c8a87c' }}>
                       Registrar pago
+                    </button>
+                    <button onClick={() => handleDelete(c)} disabled={deletingId === c.id} className={styles.compactBtn} style={{ color: '#f87171' }}>
+                      {deletingId === c.id ? 'Eliminando...' : 'Eliminar'}
                     </button>
                   </div>
                 </td>

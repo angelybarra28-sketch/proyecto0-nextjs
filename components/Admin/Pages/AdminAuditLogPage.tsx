@@ -21,6 +21,10 @@ function describeAction(row: AuditLogRow): string {
     case 'product_created': return `"${meta.name ?? ''}" creado`;
     case 'product_updated': return `Campos: ${(meta.updatedFields as string[] ?? []).join(', ')}`;
     case 'product_deleted': return `ID: ${row.entity_id}`;
+    case 'product_trashed': return `"${meta.name ?? ''}" movido a la papelera${meta.reason ? ` — Motivo: ${meta.reason}` : ''}`;
+    case 'product_restored': return `"${meta.name ?? ''}" restaurado desde la papelera`;
+    case 'product_hard_deleted': return `"${meta.name ?? ''}" eliminado definitivamente`;
+    case 'product_price_changed': return `Precio: $${Number(meta.oldPrice ?? 0).toFixed(2)} → $${Number(meta.newPrice ?? 0).toFixed(2)}${meta.reason ? ` — Motivo: ${meta.reason}` : ''}`;
     case 'product_image_uploaded': return `Imagen subida`;
     case 'product_image_deleted': return `Imagen eliminada`;
     case 'category_created': return `"${meta.name ?? ''}" creada`;
@@ -50,6 +54,11 @@ function describeAction(row: AuditLogRow): string {
     case 'proveedor_compra_item_deleted': return `ID: ${row.entity_id}`;
     case 'proveedor_adjunto_uploaded': return `"${meta.nombreOriginal ?? ''}" (${meta.tipo ?? ''})`;
     case 'proveedor_adjunto_deleted': return `ID: ${row.entity_id}`;
+    case 'backup_exported': return `versión ${meta.version ?? '?'} · ${meta.tables ?? '?'} tablas · ${meta.rows ?? '?'} filas`;
+    case 'backup_validated': return meta.result === 'ok' ? 'Backup válido' : `Errores: ${meta.errorCount ?? '?'}`;
+    case 'backup_restore_started': return `modo ${meta.mode ?? '?'} · versión ${meta.version ?? '?'}`;
+    case 'backup_restored': return `modo ${meta.mode ?? '?'} · ${meta.tables ?? '?'} tablas · ${meta.rows ?? '?'} filas · ${meta.durationMs ?? '?'} ms`;
+    case 'backup_restore_failed': return `modo ${meta.mode ?? '?'} · errores: ${Array.isArray(meta.errors) ? meta.errors.length : meta.errorCount ?? '?'} · rollback: ${meta.rollbackApplied ? 'sí' : 'no'}`;
     default: return row.action;
   }
 }
