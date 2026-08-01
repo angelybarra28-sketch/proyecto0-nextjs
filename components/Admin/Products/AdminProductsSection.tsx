@@ -287,14 +287,14 @@ export function AdminProductsSection({ enabled }: AdminProductsSectionProps) {
       {!showCreateForm && (
         <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
-            className={styles.deleteBtn}
+            className={styles.adminPrimarySmallButton}
             onClick={() => setShowCreateForm(true)}
             disabled={isSaving}
           >
             + Crear producto nuevo
           </button>
           <Link href="/admin/productos/papelera">
-            <button className={styles.adminActionButton} disabled={isSaving}>
+            <button className={styles.adminTableActionButton} disabled={isSaving}>
               Papelera ({trashCount})
             </button>
           </Link>
