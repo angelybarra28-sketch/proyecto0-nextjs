@@ -131,6 +131,12 @@ const AUTH_REFERENCE_COLUMNS: Record<string, string> = {
 const CHUNK_SIZE = 200;
 const FAKE_UUID = '00000000-0000-0000-0000-000000000000';
 
+// Límite de tamaño del payload de restore. El backup completo del proyecto es
+// del orden de unos pocos MB; un payload mayor sugiere un archivo corrupto,
+// malicioso o una exportación de otro proyecto. Se valida antes de parsear
+// para evitar abusos de memoria en el servidor.
+const MAX_RESTORE_PAYLOAD_BYTES = 50 * 1024 * 1024;
+
 type Row = Record<string, unknown>;
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -520,6 +526,13 @@ export async function restoreBackup(options: RestoreOptions): Promise<RestoreRes
 
   if (!supabase) {
     throw new RestoreError('Supabase admin client not available');
+  }
+
+  const payloadBytes = Buffer.byteLength(options.rawJson, 'utf8');
+  if (payloadBytes > MAX_RESTORE_PAYLOAD_BYTES) {
+    throw new RestoreError(
+      `El backup supera el tamaño máximo permitido (${MAX_RESTORE_PAYLOAD_BYTES / (1024 * 1024)}MB). Restore cancelado sin modificar la base.`
+    );
   }
 
   const validation = validateBackup(options.rawJson);

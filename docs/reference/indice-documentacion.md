@@ -114,6 +114,7 @@ docs/
 
 | Documento | Enfoque | Duración |
 |-----------|---------|----------|
+| `docs/audits/AUDITORIA_TECNICA_PRE_PRODUCCION.md` | Auditoría técnica general pre-producción (13 secciones) | 60 min |
 | `docs/audits/AUDITORIA_PAGOS_HUERFANOS_Y_DIVERGENCIA.md` | Pagos huérfanos, divergencia entre módulos | 30 min |
 | `docs/audits/AUDITORIA_IS_ACTIVE_CALCULATE_SUMMARY.md` | Flag is_active, función calculateSummary | 20 min |
 | `docs/audits/AUDITORIA_FASE_4_1_CALCULATE_SUMMARY_SOBREPAGOS.md` | Sobrepagos, análisis de remaining | 35 min |

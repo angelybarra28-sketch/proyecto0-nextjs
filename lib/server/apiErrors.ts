@@ -31,11 +31,18 @@ export function errorResponse(error: unknown, requestId: string, status = 400) {
       ? String((error as Record<string, unknown>).message)
       : 'Error interno';
 
+  // Los errores internos (>= 500) pueden contener mensajes crudos de Supabase,
+  // PostgreSQL u otras librerías. No deben exponerse al cliente: se devuelve un
+  // mensaje genérico y el detalle queda en los logs del servidor.
+  const safeMessage = status >= 500
+    ? 'Error interno del servidor'
+    : message;
+
   return NextResponse.json({
     success: false,
     error: {
       code: classifyError(error),
-      message,
+      message: safeMessage,
       requestId,
     },
   }, { status, headers: { 'x-request-id': requestId } });
