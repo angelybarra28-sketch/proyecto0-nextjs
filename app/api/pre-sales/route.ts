@@ -2,23 +2,18 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { findOrCreateCustomer } from '@/lib/repositories/customerRepository';
 import { createSale, createSaleItems } from '@/lib/repositories/saleRepository';
+import {
+  getPreSalePriceValidationMode,
+  loadCatalogByName,
+  validatePreSaleItems,
+} from '@/lib/server/salePriceValidation';
+import {
+  parsePreSaleBody,
+  preSalesDisabledGuard,
+  preSalesRateLimitGuard,
+  validatePreSalePayloadShape,
+} from '@/lib/server/preSalesGuards';
 import type { SaleInsert, SaleItemInsert } from '@/lib/supabase/types';
-
-interface PreSaleItem {
-  name: string;
-  price: number;
-  quantity: number;
-  imageUrl?: string;
-  installmentCount?: number;
-}
-
-interface PreSaleInput {
-  fullName: string;
-  phone?: string;
-  address?: string;
-  location?: string;
-  items: PreSaleItem[];
-}
 
 export async function POST(request: Request) {
   try {
@@ -27,10 +22,58 @@ export async function POST(request: Request) {
       return NextResponse.json({ persisted: false, error: 'Supabase not configured' }, { status: 500 });
     }
 
-    const input = await request.json() as PreSaleInput;
+    const disabledResponse = preSalesDisabledGuard();
+    if (disabledResponse) {
+      return disabledResponse;
+    }
 
-    if (!input.fullName || !input.items || input.items.length === 0) {
+    const rateLimitResponse = preSalesRateLimitGuard(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    const payload = await parsePreSaleBody(request);
+    if (payload instanceof Response) {
+      return payload;
+    }
+
+    if (!payload.fullName || !payload.items || payload.items.length === 0) {
       return NextResponse.json({ persisted: false, error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const shaped = validatePreSalePayloadShape(payload);
+    if (shaped instanceof Response) {
+      return shaped;
+    }
+
+    const input = shaped;
+
+    const validationMode = getPreSalePriceValidationMode();
+
+    let catalogByName = new Map<string, number>();
+    let catalogLoadWarning: string | null = null;
+    try {
+      catalogByName = await loadCatalogByName(supabase);
+    } catch (catalogError) {
+      console.warn('[pre-sales] Catalog load failed, skipping catalog price check:', catalogError);
+      catalogLoadWarning = 'Catalog price check skipped';
+    }
+
+    const validation = validatePreSaleItems(input.items, catalogByName, validationMode);
+    const warnings = [...validation.warnings];
+    if (catalogLoadWarning) {
+      warnings.push(catalogLoadWarning);
+    }
+
+    if (!validation.valid) {
+      return NextResponse.json(
+        { persisted: false, error: validation.errors.join('; ') },
+        { status: 400 }
+      );
+    }
+
+    if (warnings.length > 0) {
+      console.warn('[pre-sales] Validation warnings:', warnings);
     }
 
     const customer = await findOrCreateCustomer(supabase, {
@@ -109,11 +152,16 @@ export async function POST(request: Request) {
       throw new Error(`Error al crear las cuotas: ${installmentError.message}`);
     }
 
-    return NextResponse.json({
+    const responseBody: Record<string, unknown> = {
       persisted: true,
       saleId: sale.id,
       saleNumber: sale.sale_number,
-    });
+    };
+    if (warnings.length > 0) {
+      responseBody.warnings = warnings;
+    }
+
+    return NextResponse.json(responseBody);
   } catch (error) {
     console.error('[pre-sales] Error creating pre-sale:', error);
     return NextResponse.json(
