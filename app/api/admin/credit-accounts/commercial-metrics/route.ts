@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       .eq('origin_year', currentYear);
 
     if (countError) {
-      console.error('Error counting replacements:', countError);
+      logServerError({ area: 'admin.creditAccounts', action: 'count-replacements', requestId: context.requestId, error: countError });
     }
 
     // Fetch all accounts (including inactive/finished) to build the finished list

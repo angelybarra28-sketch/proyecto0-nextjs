@@ -1,5 +1,7 @@
 # Supabase Phase 1
 
+> **Nota (W06):** `supabase/schema.sql` ya no se mantiene a mano. Desde W06 es un snapshot **auto-generado** a partir de `supabase/migrations/` (`npm run schema:generate`). Este documento describe el diseño de Fase 1 (histórico); el archivo manuscrito original quedó respaldado en `supabase/schema.sql.backup-fase1`.
+
 ## Scope
 - Adds persistence for `categories`, `products`, `customers`, `sales`, and `sale_items` only.
 - Does not replace `lib/products.ts` yet; the current frontend catalog, search, filters, cart, and visual checkout remain unchanged.

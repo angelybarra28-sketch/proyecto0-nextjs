@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "schema:generate": "node scripts/generate-schema-snapshot.mjs",
     "test:integration": "node --test tests/integration/*.test.mjs",
     "test:db": "node --test tests/db/*.test.mjs",
     "test:db:watch": "node --test --watch tests/db/*.test.mjs",

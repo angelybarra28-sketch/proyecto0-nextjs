@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { exportBackup } from './export.service';
 import { validateBackup } from './validate.service';
+import { getRestorePayloadError, getMaxRestorePayloadMb } from './restoreConfig';
 import type { BackupPayload } from './types';
 
 export type RestoreMode = 'merge' | 'replace';
@@ -31,9 +32,12 @@ export interface RestoreResult {
 }
 
 export class RestoreError extends Error {
-  constructor(message: string) {
+  readonly status: number;
+
+  constructor(message: string, status = 400) {
     super(message);
     this.name = 'RestoreError';
+    this.status = status;
   }
 }
 
@@ -130,12 +134,6 @@ const AUTH_REFERENCE_COLUMNS: Record<string, string> = {
 
 const CHUNK_SIZE = 200;
 const FAKE_UUID = '00000000-0000-0000-0000-000000000000';
-
-// Límite de tamaño del payload de restore. El backup completo del proyecto es
-// del orden de unos pocos MB; un payload mayor sugiere un archivo corrupto,
-// malicioso o una exportación de otro proyecto. Se valida antes de parsear
-// para evitar abusos de memoria en el servidor.
-const MAX_RESTORE_PAYLOAD_BYTES = 50 * 1024 * 1024;
 
 type Row = Record<string, unknown>;
 
@@ -380,11 +378,9 @@ async function mergeTable(
     for (const row of group) {
       const rowError = await upsertRows(supabase, table, [row]);
       if (rowError) {
-        stats.ignored++;
-        warnings.push(`merge ${table}: fila "${rowKey(row, pkCols)}" ignorada: ${rowError.message}`);
-      } else {
-        countRow(row, pkCols, existingIds, stats);
+        throw new Error(`merge ${table}: ${rowError.message}`);
       }
+      countRow(row, pkCols, existingIds, stats);
     }
   }
 
@@ -439,63 +435,6 @@ async function importData(
   }
 }
 
-async function runReplace(
-  supabase: SupabaseClient,
-  payload: BackupPayload,
-  existingAuthIds: Set<string>,
-  warnings: string[]
-): Promise<{ stats: RestoreTableStats[]; snapshot: BackupPayload; rollbackApplied: boolean; errors: string[] }> {
-  const stats: RestoreTableStats[] = INSERT_ORDER.map((table) => ({
-    table,
-    backupRows: (payload.data[table] ?? []).length,
-    inserted: 0,
-    updated: 0,
-    ignored: 0,
-  }));
-
-  const snapshot = await exportBackup();
-  const errors: string[] = [];
-
-  let rollbackApplied = false;
-
-  const attemptRollback = async (failureMessage: string) => {
-    rollbackApplied = true;
-    errors.push(failureMessage);
-    try {
-      await clearAllData(supabase);
-      await importData(supabase, snapshot, existingAuthIds, warnings);
-      warnings.push('Rollback aplicado: la base fue restaurada al estado anterior al restore.');
-    } catch (rollbackError) {
-      errors.push(
-        `Rollback falló: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}. ` +
-          'Descargá el snapshot de seguridad para restaurar manualmente.'
-      );
-    }
-  };
-
-  const clearError = await clearAllData(supabase);
-  if (clearError) {
-    await attemptRollback(`Error al vaciar la base: ${clearError.message}`);
-    return { stats, snapshot, rollbackApplied, errors };
-  }
-
-  try {
-    for (const table of INSERT_ORDER) {
-      const rows = (payload.data[table] ?? []) as Row[];
-      const inserted = await insertTable(supabase, table, rows, existingAuthIds, (message) => warnings.push(message));
-      const tableStats = stats.find((entry) => entry.table === table);
-      if (tableStats) {
-        tableStats.inserted = inserted;
-        tableStats.ignored = Math.max(0, tableStats.backupRows - inserted);
-      }
-    }
-  } catch (insertError) {
-    await attemptRollback(insertError instanceof Error ? insertError.message : String(insertError));
-  }
-
-  return { stats, snapshot, rollbackApplied, errors };
-}
-
 function aggregate(stats: RestoreTableStats[]): {
   totalInserted: number;
   totalUpdated: number;
@@ -525,14 +464,13 @@ export async function restoreBackup(options: RestoreOptions): Promise<RestoreRes
   const supabase = getSupabaseAdminClient();
 
   if (!supabase) {
-    throw new RestoreError('Supabase admin client not available');
+    throw new RestoreError('Supabase admin client not available', 500);
   }
 
-  const payloadBytes = Buffer.byteLength(options.rawJson, 'utf8');
-  if (payloadBytes > MAX_RESTORE_PAYLOAD_BYTES) {
-    throw new RestoreError(
-      `El backup supera el tamaño máximo permitido (${MAX_RESTORE_PAYLOAD_BYTES / (1024 * 1024)}MB). Restore cancelado sin modificar la base.`
-    );
+  const maxMb = getMaxRestorePayloadMb();
+  const payloadError = getRestorePayloadError(options.rawJson, maxMb);
+  if (payloadError) {
+    throw new RestoreError(payloadError, 413);
   }
 
   const validation = validateBackup(options.rawJson);
@@ -567,32 +505,79 @@ export async function restoreBackup(options: RestoreOptions): Promise<RestoreRes
     rollbackApplied: false,
   };
 
-  if (options.mode === 'merge') {
-    const stats: RestoreTableStats[] = [];
+  let snapshot: BackupPayload;
+  try {
+    snapshot = await exportBackup();
+  } catch (error) {
+    console.error('Error generating restore snapshot:', error);
+    throw new RestoreError(
+      'No se pudo generar el snapshot de seguridad antes del restore. Restore cancelado sin modificar la base.',
+      500
+    );
+  }
 
-    for (const table of INSERT_ORDER) {
-      const fileRows = (payload.data[table] ?? []) as Row[];
-      const outcome = await mergeTable(supabase, table, fileRows, existingAuthIds);
-      stats.push(outcome.stats);
-      warnings.push(...outcome.warnings);
+  const applyRollback = async (failureMessage: string) => {
+    result.rollbackApplied = true;
+    result.errors.push(failureMessage);
+    try {
+      await clearAllData(supabase);
+      await importData(supabase, snapshot, existingAuthIds, warnings);
+      warnings.push('Rollback aplicado: la base fue restaurada al estado anterior al restore.');
+    } catch (rollbackError) {
+      result.errors.push(
+        `Rollback falló: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}. ` +
+          'Descargá el snapshot de seguridad para restaurar manualmente.'
+      );
+    }
+  };
+
+  const stats: RestoreTableStats[] = INSERT_ORDER.map((table) => ({
+    table,
+    backupRows: (payload.data[table] ?? []).length,
+    inserted: 0,
+    updated: 0,
+    ignored: 0,
+  }));
+
+  try {
+    if (options.mode === 'merge') {
+      for (const table of INSERT_ORDER) {
+        const fileRows = (payload.data[table] ?? []) as Row[];
+        const outcome = await mergeTable(supabase, table, fileRows, existingAuthIds);
+        const tableStats = stats.find((entry) => entry.table === table);
+        if (tableStats) {
+          tableStats.inserted = outcome.stats.inserted;
+          tableStats.updated = outcome.stats.updated;
+          tableStats.ignored = outcome.stats.ignored;
+        }
+        warnings.push(...outcome.warnings);
+      }
+    } else {
+      const clearError = await clearAllData(supabase);
+      if (clearError) {
+        throw new Error(`Error al vaciar la base: ${clearError.message}`);
+      }
+      for (const table of INSERT_ORDER) {
+        const rows = (payload.data[table] ?? []) as Row[];
+        const inserted = await insertTable(supabase, table, rows, existingAuthIds, (message) => warnings.push(message));
+        const tableStats = stats.find((entry) => entry.table === table);
+        if (tableStats) {
+          tableStats.inserted = inserted;
+          tableStats.ignored = Math.max(0, tableStats.backupRows - inserted);
+        }
+      }
     }
 
     result.tables = stats;
-    Object.assign(result, aggregate(stats));
     result.success = true;
-  } else {
-    const outcome = await runReplace(supabase, payload, existingAuthIds, warnings);
-    result.tables = outcome.stats;
-    result.snapshot = outcome.snapshot;
-    result.rollbackApplied = outcome.rollbackApplied;
-    result.errors.push(...outcome.errors);
-    result.success = outcome.errors.length === 0;
-    if (result.success) {
-      const totals = aggregate(outcome.stats);
-      result.totalInserted = totals.totalInserted;
-      result.totalUpdated = totals.totalUpdated;
-      result.totalIgnored = totals.totalIgnored;
-    }
+    Object.assign(result, aggregate(stats));
+  } catch (error) {
+    result.tables = stats;
+    await applyRollback(error instanceof Error ? error.message : String(error));
+  }
+
+  if (options.mode === 'replace') {
+    result.snapshot = snapshot;
   }
 
   result.durationMs = Date.now() - startedAt;

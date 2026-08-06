@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     if (!rawJson || rawJson.trim().length === 0) {
       return NextResponse.json(
         { valid: false, errors: ['El cuerpo de la solicitud está vacío'], warnings: [], summary: { tables: 0, rows: 0, checksum: '', version: '', exportedAt: '' } },
-        { status: 400 },
+        { status: 400, headers: { 'x-request-id': context.requestId } },
       );
     }
 

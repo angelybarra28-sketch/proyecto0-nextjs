@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
+      return NextResponse.json({ message: 'No autorizado' }, { status: 401, headers: { 'x-request-id': context.requestId } });
     }
 
     const { data: customers, error: customerError } = await supabase
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         customer: null,
         resumen: null,
         message: 'Tu cuenta aún no está vinculada a un cliente. Contactanos.',
-      });
+      }, { headers: { 'x-request-id': context.requestId } });
     }
 
     const customerIds = customers.map((c) => c.id);
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
         cuotasDetalle: a.credit_installments || [],
         pagos: a.credit_payments || [],
       })),
-    });
+    }, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
     logServerError({ area: 'mi-cuenta', action: 'resumen', requestId: context.requestId, error });
     return errorResponse(error, context.requestId, 500);

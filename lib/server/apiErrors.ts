@@ -1,15 +1,7 @@
 import { NextResponse } from 'next/server';
+import { resolveSafeErrorMessage, type ApiErrorCode } from './errorMessages';
 
-export type ApiErrorCode =
-  | 'AUTH_REQUIRED'
-  | 'FORBIDDEN'
-  | 'VALIDATION_ERROR'
-  | 'RUNTIME_CONTRACT_FAILED'
-  | 'STOCK_INSUFFICIENT'
-  | 'PRODUCT_NOT_FOUND'
-  | 'MAINTENANCE_MODE_ACTIVE'
-  | 'STORAGE_INCONSISTENT'
-  | 'INTERNAL_ERROR';
+export type { ApiErrorCode } from './errorMessages';
 
 export function classifyError(error: unknown): ApiErrorCode {
   const message = error instanceof Error ? error.message : String(error);
@@ -24,25 +16,21 @@ export function classifyError(error: unknown): ApiErrorCode {
   return 'INTERNAL_ERROR';
 }
 
-export function errorResponse(error: unknown, requestId: string, status = 400) {
-  const message = error instanceof Error
-    ? error.message
-    : typeof error === 'object' && error !== null && 'message' in error
-      ? String((error as Record<string, unknown>).message)
-      : 'Error interno';
+export function errorResponse(error: unknown, requestId: string, status = 400, safeMessage?: string) {
+  const code = classifyError(error);
 
-  // Los errores internos (>= 500) pueden contener mensajes crudos de Supabase,
-  // PostgreSQL u otras librerías. No deben exponerse al cliente: se devuelve un
-  // mensaje genérico y el detalle queda en los logs del servidor.
-  const safeMessage = status >= 500
-    ? 'Error interno del servidor'
-    : message;
+  // El mensaje del error nunca se expone al cliente en crudo: puede contener
+  // detalle interno de Supabase, PostgreSQL u otras librerías. Se devuelve un
+  // mensaje seguro derivado del código y del status, salvo que el caller pase
+  // explícitamente un `safeMessage` (mensaje curado, sin detalles internos).
+  // El detalle completo queda únicamente en los logs del servidor.
+  const message = resolveSafeErrorMessage(code, status, safeMessage);
 
   return NextResponse.json({
     success: false,
     error: {
-      code: classifyError(error),
-      message: safeMessage,
+      code,
+      message,
       requestId,
     },
   }, { status, headers: { 'x-request-id': requestId } });

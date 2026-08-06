@@ -40,7 +40,7 @@ export async function POST(request: Request, context: RouteContext) {
           success: false,
           error: {
             code: 'PRODUCT_REFERENCED',
-            message: error.message,
+            message: 'Este producto tiene historial de ventas o cuentas de crédito y no puede eliminarse definitivamente.',
             requestId: requestContext.requestId,
           },
         },

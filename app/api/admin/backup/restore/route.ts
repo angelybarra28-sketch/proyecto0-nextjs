@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
-import { restoreBackup, type RestoreMode } from '@/lib/services/admin/backup';
+import { restoreBackup, RestoreError, type RestoreMode } from '@/lib/services/admin/backup';
+import {
+  buildPayloadTooLargeMessage,
+  getMaxRestorePayloadBytes,
+  getMaxRestorePayloadMb,
+} from '@/lib/services/admin/backup/restoreConfig';
 import { computeChecksum } from '@/lib/services/admin/backup/checksum';
 import { logAdminAction } from '@/lib/services/admin/audit';
 import { errorResponse } from '@/lib/server/apiErrors';
@@ -17,13 +22,21 @@ export async function POST(request: Request) {
     const modeHeader = request.headers.get('X-Restore-Mode') ?? '';
     const mode: RestoreMode = modeHeader === 'replace' ? 'replace' : 'merge';
 
+    const maxMb = getMaxRestorePayloadMb();
+    const maxBytes = getMaxRestorePayloadBytes(maxMb);
+
+    const contentLength = request.headers.get('Content-Length');
+    if (contentLength) {
+      const declaredBytes = Number(contentLength);
+      if (Number.isFinite(declaredBytes) && declaredBytes > maxBytes) {
+        return errorResponse(new RestoreError(buildPayloadTooLargeMessage(maxMb), 413), context.requestId, 413);
+      }
+    }
+
     const rawJson = await request.text();
 
     if (!rawJson || rawJson.trim().length === 0) {
-      return NextResponse.json(
-        { success: false, errors: ['El cuerpo de la solicitud está vacío'], warnings: [] },
-        { status: 400 },
-      );
+      return errorResponse(new RestoreError('El cuerpo de la solicitud está vacío'), context.requestId, 400);
     }
 
     const checksum = computeChecksum(rawJson);
@@ -31,7 +44,14 @@ export async function POST(request: Request) {
     const adminUser = await getAdminUserContext();
 
     const startedAt = Date.now();
-    const parsedVersion = (JSON.parse(rawJson) as { manifest?: { version?: string } }).manifest?.version ?? '';
+
+    let parsedVersion = '';
+    try {
+      const parsed = JSON.parse(rawJson) as { manifest?: { version?: string } };
+      parsedVersion = parsed?.manifest?.version ?? '';
+    } catch {
+      parsedVersion = '';
+    }
 
     await logAdminAction({
       adminUserId: adminUser?.userId ?? null,
@@ -95,6 +115,11 @@ export async function POST(request: Request) {
     return NextResponse.json(result, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
     logServerError({ area: 'admin.backup', action: 'restore', requestId: context.requestId, error });
-    return errorResponse(error, context.requestId, 400);
+    return errorResponse(
+      error,
+      context.requestId,
+      error instanceof RestoreError ? error.status : 500,
+      error instanceof RestoreError ? error.message : undefined
+    );
   }
 }

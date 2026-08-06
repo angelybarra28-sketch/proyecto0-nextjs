@@ -14,7 +14,7 @@
 - El bucket debe ser público si el catálogo consume URLs públicas.
 
 ## SQL/RPC Requeridos
-- Aplicar `supabase/schema.sql` completo o migraciones equivalentes.
+- Aplicar `supabase/schema.sql` (snapshot auto-generado desde las migraciones; ver `supabase/migrations/README.md`) o las migraciones versionadas directamente.
 - RPCs críticas:
   - `create_checkout_sale`
   - `register_sale_payment`

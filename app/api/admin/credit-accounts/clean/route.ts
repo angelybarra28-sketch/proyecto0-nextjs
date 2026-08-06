@@ -54,13 +54,11 @@ export async function POST(request: Request) {
       { headers: { 'x-request-id': context.requestId } }
     );
   } catch (error) {
-    console.error('CLEAN ROUTE ERROR:', error);
-
     logServerError({
-    area: 'admin.creditAccounts',
-    action: 'clean',
-    requestId: context.requestId,
-    error,
+      area: 'admin.creditAccounts',
+      action: 'clean',
+      requestId: context.requestId,
+      error,
     });
     return errorResponse(error, context.requestId, 500);
   }

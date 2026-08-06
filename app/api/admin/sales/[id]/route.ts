@@ -3,6 +3,7 @@ import { getAdminSaleDetail, updateAdminSale, replaceAdminSaleItems } from '@/li
 import { createCreditAccountFromSale } from '@/lib/services/saleToCreditService';
 import { getAdminUserContext, requireAdminUser } from '@/lib/auth/server';
 import { logAdminAction } from '@/lib/services/admin/audit';
+import { createRequestContext, logServerError } from '@/lib/server/logging';
 import type { SaleStatus, SaleItemInsert } from '@/lib/supabase/types';
 
 interface Props {
@@ -11,7 +12,9 @@ interface Props {
   }>;
 }
 
-export async function GET(_request: Request, { params }: Props) {
+export async function GET(request: Request, { params }: Props) {
+  const requestContext = createRequestContext(request);
+
   try {
     const authorizationError = await requireAdminUser();
     if (authorizationError) return authorizationError;
@@ -20,17 +23,19 @@ export async function GET(_request: Request, { params }: Props) {
     const sale = await getAdminSaleDetail(id);
 
     if (!sale) {
-      return NextResponse.json({ sale: null }, { status: 404 });
+      return NextResponse.json({ sale: null }, { status: 404, headers: { 'x-request-id': requestContext.requestId } });
     }
 
-    return NextResponse.json({ sale });
+    return NextResponse.json({ sale }, { headers: { 'x-request-id': requestContext.requestId } });
   } catch (error) {
-    console.error('Error loading admin sale detail:', error);
-    return NextResponse.json({ sale: null }, { status: 500 });
+    logServerError({ area: 'admin.sales', action: 'get-detail', entity: 'sale', entityId: (await params).id, requestId: requestContext.requestId, error });
+    return NextResponse.json({ sale: null }, { status: 500, headers: { 'x-request-id': requestContext.requestId } });
   }
 }
 
 export async function PATCH(request: Request, { params }: Props) {
+  const requestContext = createRequestContext(request);
+
   try {
     const authorizationError = await requireAdminUser();
     if (authorizationError) return authorizationError;
@@ -83,7 +88,7 @@ export async function PATCH(request: Request, { params }: Props) {
       try {
         creditAccountId = await createCreditAccountFromSale(id);
       } catch (creditError) {
-        console.error('[PATCH sale] Error creating credit account:', creditError);
+        logServerError({ area: 'admin.sales', action: 'create-credit-account', entity: 'sale', entityId: id, requestId: requestContext.requestId, error: creditError });
       }
     }
 
@@ -101,9 +106,10 @@ export async function PATCH(request: Request, { params }: Props) {
       },
     });
 
-    return NextResponse.json({ success: true, creditAccountId });
+    return NextResponse.json({ success: true, creditAccountId }, { headers: { 'x-request-id': requestContext.requestId } });
   } catch (error) {
-    console.error('Error updating sale:', error);
-    return NextResponse.json({ error: 'No se pudo actualizar la venta' }, { status: 500 });
+    const { id } = await params;
+    logServerError({ area: 'admin.sales', action: 'update', entity: 'sale', entityId: id, requestId: requestContext.requestId, error });
+    return NextResponse.json({ error: 'No se pudo actualizar la venta' }, { status: 500, headers: { 'x-request-id': requestContext.requestId } });
   }
 }

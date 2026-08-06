@@ -14,36 +14,47 @@ import {
   validatePreSalePayloadShape,
 } from '@/lib/server/preSalesGuards';
 import type { SaleInsert, SaleItemInsert } from '@/lib/supabase/types';
+import { createRequestContext, logServerError, logServerEvent } from '@/lib/server/logging';
 
 export async function POST(request: Request) {
+  const context = createRequestContext(request);
+
+  const withRequestId = (response: Response): Response => {
+    const headers = new Headers(response.headers);
+    if (!headers.has('x-request-id')) {
+      headers.set('x-request-id', context.requestId);
+    }
+    return new Response(response.body, { status: response.status, headers });
+  };
+
   try {
     const supabase = getSupabaseAdminClient();
     if (!supabase) {
-      return NextResponse.json({ persisted: false, error: 'Supabase not configured' }, { status: 500 });
+      return NextResponse.json({ persisted: false, error: 'Error interno del servidor' }, { status: 500, headers: { 'x-request-id': context.requestId } });
     }
 
     const disabledResponse = preSalesDisabledGuard();
     if (disabledResponse) {
-      return disabledResponse;
+      return withRequestId(disabledResponse);
     }
 
     const rateLimitResponse = preSalesRateLimitGuard(request);
     if (rateLimitResponse) {
-      return rateLimitResponse;
+      return withRequestId(rateLimitResponse);
     }
 
     const payload = await parsePreSaleBody(request);
     if (payload instanceof Response) {
-      return payload;
+      return withRequestId(payload);
     }
 
     if (!payload.fullName || !payload.items || payload.items.length === 0) {
-      return NextResponse.json({ persisted: false, error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json({ persisted: false, error: 'Missing required fields' }, { status: 400, headers: { 'x-request-id': context.requestId } });
     }
 
     const shaped = validatePreSalePayloadShape(payload);
     if (shaped instanceof Response) {
-      return shaped;
+      return withRequestId(shaped);
     }
 
     const input = shaped;
@@ -55,7 +66,7 @@ export async function POST(request: Request) {
     try {
       catalogByName = await loadCatalogByName(supabase);
     } catch (catalogError) {
-      console.warn('[pre-sales] Catalog load failed, skipping catalog price check:', catalogError);
+      logServerEvent({ level: 'warn', area: 'pre-sales', action: 'loadCatalog', requestId: context.requestId, error: catalogError, metadata: { note: 'Catalog price check skipped' } });
       catalogLoadWarning = 'Catalog price check skipped';
     }
 
@@ -68,12 +79,12 @@ export async function POST(request: Request) {
     if (!validation.valid) {
       return NextResponse.json(
         { persisted: false, error: validation.errors.join('; ') },
-        { status: 400 }
+        { status: 400, headers: { 'x-request-id': context.requestId } }
       );
     }
 
     if (warnings.length > 0) {
-      console.warn('[pre-sales] Validation warnings:', warnings);
+      logServerEvent({ level: 'warn', area: 'pre-sales', action: 'create', requestId: context.requestId, metadata: { warnings } });
     }
 
     const customer = await findOrCreateCustomer(supabase, {
@@ -161,12 +172,12 @@ export async function POST(request: Request) {
       responseBody.warnings = warnings;
     }
 
-    return NextResponse.json(responseBody);
+    return NextResponse.json(responseBody, { headers: { 'x-request-id': context.requestId } });
   } catch (error) {
-    console.error('[pre-sales] Error creating pre-sale:', error);
+    logServerError({ area: 'pre-sales', action: 'create', requestId: context.requestId, error });
     return NextResponse.json(
-      { persisted: false, error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { persisted: false, error: 'Error interno del servidor' },
+      { status: 500, headers: { 'x-request-id': context.requestId } }
     );
   }
 }

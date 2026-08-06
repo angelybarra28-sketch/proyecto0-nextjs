@@ -21,7 +21,7 @@ export async function POST(
     if (!body.contactType || !body.result) {
       return NextResponse.json(
         { message: 'Faltan campos requeridos (contactType, result)' },
-        { status: 400 }
+        { status: 400, headers: { 'x-request-id': requestContext.requestId } }
       );
     }
 
@@ -41,7 +41,7 @@ export async function POST(
       metadata: { contactType: body.contactType, result: body.result },
     });
 
-    return NextResponse.json({ note }, { status: 201 });
+    return NextResponse.json({ note }, { status: 201, headers: { 'x-request-id': requestContext.requestId } });
   } catch (error) {
     logServerError({
       area: 'admin.creditAccounts',

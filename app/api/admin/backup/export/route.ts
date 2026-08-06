@@ -50,6 +50,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
         'Content-Disposition': `attachment; filename=${filename}`,
         'Content-Length': String(fileSizeBytes),
+        'x-request-id': context.requestId,
       },
     });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { listActiveCategories } from '@/lib/repositories/categoryRepository';
+import { createRequestContext, logServerError } from '@/lib/server/logging';
 
 export type PublicCategoryItem = {
   id: string;
@@ -30,12 +31,14 @@ function slugify(label: string): string {
     .replace(/[^a-z0-9-]/g, '');
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const requestContext = createRequestContext(request);
+
   try {
     const supabase = getSupabaseAdminClient();
 
     if (!supabase) {
-      return NextResponse.json({ madreGroups: [] });
+      return NextResponse.json({ madreGroups: [] }, { headers: { 'x-request-id': requestContext.requestId } });
     }
 
     const rows = await listActiveCategories(supabase);
@@ -69,12 +72,9 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ madreGroups });
+    return NextResponse.json({ madreGroups }, { headers: { 'x-request-id': requestContext.requestId } });
   } catch (error) {
-    console.error('Error fetching public categories:', error instanceof Error ? error.message : error);
-    if (error && typeof error === 'object' && 'code' in error) {
-      console.error('Supabase error code:', (error as { code: unknown }).code);
-    }
-    return NextResponse.json({ madreGroups: [] });
+    logServerError({ area: 'categories', action: 'list', requestId: requestContext.requestId, error });
+    return NextResponse.json({ madreGroups: [] }, { headers: { 'x-request-id': requestContext.requestId } });
   }
 }

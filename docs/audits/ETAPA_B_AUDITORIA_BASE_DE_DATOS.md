@@ -62,6 +62,8 @@
 
 **Clasificación:** CRÍTICO (reproducibilidad). **Estado:** Confirmado (archivos). **Confianza:** 100% archivos. **Pendiente de DB real:** no se obtuvo en B.1 evidencia de producción (ver §10.3); el estado real de prod (trigger creado a mano o no) no fue verificado con consulta.
 
+> **Resolución (W07):** la función `handle_new_auth_user()` + trigger `on_auth_user_created` quedaron incorporados a las migraciones en `supabase/migrations/202608060001_handle_new_auth_user.sql` (función idéntica a la definición histórica, `SECURITY DEFINER`, trigger drop-if-exists + create, backfill idempotente con anti-join + `on conflict do nothing`). Un proyecto reconstruido solo con migraciones ya crea `profiles` automáticamente en `signUp`. Falta verificación manual en DB real del backfill de huérfanos existentes en producción.
+
 ---
 
 ### C4 — Columnas `reference_price` y `tendencias` de `products` fuera del DDL (CRÍTICO) — **se mantiene, prod pendiente**
@@ -77,6 +79,8 @@
 **Impacto:** En cualquier DB construida desde migraciones, `listProducts`, `createProduct` y `updateProduct` fallan en runtime (columna inexistente). El estado de producción no es verificable sin acceso (ver §10.2).
 
 **Clasificación:** CRÍTICO (reproducibilidad). **Estado:** Confirmado (en archivos). **Confianza:** 95%. **Depende de verificar producción** (`\d products`): no se obtuvo evidencia de DB real en B.1.
+
+> **Resolución (W08):** las columnas son necesarias (callers vivos en catálogo admin, secciones de Tendencias del home y el importador de URLs). Se incorporaron al DDL oficial con la migración `supabase/migrations/202608060002_products_reference_price_tendencias.sql` (`reference_price numeric(12,2)` nullable y `tendencias boolean not null default false`, con `add column if not exists` para ser segura sobre una base donde ya existan). El snapshot regenerado (`npm run schema:generate`) y los tipos del código quedan alineados. Falta verificación manual en DB real.
 
 ---
 
